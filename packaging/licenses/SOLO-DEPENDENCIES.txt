@@ -1,0 +1,19 @@
+Citizen Tools Solo - additional runtime components
+
+pywebview provides the native application window.
+pythonnet and clr_loader connect Python to the Windows .NET runtime.
+cffi, pycparser, bottle, proxy_tools and typing_extensions are supporting
+dependencies. The build copies their supplied license files into this folder.
+
+The original Companion-specific EULA is not included in this separate edition.
+
+Microsoft Edge WebView2 is distributed as Microsoft's digitally signed
+Evergreen Standalone Installer under prerequisites. It is a Microsoft runtime
+with its own license terms, not an open-source component of Citizen Tools.
+The setup installs it only if it is missing. No Internet download is performed
+by Citizen Tools Solo or its installer at runtime.
+
+Sources:
+https://pywebview.flowrl.com/
+https://pythonnet.github.io/
+https://developer.microsoft.com/en-us/microsoft-edge/webview2/

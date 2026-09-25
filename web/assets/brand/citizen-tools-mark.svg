@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Citizen Tools</title>
+  <path fill="#5DC8F3" d="M18 4h28l14 14v28L46 60H18L4 46V18L18 4Z"/>
+  <path fill="#07101A" d="M19 8h26l11 11v26L45 56H19L8 45V19L19 8Z"/>
+  <path fill="#5DC8F3" d="m14 20 9-9h16v8H26l-4 4v18l4 4h13v8H23l-9-9V20Z"/>
+  <path fill="#E7F3FA" d="M29 24h22v8h-6v19h-8V32h-8v-8Z"/>
+  <path fill="#5DC8F3" d="m48 11 5 5-5 5-3-3 2-2-2-2 3-3Z"/>
+</svg>

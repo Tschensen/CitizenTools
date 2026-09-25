@@ -1,0 +1,278 @@
+[
+  {
+    "file": "APACHE-2.0.txt",
+    "title": "Tesseract OCR 5.3.0 & Sprachdaten / language data",
+    "license": "Apache-2.0",
+    "source": "https://github.com/tesseract-ocr/tesseract"
+  },
+  {
+    "file": "TESSERACT-AUTHORS.txt",
+    "title": "Tesseract · Authors",
+    "license": "Copyright notices",
+    "source": "https://github.com/tesseract-ocr/tesseract"
+  },
+  {
+    "file": "proxy_tools-LICENSE.txt",
+    "title": "proxy_tools 0.1.0 · Werkzeug proxy",
+    "license": "BSD-2-Clause (source header / original LICENSE)",
+    "source": "https://github.com/jtushman/proxy_tools"
+  },
+  {
+    "file": "WEBVIEW2-RUNTIME.txt",
+    "title": "Microsoft Edge WebView2 Runtime",
+    "license": "Microsoft Software License Terms",
+    "source": "https://developer.microsoft.com/microsoft-edge/api/eula/webview2"
+  },
+  {
+    "file": "WEBVIEW2-SDK-LICENSE.txt",
+    "title": "Microsoft WebView2 SDK 1.0.3856.49",
+    "license": "BSD-3-Clause",
+    "source": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3856.49"
+  },
+  {
+    "file": "WEBVIEW2-SDK-NOTICE.txt",
+    "title": "Microsoft WebView2 SDK · Third-party notices",
+    "license": "Third-party notices",
+    "source": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3856.49"
+  },
+  {
+    "file": "GPL-2.0.txt",
+    "title": "GPL-2.0",
+    "license": "GPL-2.0",
+    "source": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt"
+  },
+  {
+    "file": "GPL-3.0.txt",
+    "title": "GPL-3.0",
+    "license": "GPL-3.0",
+    "source": "https://www.gnu.org/licenses/gpl-3.0.txt"
+  },
+  {
+    "file": "LGPL-2.1.txt",
+    "title": "LGPL-2.1",
+    "license": "LGPL-2.1",
+    "source": "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt"
+  },
+  {
+    "file": "LGPL-3.0.txt",
+    "title": "LGPL-3.0",
+    "license": "LGPL-3.0",
+    "source": "https://www.gnu.org/licenses/lgpl-3.0.txt"
+  },
+  {
+    "file": "LEPTONICA.txt",
+    "title": "Leptonica 1.78.0",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/DanBloomberg/leptonica/1.78.0/leptonica-license.txt"
+  },
+  {
+    "file": "LIBARCHIVE.txt",
+    "title": "libarchive 3.5.0",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libarchive/libarchive/v3.5.0/COPYING"
+  },
+  {
+    "file": "LIBPNG.txt",
+    "title": "libpng 1.6.34",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.34/LICENSE"
+  },
+  {
+    "file": "LIBJPEG-TURBO.txt",
+    "title": "libjpeg-turbo 1.5.3",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/1.5.3/LICENSE.md"
+  },
+  {
+    "file": "LIBJPEG-IJG.txt",
+    "title": "libjpeg IJG",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/1.5.3/README.ijg"
+  },
+  {
+    "file": "LIBTIFF.txt",
+    "title": "libtiff 4.0.9",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.0.9/COPYRIGHT"
+  },
+  {
+    "file": "LIBWEBP.txt",
+    "title": "libwebp 0.6.1",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/webmproject/libwebp/v0.6.1/COPYING"
+  },
+  {
+    "file": "OPENJPEG.txt",
+    "title": "OpenJPEG 2.3.0",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/uclouvain/openjpeg/v2.3.0/LICENSE"
+  },
+  {
+    "file": "ZLIB.txt",
+    "title": "zlib 1.2.11",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/madler/zlib/v1.2.11/README"
+  },
+  {
+    "file": "ICU.txt",
+    "title": "ICU 64.2",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/unicode-org/icu/release-64-2/icu4c/LICENSE"
+  },
+  {
+    "file": "LZ4.txt",
+    "title": "LZ4 1.7.5",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/lz4/lz4/v1.7.5/lib/LICENSE"
+  },
+  {
+    "file": "ZSTD.txt",
+    "title": "Zstandard 1.4.5",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/facebook/zstd/v1.4.5/LICENSE"
+  },
+  {
+    "file": "XZ.txt",
+    "title": "XZ 5.2.3",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/tukaani-project/xz/v5.2.3/COPYING"
+  },
+  {
+    "file": "CURL.txt",
+    "title": "libcurl",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/curl/curl/curl-7_77_0/COPYING"
+  },
+  {
+    "file": "NGHTTP2.txt",
+    "title": "nghttp2 1.31.0",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/nghttp2/nghttp2/v1.31.0/COPYING"
+  },
+  {
+    "file": "LIBFFI.txt",
+    "title": "libffi",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libffi/libffi/v3.2.1/LICENSE"
+  },
+  {
+    "file": "EXPAT.txt",
+    "title": "libexpat",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libexpat/libexpat/R_2_2_5/expat/COPYING"
+  },
+  {
+    "file": "LIBXML2.txt",
+    "title": "libxml2",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/GNOME/libxml2/v2.9.7/Copyright"
+  },
+  {
+    "file": "HARFBUZZ.txt",
+    "title": "Harfbuzz",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/1.7.6/COPYING"
+  },
+  {
+    "file": "FONTCONFIG.txt",
+    "title": "Fontconfig",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/fontconfig/fontconfig/2.12.6/COPYING"
+  },
+  {
+    "file": "FREETYPE.txt",
+    "title": "FreeType",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-8-1/docs/FTL.TXT"
+  },
+  {
+    "file": "LIBSSH2.txt",
+    "title": "libssh2",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libssh2/libssh2/libssh2-1.8.0/COPYING"
+  },
+  {
+    "file": "OPENSSL-1.txt",
+    "title": "OpenSSL 1.0.2",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/openssl/openssl/OpenSSL_1_0_2u/LICENSE"
+  },
+  {
+    "file": "GCC-EXCEPTION.txt",
+    "title": "GNU runtime exception",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/master/COPYING.RUNTIME"
+  },
+  {
+    "file": "GLIB.txt",
+    "title": "GLib",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/GNOME/glib/2.54.3/COPYING"
+  },
+  {
+    "file": "PANGO.txt",
+    "title": "Pango",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/GNOME/pango/1.40.14/COPYING"
+  },
+  {
+    "file": "BZIP2.txt",
+    "title": "Bzip2",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/libarchive/bzip2/bzip2-1.0.6/LICENSE"
+  },
+  {
+    "file": "MINGW-W64.txt",
+    "title": "mingw-w64 runtime",
+    "license": "Original license / notices",
+    "source": "https://raw.githubusercontent.com/mingw-w64/mingw-w64/master/COPYING"
+  },
+  {
+    "file": "CAIRO.txt",
+    "title": "Cairo · licensing",
+    "license": "Original license / notices",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "file": "CAIRO-LGPL.txt",
+    "title": "Cairo · LGPL 2.1",
+    "license": "Original license / notices",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "file": "CAIRO-MPL.txt",
+    "title": "Cairo · MPL 1.1",
+    "license": "Original license / notices",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "file": "PIXMAN.txt",
+    "title": "Pixman",
+    "license": "Original license / notices",
+    "source": "https://cairographics.org/releases/pixman-0.34.0.tar.gz"
+  },
+  {
+    "file": "OCR-RUNTIME-NOTICES.txt",
+    "title": "OCR-Bibliotheken · Herkunft / Provenance",
+    "license": "GPL / LGPL / other licenses",
+    "source": "https://github.com/UB-Mannheim/tesseract/wiki"
+  },
+  {
+    "file": "MICROSOFT-NOTICES.txt",
+    "title": "Microsoft · WebView2 & SmartScreen",
+    "license": "Required notices",
+    "source": "https://learn.microsoft.com/en-us/microsoft-edge/privacy-whitepaper#smartscreen"
+  },
+  {
+    "file": "THIRD-PARTY-NOTICES-de.txt",
+    "title": "Third-party overview (de)",
+    "license": "Notices",
+    "source": ""
+  },
+  {
+    "file": "THIRD-PARTY-NOTICES-en.txt",
+    "title": "Third-party overview (en)",
+    "license": "Notices",
+    "source": ""
+  }
+]

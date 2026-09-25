@@ -1,0 +1,17 @@
+#personalTransferPanel { display: block; max-width: 1100px; }
+#personalTransferPanel .panel-header { margin-bottom: 16px; }
+#personalTransferPanel .form-hint { display: block; min-height: 0; margin: 12px 0; padding: 0; border: 0; background: none; color: var(--muted); font-size: .85rem; line-height: 1.6; }
+#personalTransferPanel .settings-backup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 8px; }
+#personalTransferPanel .settings-backup-reminder { display: block; }
+#personalTransferPanel button, #personalTransferPanel select { min-height: 42px; max-width: 100%; }
+#personalTransferPanel select { min-width: 230px; }
+#personalTransferPreview { margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 8px; }
+#personalTransferFilename { overflow-wrap: anywhere; margin: 0 0 12px; }
+#personalTransferStatus:empty { display: none; }
+#personalTransferPanel #personalTransferStatus { color: var(--highlight-strong); }
+#personalTransferRecovery { margin-top: 10px; }
+@media (max-width: 600px) {
+  #personalTransferPanel .settings-backup-actions > * { width: 100%; }
+  #personalTransferPanel select { width: 100%; }
+  #personalTransferPreview { padding: 10px; }
+}

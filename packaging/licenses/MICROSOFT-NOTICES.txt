@@ -1,0 +1,17 @@
+Microsoft Edge WebView2
+
+Das Windows-Fenster verwendet Microsoft Edge WebView2. Diese Komponente
+enthaelt Microsoft Defender SmartScreen und erfasst und sendet Informationen
+an Microsoft entsprechend Microsofts Datenschutzerklaerung und dem
+Microsoft Edge Privacy Whitepaper. Fuer WebView2 gelten die eigenen
+Microsoft-Lizenzbedingungen in WEBVIEW2-RUNTIME.txt. Die MIT-Lizenz von
+Citizen Tools ersetzt diese Bedingungen nicht.
+
+The Windows window uses Microsoft Edge WebView2, which includes Microsoft
+Defender SmartScreen and collects and sends information to Microsoft as
+disclosed in Microsoft's Privacy Statement and the Microsoft Edge Privacy
+Whitepaper. Its own terms are in WEBVIEW2-RUNTIME.txt and are not replaced
+by the Citizen Tools MIT License.
+
+https://aka.ms/privacy
+https://learn.microsoft.com/en-us/microsoft-edge/privacy-whitepaper#smartscreen

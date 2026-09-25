@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      window.soloErrors = [];
+      window.soloLoadErrors = [];
+      window.addEventListener('error', function (event) {
+        if (event.message) window.soloErrors.push(event.message);
+        else window.soloLoadErrors.push(event.target.src || event.target.href || 'unbekannt');
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) { window.soloErrors.push(String(event.reason)); });
+    </script>
+    <title>Citizen Tools · Flight Deck</title>
+    <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css?v=232" />
+    <link rel="stylesheet" href="solo.css?solo=0.1.23" />
+    <link rel="stylesheet" href="personal-transfer.css?solo=0.1.23" />
+  </head>
+  <body>
+    <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
+      <span id="soloConnectionMessage"></span>
+      <button id="soloConnectionRetry" class="secondary-button" type="button">Jetzt prüfen</button>
+    </aside>
+    <div class="app-shell">
+      <div class="app-topbar">
+        <header class="hero">
+          <div class="brand-lockup" aria-label="Citizen Tools · Flight Deck">
+            <span class="brand-rail" aria-hidden="true"></span>
+            <img class="brand-mark" src="assets/brand/citizen-tools-mark.svg" alt="" width="58" height="58" />
+            <div class="brand-copy">
+              <p class="brand-name">Citizen Tools</p>
+              <p class="brand-descriptor">Flight Deck <span class="brand-edition">/ Personal Command</span></p>
+            </div>
+            <div class="flight-clocks">
+              <div class="flight-clock"><span id="flightClockLabel" data-i18n="clock.shipTime">Schiffszeit / UTC</span><time id="flightClock">—</time></div>
+              <div class="flight-clock"><span id="flightLocalClockLabel" data-i18n="clock.localTime">Ortszeit</span><time id="flightLocalClock">—</time></div>
+            </div>
+            <div id="serverStatusCard" class="brand-telemetry brand-server-status server-status-card" tabindex="0" aria-label="Serverstatus">
+              <span>CT / SYSTEM LINK</span>
+              <span id="serverStatusDot" class="server-status-dot" aria-hidden="true"></span>
+              <span id="serverStatusLinkLabel" class="server-status-link-label">LINK ACTIVE</span>
+              <div class="server-status-tooltip">
+                <strong id="serverStatusLabel">Lokaler Modus</strong>
+                <p id="serverStatusMeta" class="server-status-meta">
+                  Kein gemeinsamer Server verbunden. Die App nutzt nur den lokalen Browser-Speicher.
+                </p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="module-row">
+          <nav class="module-nav" aria-label="Modulnavigation" data-i18n-aria-label="nav.moduleAria">
+            <button class="module-tab is-active" type="button" data-module-target="hub"><svg class="flight-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m15 9-2 4-4 2 2-4 4-2ZM12 1v3m0 16v3M1 12h3m16 0h3"/></svg><span data-i18n="nav.start">Start</span></button>
+            <button class="module-tab" type="button" data-module-target="cargo"><svg class="flight-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5v9l-9 5-9-5V8l9-5ZM3 8l9 5 9-5M12 13v9M7 6l10 5"/></svg><span data-i18n="nav.contracts">Aufträge</span></button>
+            <button class="module-tab" type="button" data-module-target="finance"><svg class="flight-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h17M8 15l4-5 4 2 5-7M17 5h4v4"/></svg><span data-i18n="nav.finance">Finanzen</span></button>
+            <button class="module-tab" type="button" data-module-target="fleet"><svg class="flight-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 18-9-4-9 4L12 2ZM12 2v14m-4 5h8"/></svg><span data-i18n="nav.fleet">Flotte</span></button>
+            <button class="module-tab" type="button" data-module-target="statistics"><svg class="flight-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10m2 0V4h4v16m2 0v-7h4v7M2 20h20"/></svg><span data-i18n="nav.statistics">Statistik</span></button>
+          </nav>
+
+          <div class="module-actions">
+            <button id="fullscreenToggle" class="fullscreen-toggle tooltip-button" type="button" aria-label="Vollbild öffnen" aria-pressed="false" data-tooltip="Vollbild öffnen" hidden>
+              <span class="button-icon fullscreen-enter-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z" />
+                </svg>
+              </span>
+              <span class="button-icon fullscreen-exit-icon" aria-hidden="true" hidden>
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 4h2v5H4V7h3V4Zm8 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <nav id="cargoNav" class="app-nav" aria-label="Auftragsnavigation">
+          <button class="nav-tab" type="button" data-page-target="run" data-i18n="cargo.tabs.route">Aktuelle Route</button>
+          <button class="nav-tab is-active" type="button" data-page-target="overview" data-i18n="cargo.tabs.overview">Übersicht</button>
+          
+          <button class="nav-tab" type="button" data-page-target="create" data-i18n="cargo.tabs.create">Auftrag anlegen</button>
+          <button class="nav-tab" type="button" data-page-target="load" data-i18n="cargo.tabs.load">Verladen</button>
+          
+          
+        </nav>
+
+        <nav id="fleetNav" class="app-nav" aria-label="Flotten-Navigation" hidden>
+          <button class="nav-tab" type="button" data-fleet-view-target="form" role="tab">Flotteneintrag</button>
+          <button class="nav-tab is-active" type="button" data-fleet-view-target="ships" role="tab">Meine Schiffe</button>
+          <button class="nav-tab" type="button" data-fleet-view-target="archive" role="tab">Flottenarchiv</button>
+          <button class="nav-tab" type="button" data-fleet-view-target="dossier" role="tab" hidden>Schiffsakte</button>
+          <div class="fleet-nav-actions">
+            <button id="fleetWipeButton" class="secondary-button icon-text-button fleet-wipe-nav-action tooltip-button" type="button" data-tooltip="Patchwechsel verwalten" data-i18n-title="fleet.wipe.openTooltip">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 3a9 9 0 0 1 8.7 6.8l-1.9.5A7 7 0 1 0 19 14h-3l4-4 4 4h-3a9 9 0 1 1-9-11Z" />
+                </svg>
+              </span>
+              <span data-i18n="fleet.wipe.open">Patchwechsel</span>
+            </button>
+            
+            
+          </div>
+        </nav>
+
+        <nav id="financeNav" class="app-nav" aria-label="Finanz-Navigation" hidden>
+          <button class="nav-tab" type="button" data-finance-view-target="entry" role="tab">Neue Buchung erfassen</button>
+          <button class="nav-tab is-active" type="button" data-finance-view-target="statement" role="tab">Kontoauszug</button>
+          <button class="nav-tab" type="button" data-finance-view-target="pnl" role="tab">GuV-Rechnung</button>
+          <button class="nav-tab" type="button" data-finance-view-target="assets" role="tab">Vermögen</button>
+        </nav>
+
+        <nav id="statisticsNav" class="app-nav" aria-label="Statistik-Navigation" data-i18n-aria-label="statistics.navAria" hidden>
+          <button class="nav-tab is-active" type="button" data-statistics-view-target="overview" role="tab" data-i18n="statistics.tabs.overview">Übersicht</button>
+          <button class="nav-tab" type="button" data-statistics-view-target="operations" role="tab" data-i18n="statistics.tabs.operations">Aufträge &amp; Orte</button>
+          <button class="nav-tab" type="button" data-statistics-view-target="ships" role="tab" data-i18n="statistics.tabs.ships">Schiffe</button>
+        </nav>
+
+        <nav id="settingsNav" class="app-nav" aria-label="Einstellungsnavigation" data-i18n-aria-label="settings.navAria" hidden>
+          <button class="nav-tab is-active" type="button" data-settings-view-target="profile" role="tab" data-i18n="settings.tabs.profile">Profil</button>
+          <button class="nav-tab" type="button" data-settings-view-target="companion" role="tab" data-i18n="settings.tabs.companion">Companion</button>
+          <button class="nav-tab" type="button" data-settings-view-target="database" role="tab" data-i18n="settings.tabs.database">Datenbank</button>
+          <button class="nav-tab" type="button" data-settings-view-target="transfer" role="tab">Datentransfer</button>
+          <button class="nav-tab" type="button" data-settings-view-target="about" role="tab" data-i18n="settings.tabs.about">Über Citizen Tools</button>
+        </nav>
+      </div>
+
+      <main class="page-stack">
+        <section class="page-section is-active" data-page="hub">
+          <section class="panel panel-suite-intro flight-deck-panel">
+            <div class="flight-welcome">
+              <div class="flight-welcome-copy">
+                <p class="flight-eyebrow">CAPTAIN'S CONSOLE <span aria-hidden="true">/</span> <span data-solo-text="welcomeKicker">Deine Kommandozentrale</span></p>
+                <h1 data-solo-text="welcomeTitle">Dein Schiff. Dein Kurs.</h1>
+                <div class="flight-quick-actions">
+                  <button class="primary-button" type="button" data-go-page="create"><span aria-hidden="true">＋</span> <span data-solo-text="newMission">Auftrag anlegen</span></button>
+                  <button class="secondary-button" type="button" data-go-page="fleet"><span data-solo-text="myFleet">Meine Flotte</span> <span aria-hidden="true">↗</span></button>
+                </div>
+              </div>
+              <svg class="flight-orbit" viewBox="0 0 400 230" aria-hidden="true" focusable="false">
+                <defs><radialGradient id="flightOrbitGlow"><stop stop-color="#62d8e8" stop-opacity=".18"/><stop offset="1" stop-color="#62d8e8" stop-opacity="0"/></radialGradient></defs>
+                <circle cx="220" cy="115" r="115" fill="url(#flightOrbitGlow)"/>
+                <g fill="none" stroke="currentColor" stroke-width=".8"><path d="M20 115h370M220 8v214" opacity=".25"/><circle cx="220" cy="115" r="92" opacity=".25"/><circle cx="220" cy="115" r="65" stroke-dasharray="3 7" opacity=".55"/><ellipse cx="220" cy="115" rx="155" ry="45" transform="rotate(-24 220 115)" opacity=".5"/><path d="M128 35h-18v18m202 124v18h18"/><path class="flight-orbit-trace" d="M220 23a92 92 0 0 1 87 122" stroke-width="2"/></g>
+                <g transform="translate(220 115) rotate(24)" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M0-27 19 21 0 12-19 21 0-27ZM0-27v39"/><path d="M-6 24h12" stroke="#efbd72"/></g>
+                <circle cx="79" cy="142" r="4" fill="#efbd72"/><circle cx="304" cy="77" r="3" fill="currentColor"/>
+                <path d="M79 149v26h-29M304 70V43h35" fill="none" stroke="currentColor" opacity=".5"/>
+              </svg>
+            </div>
+            <div id="hubSummary" class="summary-cards"></div>
+          </section>
+
+          <section class="panel panel-hub-today">
+            <div class="panel-header hub-today-header">
+              <div>
+                <h2 data-i18n="hub.today.title">Heute wichtig</h2>
+              </div>
+              <div id="hubCurrentLocationControl" class="hub-location-control">
+                <label class="hub-location-field">
+                  <span data-i18n="hub.location.current">Aktueller Standort</span>
+                  <select id="hubCurrentLocationSelect" aria-label="Aktueller Standort" data-i18n-aria-label="hub.location.current">
+                    <option value="" data-i18n="hub.location.select">Standort auswählen</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div id="hubTodayList" class="hub-today-grid"></div>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="run">
+          <section class="run-shell">
+            <header class="run-command-bar">
+              <div class="run-view-controls">
+                <button id="runCompactViewButton" class="run-view-button run-compact-view-button" type="button" aria-pressed="false">
+                  <span class="button-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M11 2h2v3.08A7 7 0 0 1 18.92 11H22v2h-3.08A7 7 0 0 1 13 18.92V22h-2v-3.08A7 7 0 0 1 5.08 13H2v-2h3.08A7 7 0 0 1 11 5.08V2Zm1 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" />
+                    </svg>
+                  </span>
+                  <span data-i18n="run.view.compact">Kompakte Ansicht</span>
+                </button>
+                <button id="runCockpitFullscreenButton" class="run-cockpit-fullscreen fullscreen-toggle tooltip-button" type="button" aria-label="Vollbild öffnen" aria-pressed="false" data-tooltip="Vollbild öffnen" hidden>
+                  <span class="button-icon fullscreen-enter-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z" />
+                    </svg>
+                  </span>
+                  <span class="button-icon fullscreen-exit-icon" aria-hidden="true" hidden>
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M7 4h2v5H4V7h3V4Zm8 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+              <button id="runShipButton" class="run-ship-button tooltip-button" type="button" aria-label="Schiff ändern" title="Schiff ändern" data-i18n-aria-label="run.ship.change" data-i18n-title="run.ship.change">
+                <span data-i18n="run.ship.active">Aktives Schiff</span>
+                <strong id="runShipName">Kein aktives Schiff</strong>
+                <small id="runShipRegistration">XX-0000-XX</small>
+              </button>
+              <label class="run-location-field">
+                <span data-i18n="run.location.current">Aktueller Standort</span>
+                <select id="runCurrentLocationSelect" aria-label="Aktueller Standort" data-i18n-aria-label="run.location.current">
+                  <option value="" data-i18n="run.location.select">Standort auswählen</option>
+                </select>
+              </label>
+            </header>
+
+            <section id="runEmptyState" class="panel run-empty-state" hidden>
+              <strong id="runEmptyTitle"></strong>
+              <p id="runEmptyText"></p>
+              <button id="runEmptyAction" class="primary-button" type="button"></button>
+            </section>
+
+            <div id="runContent" class="run-layout">
+              <section id="runFocusPanel" class="panel run-focus-panel panel-collapsible">
+                <div class="panel-header run-focus-header">
+                  <button class="panel-toggle collapse-toggle" type="button" data-collapse-target="runFocusBody" aria-expanded="true">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="run.actions.panelTitle">Aktionen</span>
+                      <span id="runFocusSummary" class="panel-toggle-text"></span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="runFocusBody" class="collapsible-body">
+                  <div class="run-progress-head">
+                    <span data-i18n="run.progress.label">Einsatzfortschritt</span>
+                    <strong id="runProgressText">0 / 0</strong>
+                  </div>
+                  <div class="run-progress-track" role="progressbar" aria-label="Routenfortschritt" data-i18n-aria-label="run.progress.label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <span id="runProgressFill"></span>
+                  </div>
+                  <ol id="runWaypoints" class="run-waypoints" aria-label="Flugplan" data-i18n-aria-label="run.route.title"></ol>
+
+                  <div class="run-target-head">
+                    <span id="runTargetEyebrow" data-i18n="run.target.next">Nächstes Ziel</span>
+                    <h2 id="runTargetName">Noch keine Route</h2>
+                    <p id="runTargetMeta"></p>
+                  </div>
+
+                  <div id="runStopStatus" class="run-stop-status" role="status" aria-live="polite">
+                    <span class="run-stop-status-marker" aria-hidden="true"></span>
+                    <div>
+                      <strong id="runStopStatusTitle"></strong>
+                      <p id="runStopStatusText"></p>
+                    </div>
+                  </div>
+
+                  <div id="runTaskList" class="run-task-list"></div>
+
+                  <div id="runAutoloadOptions" class="autoload-options" data-autoload-options hidden>
+                    <label class="autoload-strategy-field">
+                      <span data-i18n="autoload.strategy.label">Strategie</span>
+                      <select data-autoload-strategy aria-label="Autoload-Strategie" data-i18n-aria-label="autoload.strategy.label">
+                        <option value="compact" data-i18n="autoload.strategy.compact">Kompakt</option>
+                        <option value="route" data-i18n="autoload.strategy.route">Routenoptimiert</option>
+                        <option value="largest" data-i18n="autoload.strategy.largest">Größte zuerst</option>
+                      </select>
+                    </label>
+                    <label class="autoload-overload-toggle" data-tooltip="Überladungsbereich bei Bedarf mitbenutzen" data-i18n-tooltip="autoload.overload.tooltip">
+                      <input type="checkbox" data-autoload-overload />
+                      <span data-i18n="autoload.overload.label">Überladung erlauben</span>
+                    </label>
+                  </div>
+
+                  <div id="runActionBar" class="run-action-bar">
+                    <button id="runArriveButton" class="primary-button" type="button" data-i18n="run.actions.arrive">Ankunft bestätigen</button>
+                    <button id="runOpenLoadButton" class="secondary-button" type="button" data-i18n="run.actions.openLoad" hidden>Manuell verladen</button>
+                    <button id="runAutoLoadButton" class="secondary-button" type="button" data-i18n="run.actions.autoload" hidden>Autoload</button>
+                    <button id="runCompletePickupButton" class="secondary-button" type="button" data-i18n="run.actions.completePickup" hidden>Abholung erledigt</button>
+                    <button id="runCompleteStopButton" class="secondary-button" type="button" data-i18n="run.actions.completeStop" hidden>Halt abschließen</button>
+                  </div>
+                </div>
+              </section>
+
+              <section id="runMissionPanel" class="panel run-mission-panel panel-collapsible" hidden>
+                <div class="panel-header run-mission-header">
+                  <button class="panel-toggle collapse-toggle" type="button" data-collapse-target="runMissionBody" aria-expanded="false">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="run.missions.title">Auftragslage</span>
+                      <span id="runMissionSummary" class="panel-toggle-text"></span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="runMissionBody" class="collapsible-body" hidden>
+                  <div id="runMissionList" class="run-mission-list"></div>
+                </div>
+              </section>
+
+              <section id="runRoutePanel" class="panel run-route-panel panel-collapsible">
+                <div class="panel-header run-route-header">
+                  <button class="panel-toggle collapse-toggle" type="button" data-collapse-target="runRouteBody" aria-expanded="false">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="run.route.title">Flugplan</span>
+                      <span id="runRouteSummary" class="panel-toggle-text"></span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="runRouteBody" class="collapsible-body" hidden>
+                  <div id="runRouteList" class="run-route-list"></div>
+                </div>
+              </section>
+
+              <section id="runManifestPanel" class="panel run-manifest-panel panel-collapsible" hidden>
+                <div class="panel-header run-manifest-header">
+                  <button class="panel-toggle collapse-toggle" type="button" data-collapse-target="runManifestBody" aria-expanded="false">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="run.manifest.title">Ladungsmanifest</span>
+                      <span id="runManifestSummary" class="panel-toggle-text"></span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="runManifestBody" class="collapsible-body" hidden>
+                  <div class="run-manifest-columns">
+                    <section class="run-manifest-section">
+                      <h3 data-i18n="run.manifest.onBoard">Im Schiff</h3>
+                      <div id="runOnBoardList" class="run-manifest-list"></div>
+                    </section>
+                    <section id="runWaitingSection" class="run-manifest-section" hidden>
+                      <h3 data-i18n="run.manifest.atLocation">An diesem Standort</h3>
+                      <div id="runWaitingList" class="run-manifest-list"></div>
+                    </section>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="home">
+          <section class="top-strip top-strip-single">
+            <section class="panel panel-layout-control">
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2>Schiffsauswahl</h2>
+                  <p>Wähle ein aktives Flottenschiff oder nutze das freie Frachtgitter für Leihschiffe und eigene Layouts.</p>
+                </div>
+              </div>
+
+              <form id="layoutForm" class="layout-config">
+                <div class="layout-preset-block">
+                  <label class="layout-preset-field">
+                    <span class="field-label">Flottenschiff</span>
+                    <select name="preset" id="presetSelect"></select>
+                  </label>
+                  <p class="layout-preset-copy">
+                    Hier erscheinen aktive Schiffe aus deiner Flotte mit verknüpftem Schiffsprofil. Alternativ kannst du jederzeit auf ein freies Frachtgitter wechseln.
+                  </p>
+                </div>
+
+                <div class="layout-metrics-block">
+                  <div class="layout-metrics-head">
+                    <span class="field-label">Rasterdaten</span>
+                    <span class="layout-metrics-mode" id="layoutMetricsMode">Presetwerte</span>
+                  </div>
+
+                  <div class="layout-metrics-table">
+                    <span class="layout-metrics-label">Reihen</span>
+                    <span class="layout-metrics-label">Spalten</span>
+                    <span class="layout-metrics-label">Höhe je Zelle</span>
+
+                    <label class="layout-metric-input">
+                      <input type="number" name="rows" min="2" max="30" value="4" aria-label="Reihen" />
+                    </label>
+                    <label class="layout-metric-input">
+                      <input type="number" name="cols" min="2" max="12" value="6" aria-label="Spalten" />
+                    </label>
+                    <label class="layout-metric-input">
+                      <input type="number" name="cellHeight" min="1" max="8" value="3" aria-label="Höhe je Zelle" />
+                    </label>
+
+                    <div class="layout-metric-value" id="layoutRowsValue">4</div>
+                    <div class="layout-metric-value" id="layoutColsValue">6</div>
+                    <div class="layout-metric-value" id="layoutHeightValue">3</div>
+                  </div>
+                </div>
+
+                <button type="submit" class="secondary-button layout-submit">Schiff übernehmen</button>
+              </form>
+
+              <div class="preset-card preset-card-inline">
+                <strong id="presetTitle">Freies Frachtgitter</strong>
+                <p id="presetDescription">
+                  Nutze das freie Frachtgitter für Leihschiffe, fehlende Presets oder ein komplett eigenes Layout.
+                </p>
+                <p class="preset-extra" id="presetStats"></p>
+              </div>
+            </section>
+          </section>
+
+          <section class="selection-preview-layout">
+            <section class="panel panel-ship">
+              <div class="panel-header">
+                <div>
+                  <h2>Grid-Vorschau</h2>
+                  <p>Draufsicht des aktuell gewählten Cargo-Grids.</p>
+                </div>
+              </div>
+
+              <div class="ship-schematic is-static-preview">
+                <div class="ship-axis">
+                  <span>Vorne</span>
+                  <span>Draufsicht</span>
+                </div>
+                <div class="ship-frame">
+                  <div id="selectionShipGrid" class="ship-grid ship-grid-preview" aria-hidden="true"></div>
+                </div>
+                <div class="ship-axis">
+                  <span>Heck</span>
+                  <span>Vorschau</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel panel-selection-iso">
+              <div class="panel-header">
+                <div>
+                  <h2>ISO-Vorschau</h2>
+                  <p>Das aktuelle Schiff als isometrische Anschauung.</p>
+                </div>
+              </div>
+
+              <div class="iso-panel iso-panel-standalone is-static-preview">
+                <div class="ship-axis">
+                  <span>Isometrie</span>
+                  <span>Vorschau</span>
+                </div>
+                <div class="iso-frame">
+                  <svg id="selectionIsoView" class="iso-view" aria-hidden="true"></svg>
+                </div>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="create">
+          <section class="panel panel-form-page">
+            <div class="panel-header mission-header">
+              <div>
+                <h2 id="missionFormTitle" data-i18n="contracts.form.title.create">Neuen Auftrag anlegen</h2>
+              </div>
+              <div class="mission-header-actions">
+                <button id="openMissionImportDialog" class="secondary-button mission-import-trigger" type="button">
+                  <span class="button-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 3h11l5 5v13H4V3zm10 2v4h4l-4-4zM7 13h3v-3h4v3h3l-5 5-5-5z" />
+                    </svg>
+                  </span>
+                  <span data-i18n="contracts.import.open">Aus Spiel importieren</span>
+                </button>
+                <div class="summary-card summary-card-compact mission-ship-indicator" role="button" tabindex="0" aria-label="Schiff ändern" title="Schiff ändern" data-tooltip="Schiff ändern" data-i18n-aria-label="contracts.form.changeShip" data-i18n-title="contracts.form.changeShip" data-i18n-tooltip="contracts.form.changeShip">
+                  <span data-i18n="contracts.form.currentShip">Aktuelles Schiff</span>
+                  <strong id="createShipName" data-i18n="hub.summary.noActiveShip">Kein aktives Schiff gewählt</strong>
+                  <small id="createShipRegistration" data-i18n="contracts.form.chooseFleet">Wähle ein Schiff in der Flotte</small>
+                  <small id="createShipMeta" data-i18n="contracts.form.noCapacityChecked">Keine Kapazität geprüft</small>
+                  <small id="createShipStatus" class="mission-ship-status" data-i18n="contracts.form.notReady">Nicht einsatzbereit</small>
+                </div>
+              </div>
+            </div>
+
+            <form id="missionForm" class="stack">
+              <input type="hidden" name="entryId" />
+              <div class="mission-title-row">
+                <label data-i18n-label="contracts.form.missionType">
+                  Auftragsart
+                  <select name="missionType" id="missionTypeSelect">
+                    <option value="other" data-i18n="mission.type.other">Sonstiges</option>
+                    <option value="cargo" data-i18n="mission.type.cargo">Fracht</option>
+                    <option value="courier" data-i18n="mission.type.courier">Kurier</option>
+                    <option value="delivery" data-i18n="mission.type.delivery">Lieferung</option>
+                    <option value="refuel" data-i18n="mission.type.refuel">Tanken</option>
+                    <option value="investigation" data-i18n="mission.type.investigation">Ermittlung</option>
+                    <option value="salvage" data-i18n="mission.type.salvage">Salvage</option>
+                    <option value="procurement" data-i18n="mission.type.procurement">Beschaffung</option>
+                    <option value="mining" data-i18n="mission.type.mining">Bergbau</option>
+                  </select>
+                </label>
+
+                <label data-i18n-label="contracts.form.title">
+                  Auftragstitel
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="z. B. MicroTech → Hurston"
+                    data-i18n-placeholder="contracts.form.titlePlaceholderOther"
+                    required
+                  />
+                </label>
+
+                <label data-i18n-label="contracts.form.payout">
+                  Verdienst (aUEC)
+                  <input type="number" name="payout" min="0" step="1" placeholder="z. B. 42037" />
+                </label>
+
+                <label class="color-field" data-i18n-label="contracts.form.color">
+                  Farbe
+                  <input class="color-swatch-input" type="color" name="color" value="#163a63" />
+                </label>
+              </div>
+
+              <section id="missionAssignmentEditFields" class="mission-service-fields mission-assignment-edit-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.assignedShip">
+                    Zugeordnetes Einsatzschiff
+                    <select name="assignedFleetEntryId"></select>
+                  </label>
+                  <p class="form-hint" data-i18n="contracts.form.assignedShipHint">
+                    Hier kannst du auch ein inzwischen archiviertes Schiff für die historische Zuordnung auswählen.
+                  </p>
+                </div>
+              </section>
+
+              <section id="missionImportQuality" class="mission-import-quality" hidden aria-live="polite">
+                <div class="mission-import-quality-copy">
+                  <span class="app-dialog-kicker" data-i18n="contracts.import.kicker">Spielimport</span>
+                  <strong data-i18n="contracts.import.qualityTitle">OCR-Prüfung</strong>
+                </div>
+                <div id="missionImportQualitySummary" class="mission-import-quality-summary"></div>
+              </section>
+
+              <section id="cargoFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.contractor">
+                    Auftraggeber
+                    <input type="text" name="cargoCustomer" placeholder="z. B. Covalex Independent Contractors" data-i18n-placeholder="contracts.form.contractorPlaceholder" />
+                  </label>
+                </div>
+              </section>
+
+              <section id="courierFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="courierCustomer" placeholder="z. B. FTL Courier" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.maxPackageSize">
+                    Maximale Paketgröße (SCU)
+                    <input type="number" name="courierMaxPackageScu" min="0" step="0.01" placeholder="z. B. 0,25" />
+                  </label>
+                </div>
+
+                <div class="procurement-items-head">
+                  <strong data-i18n="contracts.form.courierPackages">Pakete</strong>
+                  <button id="addCourierPackageButton" type="button" class="secondary-button" data-i18n="contracts.form.addCourierPackage">Paket hinzufügen</button>
+                </div>
+                <div id="courierPackageList" class="courier-package-list"></div>
+
+                <label data-i18n-label="contracts.form.instructions">
+                  Anweisungen
+                  <textarea name="courierInstructions" rows="2" placeholder="z. B. manuell aufnehmen und persönlich übergeben"></textarea>
+                </label>
+              </section>
+
+              <section id="deliveryFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="deliveryCustomer" placeholder="z. B. Ling Family Hauling" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.instructions">
+                    Anweisungen
+                    <input type="text" name="deliveryInstructions" placeholder="z. B. minimale Kampfaktivität möglich" />
+                  </label>
+                </div>
+
+                <div class="procurement-items-head">
+                  <strong data-i18n="contracts.form.deliveryItems">Lieferpositionen</strong>
+                  <button id="addDeliveryItemButton" type="button" class="secondary-button" data-i18n="contracts.form.addDeliveryItem">Position hinzufügen</button>
+                </div>
+                <div id="deliveryItemList" class="courier-package-list delivery-item-list"></div>
+              </section>
+
+              <section id="refuelFields" class="mission-service-fields" hidden>
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Kunde / Kontakt
+                    <input type="text" name="refuelCustomer" placeholder="z. B. Beacon, Party oder Spielername" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.location">
+                    Einsatzort
+                    <input type="text" name="refuelLocation" list="locationSuggestions" placeholder="z. B. MIC-L1 oder im Orbit" required />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.targetVehicle">
+                    Zu betankendes Fahrzeug
+                    <input type="text" name="refuelTargetVehicle" placeholder="z. B. Aegis Avenger Titan" />
+                  </label>
+                </div>
+
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="contracts.form.service">
+                    Service
+                    <select name="refuelServiceType">
+                      <option value="both">Hydrogen + Quantum</option>
+                      <option value="hydrogen">Nur Hydrogen</option>
+                      <option value="quantum">Nur Quantum</option>
+                    </select>
+                  </label>
+
+                  <label data-i18n-label="contracts.form.hydrogenRate">
+                    Hydrogen-Tarif (aUEC/SCU)
+                    <input type="number" name="refuelHydrogenRate" min="0" step="0.01" placeholder="z. B. 300" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.quantumRate">
+                    Quantum-Tarif (aUEC/SCU)
+                    <input type="number" name="refuelQuantumRate" min="0" step="0.01" placeholder="z. B. 400" />
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.hydrogen">
+                    Hydrogen (SCU)
+                    <input type="number" name="refuelHydrogenAmount" min="0" step="0.01" placeholder="z. B. 24" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.quantum">
+                    Quantumfuel (SCU)
+                    <input type="number" name="refuelQuantumAmount" min="0" step="0.01" placeholder="z. B. 8" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="contracts.form.additionalCompensation">
+                  Zusatzvergütung
+                  <input type="text" name="refuelBonus" placeholder="z. B. Servicepauschale nach Abschluss" />
+                </label>
+              </section>
+
+              <section id="investigationFields" class="mission-service-fields" hidden>
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="investigationCustomer" placeholder="z. B. Hockrow Agency" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.location">
+                    Einsatzort
+                    <input type="text" name="investigationLocation" list="locationSuggestions" placeholder="z. B. Wrackstelle nahe Crusader" required />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.subject">
+                    Gesuchte Person
+                    <input type="text" name="investigationSubject" placeholder="z. B. Jonathon Burkart" />
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.caseNumber">
+                    Fallnummer
+                    <input type="text" name="investigationCaseNumber" placeholder="z. B. #MP38100" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.leadInvestigator">
+                    Leitender Ermittler
+                    <input type="text" name="investigationLead" placeholder="z. B. Arken Mallor" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="contracts.form.instructions">
+                  Anweisungen
+                  <textarea name="investigationInstructions" rows="2" placeholder="z. B. Status klären und Fund dokumentieren"></textarea>
+                </label>
+
+                <label data-i18n-label="contracts.form.dangerNote">
+                  Gefahrenhinweis
+                  <textarea name="investigationDangerNote" rows="2" placeholder="z. B. Mögliche feindliche Kräfte vor Ort"></textarea>
+                </label>
+              </section>
+
+              <section id="salvageFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="salvageCustomer" placeholder="z. B. Adagio Holdings" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.location">
+                    Einsatzort
+                    <input type="text" name="salvageLocation" list="locationSuggestions" placeholder="z. B. Wrackstelle bei Yela" />
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.salvageTarget">
+                    Bergungsziel
+                    <input type="text" name="salvageTarget" placeholder="z. B. Aegis Gladius" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.claimNumber">
+                    Claim-Nummer
+                    <input type="text" name="salvageClaimNumber" placeholder="z. B. #46956" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="contracts.form.instructions">
+                  Anweisungen
+                  <textarea name="salvageInstructions" rows="2" placeholder="z. B. Verwertungsrechte sichern und verwertbares Material bergen"></textarea>
+                </label>
+              </section>
+
+              <section id="procurementFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="procurementCustomer" placeholder="z. B. Wikelo oder Rayari Incorporated" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.deliveryLocation">
+                    Gemeinsames Lieferziel
+                    <input type="text" name="procurementLocation" list="locationSuggestions" placeholder="z. B. beliebiges Wikelo Emporium" />
+                  </label>
+                </div>
+
+                <div class="procurement-items-head">
+                  <strong data-i18n="contracts.form.procurementItems">Benötigte Gegenstände</strong>
+                  <button id="addProcurementItemButton" type="button" class="secondary-button" data-i18n="contracts.form.addProcurementItem">Position hinzufügen</button>
+                </div>
+                <div id="procurementItemList" class="procurement-item-list"></div>
+
+                <label data-i18n-label="contracts.form.instructions">
+                  Anweisungen
+                  <textarea name="procurementInstructions" rows="2" placeholder="z. B. Gegenstände beschaffen und gesammelt abliefern"></textarea>
+                </label>
+              </section>
+
+              <section id="miningFields" class="mission-service-fields" hidden>
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Auftraggeber / Kontakt
+                    <input type="text" name="miningCustomer" placeholder="z. B. Shubin Interstellar" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.miningMethod">
+                    Abbaumethode
+                    <select name="miningMethod">
+                      <option value="hand" data-i18n="contracts.form.miningMethodHand">Handbergbau</option>
+                      <option value="ship" data-i18n="contracts.form.miningMethodShip">Schiffsbergbau</option>
+                    </select>
+                  </label>
+
+                  <label data-i18n-label="contracts.form.searchArea">
+                    Suchgebiet
+                    <input type="text" name="miningSearchArea" list="locationSuggestions" placeholder="z. B. Stanton-System" />
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.deliveryLocation">
+                    Lieferziel
+                    <input type="text" name="miningLocation" list="locationSuggestions" placeholder="z. B. Shubin Mining Facility SCD-1 auf Daymar" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.material">
+                    Material
+                    <input type="text" name="miningMaterial" placeholder="z. B. Aphorite" />
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.targetAmount">
+                    Zielmenge
+                    <input type="number" name="miningTargetAmount" min="0" step="0.01" placeholder="optional" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.recommendedTool">
+                    Empfohlenes Werkzeug
+                    <input type="text" name="miningTool" placeholder="z. B. Multi-Tool mit Bergbau-Anbauteil" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="contracts.form.instructions">
+                  Anweisungen
+                  <textarea name="miningInstructions" rows="2" placeholder="z. B. in Höhlen an der Planetenoberfläche suchen"></textarea>
+                </label>
+              </section>
+
+              <section id="miscFields" class="mission-service-fields" hidden>
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="contracts.form.customer">
+                    Kunde / Kontakt
+                    <input type="text" name="miscCustomer" placeholder="z. B. Party, Org oder Spielername" />
+                  </label>
+
+                  <label data-i18n-label="contracts.form.location">
+                    Einsatzort
+                    <input type="text" name="miscLocation" list="locationSuggestions" placeholder="z. B. Seraphim Station oder im Orbit" required />
+                  </label>
+                </div>
+              </section>
+
+              <div id="createDraftSummary" class="summary-cards create-draft-summary" aria-live="polite"></div>
+              <div id="missionValidationHint" class="form-hint form-hint-neutral" aria-live="polite"></div>
+              <label id="missionValidationOverrideWrap" class="validation-override" hidden>
+                <input id="missionValidationOverride" type="checkbox" />
+                <span data-i18n="contracts.form.validationOverride">Trotz Plausibilitätsfehler Auftrag trotzdem anlegen</span>
+              </label>
+
+              <section class="mission-quick-capture panel-collapsible" aria-labelledby="quickCaptureTitle">
+                <div class="mission-quick-head">
+                  <button
+                    class="mission-quick-toggle collapse-toggle"
+                    type="button"
+                    data-collapse-target="quickCaptureBody"
+                    aria-expanded="false"
+                  >
+                    <span class="mission-quick-copy">
+                      <strong id="quickCaptureTitle" data-i18n="contracts.quick.title">Schnellerfassung</strong>
+                      <p data-i18n="contracts.quick.description">Optional für nicht kopierbare Objective-Screens: Fracht, Standard-Abholung und Zielmengen eintippen und automatisch Strecken erzeugen.</p>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+
+                <div id="quickCaptureBody" class="collapsible-body mission-quick-body" hidden>
+                  <div class="quick-capture-actions">
+                    <button id="applyQuickMissionButton" type="button" class="primary-button" data-i18n="contracts.quick.generateRoutes">Strecken erzeugen</button>
+                  </div>
+
+                  <div class="quick-capture-grid">
+                    <label data-i18n-label="contracts.quick.cargo">
+                      Fracht
+                      <input id="quickCargoTitle" type="text" placeholder="z. B. Tin, Quartz oder Corundum" />
+                    </label>
+
+                    <label data-i18n-label="contracts.quick.defaultPickup">
+                      Standard-Abholung
+                      <input id="quickPickup" type="text" list="locationSuggestions" placeholder="z. B. Everus Harbor" />
+                    </label>
+                  </div>
+
+                  <div class="quick-destination-head">
+                    <span class="consignment-section-label" data-i18n="contracts.quick.routesAndAmounts">Strecken und Mengen</span>
+                    <button id="addQuickDestinationButton" type="button" class="secondary-button" data-i18n="contracts.quick.addTarget">Ziel hinzufügen</button>
+                  </div>
+                  <div id="quickDestinationList" class="quick-destination-list"></div>
+                  <div id="quickMissionHint" class="form-hint" aria-live="polite"></div>
+                </div>
+              </section>
+
+              <section class="consignment-builder panel-collapsible">
+                <div class="consignment-builder-head">
+                  <button
+                    class="consignment-builder-toggle collapse-toggle"
+                    type="button"
+                    data-collapse-target="consignmentBuilderBody"
+                    aria-expanded="true"
+                  >
+                    <span class="consignment-builder-copy">
+                      <strong data-i18n="contracts.consignments.title">Frachten</strong>
+                      <span data-i18n="contracts.consignments.description">Detailansicht der erzeugten Frachten, Strecken und Containergruppen.</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                  <button id="addConsignmentButton" type="button" class="secondary-button" data-i18n="contracts.consignments.add">Fracht hinzufügen</button>
+                </div>
+
+                <div id="consignmentBuilderBody" class="collapsible-body consignment-builder-body">
+                  <div class="mission-container-rule">
+                    <label data-i18n-label="contracts.form.maxContainerScu">
+                      Maximale Containergröße (SCU)
+                      <input
+                        type="number"
+                        name="maxContainerScu"
+                        min="1"
+                        max="1000"
+                        step="1"
+                        list="missionContainerSizeSuggestions"
+                        placeholder="z. B. 4"
+                      />
+                    </label>
+                    <button
+                      id="recalculateContainerGroupsButton"
+                      type="button"
+                      class="secondary-button"
+                      data-i18n="contracts.consignments.recalculateGroups"
+                    >
+                      Containergruppen neu berechnen
+                    </button>
+                  </div>
+                  <div id="consignmentList" class="consignment-list"></div>
+                  <div class="form-hint" id="dimensionHint" aria-live="polite"></div>
+                </div>
+              </section>
+
+              <label data-i18n-label="contracts.form.notes">
+                Notiz
+                <textarea
+                  name="notes"
+                  rows="2"
+                  placeholder="z. B. zuerst ausladen oder fragile Route"
+                ></textarea>
+              </label>
+
+              <div class="fleet-form-actions">
+                <button id="missionSubmitButton" type="submit" class="primary-button" data-i18n="contracts.form.submit.create">Auftrag erstellen</button>
+                <button id="missionCancelButton" type="button" class="secondary-button" hidden data-i18n="common.cancelEdit">Bearbeitung abbrechen</button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        
+
+        <section class="page-section" data-page="overview">
+          <section class="panel panel-intro panel-overview-summary">
+            <div class="summary-cards" id="summaryCards"></div>
+          </section>
+
+          <section class="overview-layout">
+            <section class="panel panel-overview-ship panel-collapsible">
+              <div class="panel-header">
+                <button
+                  class="panel-toggle collapse-toggle"
+                  type="button"
+                  data-collapse-target="overviewShipBody"
+                  aria-expanded="true"
+                >
+                  <span class="panel-toggle-copy">
+                    <span class="panel-toggle-title" data-i18n="contracts.overview.currentShip">Aktuelles Schiff</span>
+                    <span id="overviewShipName" class="panel-toggle-text overview-ship-name"></span>
+                  </span>
+                  <span class="collapse-indicator" aria-hidden="true"></span>
+                </button>
+              </div>
+
+              <div id="overviewShipBody" class="collapsible-body">
+              <div class="iso-panel iso-panel-standalone">
+                <div class="ship-axis">
+                  <span data-i18n="contracts.overview.shipAxisIso">Isometrie</span>
+                  <div class="iso-axis-actions">
+                    <span id="isoStats" class="iso-axis-status" data-i18n="contracts.overview.noPlacedLoad">Noch keine platzierte Ladung</span>
+                    <div class="iso-zoom-controls" aria-label="Zoom">
+                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="out" aria-label="Verkleinern" data-tooltip="Verkleinern" data-i18n-aria-label="contracts.iso.zoomOut" data-i18n-tooltip="contracts.iso.zoomOut">
+                        <span aria-hidden="true">−</span>
+                      </button>
+                      <button class="iso-zoom-button iso-zoom-reset" type="button" data-iso-zoom-action="reset" aria-label="Zoom zurücksetzen" data-tooltip="Zoom zurücksetzen" data-i18n-aria-label="contracts.iso.zoomReset" data-i18n-tooltip="contracts.iso.zoomReset">
+                        <span data-iso-zoom-value>100 %</span>
+                      </button>
+                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="in" aria-label="Vergrößern" data-tooltip="Vergrößern" data-i18n-aria-label="contracts.iso.zoomIn" data-i18n-tooltip="contracts.iso.zoomIn">
+                        <span aria-hidden="true">+</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="iso-frame">
+                  <div id="isoEmpty" class="iso-empty" hidden></div>
+                  <svg id="overviewIsoView" class="iso-view" aria-label="Isometrische Vorschau des Cargo-Grids"></svg>
+                </div>
+                <div class="iso-detail-card" id="isoDetails">
+                  <strong id="isoDetailTitle" data-i18n="contracts.overview.noLoadSelected">Keine Ladung ausgewählt</strong>
+                  <p id="isoDetailRoute" data-i18n="contracts.overview.selectLoad">Wähle in der Vorschau oder in der Liste eine Ladung aus.</p>
+                  <p id="isoDetailMeta"></p>
+                  <div class="iso-detail-actions" id="overviewDetailActions" hidden>
+                    <button id="overviewDeselectButton" class="secondary-button" type="button" data-i18n="contracts.overview.deselect">Abwählen</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="manifest-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                      <h2 data-i18n="contracts.overview.manifest">Manifest</h2>
+                  </div>
+                </div>
+                <div id="manifestEmpty" class="empty-state" data-i18n="contracts.manifest.empty">Noch keine Ladungen im Schiff platziert.</div>
+                <div id="manifestList" class="manifest-list"></div>
+              </div>
+
+              </div>
+            </section>
+
+            <section class="panel panel-overview-route panel-collapsible">
+              <div class="panel-header">
+                <button
+                  class="panel-toggle collapse-toggle"
+                  type="button"
+                  data-collapse-target="overviewRouteBody"
+                  aria-expanded="false"
+                >
+                  <span class="panel-toggle-copy">
+                    <span class="panel-toggle-title" data-i18n="contracts.route.title">Route</span>
+                    <span class="panel-toggle-text" data-i18n="contracts.route.description">Aktueller Standort, nächster Halt und verbleibende Route.</span>
+                  </span>
+                  <span class="collapse-indicator" aria-hidden="true"></span>
+                </button>
+              </div>
+              <div id="overviewRouteBody" class="collapsible-body" hidden>
+                <form id="currentLocationForm" class="route-location-control">
+                  <label class="field route-location-field">
+                    <span data-i18n="contracts.route.currentLocation">Aktueller Standort</span>
+                    <input
+                      id="currentLocationInput"
+                      type="text"
+                      list="locationSuggestions"
+                      placeholder="Standort auswählen oder eingeben"
+                      data-i18n-placeholder="contracts.route.locationPlaceholder"
+                    />
+                  </label>
+                  <button class="primary-button" type="submit" data-i18n="contracts.route.applyLocation">Übernehmen</button>
+                  <button id="clearCurrentLocationButton" class="secondary-button" type="button" data-i18n="contracts.route.clearLocation">Leeren</button>
+                  <p id="currentLocationHint" class="route-location-hint"></p>
+                </form>
+                <div id="routeProgressBar" class="route-progress-bar"></div>
+              </div>
+            </section>
+
+            <section class="panel panel-unload-plan panel-collapsible" hidden>
+              <div class="panel-header">
+                <button
+                  class="panel-toggle collapse-toggle"
+                  type="button"
+                  data-collapse-target="overviewUnloadPlanBody"
+                  aria-expanded="false"
+                >
+                  <span class="panel-toggle-copy">
+                    <span class="panel-toggle-title" data-i18n="contracts.overview.unloadPlan">Entladeplan</span>
+                    <span class="panel-toggle-text" data-i18n="contracts.overview.unloadDescription">Entladereihenfolge für aktuell verladene Fracht.</span>
+                  </span>
+                  <span class="collapse-indicator" aria-hidden="true"></span>
+                </button>
+              </div>
+              <div id="overviewUnloadPlanBody" class="collapsible-body" hidden>
+                <div class="stop-panel">
+                  <div class="stop-controls">
+                    <label>
+                      <span data-i18n="contracts.stop.nextTarget">Nächstes Ziel</span>
+                      <select id="nextStopSelect">
+                        <option value="" data-i18n="contracts.stop.noTarget">Kein Ziel ausgewählt</option>
+                      </select>
+                    </label>
+                    <button id="suggestUnloadPlanButton" class="secondary-button" type="button" data-i18n="contracts.stop.suggestUnload">Entladeplan vorschlagen</button>
+                  </div>
+                  <div id="unloadPlanResult" class="unload-plan-result" hidden></div>
+                  <div id="stopListEmpty" class="empty-state" data-i18n="contracts.stop.empty">Keine verladene Fracht zum Entladen.</div>
+                  <div id="stopList" class="stop-list"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel panel-missions panel-collapsible">
+              <div class="panel-header">
+                <button
+                  class="panel-toggle collapse-toggle"
+                  type="button"
+                  data-collapse-target="overviewMissionsBody"
+                  aria-expanded="true"
+                >
+                  <span class="panel-toggle-copy">
+                    <span class="panel-toggle-title" data-i18n="contracts.overview.missions">Aufträge</span>
+                  </span>
+                  <span class="collapse-indicator" aria-hidden="true"></span>
+                </button>
+              </div>
+
+              <div id="overviewMissionsBody" class="collapsible-body">
+                <div class="toolbar overview-missions-toolbar">
+                  <button
+                    id="exportButton"
+                    class="secondary-button icon-only-button toolbar-icon-button"
+                    type="button"
+                    aria-label="Export"
+                    data-tooltip="Export"
+                    data-i18n-aria-label="common.export"
+                    data-i18n-tooltip="common.export"
+                  >
+                    <span class="button-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M12 3l4 4h-3v6h-2V7H8l4-4zm-7 11h2v4h10v-4h2v6H5v-6z" />
+                      </svg>
+                    </span>
+                  </button>
+                  <label
+                    class="import-button secondary-button icon-only-button toolbar-icon-button"
+                    aria-label="Import"
+                    data-tooltip="Import"
+                    data-i18n-aria-label="common.import"
+                    data-i18n-tooltip="common.import"
+                  >
+                    <span class="button-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M12 21l-4-4h3v-6h2v6h3l-4 4zm7-11h-2V6H7v4H5V4h14v6z" />
+                      </svg>
+                    </span>
+                    <input id="importInput" type="file" accept="application/json" hidden />
+                  </label>
+                </div>
+
+                <div id="emptyState" class="empty-state">
+                  <span data-i18n="contracts.overview.empty">Noch keine Aufträge vorhanden. Lege auf der Seite „Auftrag anlegen“ deinen ersten Auftrag an.</span>
+                </div>
+                <div id="missionsList" class="missions-list"></div>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        
+
+        
+
+        <section class="page-section" data-page="load">
+          <section class="load-layout">
+            <section class="panel panel-home-loads panel-load-queue">
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="contracts.load.title">Aktuelle Ladungen</h2>
+                  <p data-i18n="contracts.load.description">Wähle hier deine aktive Ladung, drehe sie bei Bedarf und platziere sie dann rechts im Schiff.</p>
+                </div>
+              </div>
+              <div id="homeLoadSummary" class="home-load-summary"></div>
+              <div id="loadAutoloadOptions" class="autoload-options" data-autoload-options>
+                <label class="autoload-strategy-field">
+                  <span data-i18n="autoload.strategy.label">Strategie</span>
+                  <select data-autoload-strategy aria-label="Autoload-Strategie" data-i18n-aria-label="autoload.strategy.label">
+                    <option value="compact" data-i18n="autoload.strategy.compact">Kompakt</option>
+                    <option value="route" data-i18n="autoload.strategy.route">Routenoptimiert</option>
+                    <option value="largest" data-i18n="autoload.strategy.largest">Größte zuerst</option>
+                  </select>
+                </label>
+                <label class="autoload-overload-toggle" data-tooltip="Überladungsbereich bei Bedarf mitbenutzen" data-i18n-tooltip="autoload.overload.tooltip">
+                  <input type="checkbox" data-autoload-overload />
+                  <span data-i18n="autoload.overload.label">Überladung erlauben</span>
+                </label>
+              </div>
+              <div id="homeLoadList" class="home-load-list"></div>
+            </section>
+
+            <section class="load-view-column">
+              <section class="panel panel-load-iso panel-collapsible">
+                <div class="panel-header">
+                  <button
+                    class="panel-toggle collapse-toggle"
+                    type="button"
+                    data-collapse-target="loadIsoBody"
+                    aria-expanded="false"
+                  >
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="contracts.load.isoTitle">Isometrische Ansicht</span>
+                      <span class="panel-toggle-text" data-i18n="contracts.load.isoDescription">Isometrische Ansicht zum Platzieren und Stapeln direkt im Schiff.</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="loadIsoBody" class="collapsible-body" hidden>
+                  <div id="isoLevelFilter" class="level-filter" aria-label="Ebenenfilter isometrische Ansicht"></div>
+                  <div class="iso-panel iso-panel-standalone">
+                    <div class="ship-axis">
+                      <span>Isometrie</span>
+                      <div class="iso-axis-actions">
+                        <span id="loadIsoStats" class="iso-axis-status" data-i18n="contracts.overview.noPlacedLoad">Noch keine platzierte Ladung</span>
+                        <div class="iso-zoom-controls" aria-label="Zoom">
+                          <button class="iso-zoom-button" type="button" data-iso-zoom-action="out" aria-label="Verkleinern" data-tooltip="Verkleinern" data-i18n-aria-label="contracts.iso.zoomOut" data-i18n-tooltip="contracts.iso.zoomOut">
+                            <span aria-hidden="true">−</span>
+                          </button>
+                          <button class="iso-zoom-button iso-zoom-reset" type="button" data-iso-zoom-action="reset" aria-label="Zoom zurücksetzen" data-tooltip="Zoom zurücksetzen" data-i18n-aria-label="contracts.iso.zoomReset" data-i18n-tooltip="contracts.iso.zoomReset">
+                            <span data-iso-zoom-value>100 %</span>
+                          </button>
+                          <button class="iso-zoom-button" type="button" data-iso-zoom-action="in" aria-label="Vergrößern" data-tooltip="Vergrößern" data-i18n-aria-label="contracts.iso.zoomIn" data-i18n-tooltip="contracts.iso.zoomIn">
+                            <span aria-hidden="true">+</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="iso-frame">
+                      <svg id="isoView" class="iso-view" aria-label="Interaktive isometrische Vorschau des Cargo-Grids"></svg>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel panel-ship panel-collapsible">
+                <div class="panel-header">
+                  <button
+                    class="panel-toggle collapse-toggle"
+                    type="button"
+                    data-collapse-target="loadTopdownBody"
+                    aria-expanded="false"
+                  >
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="contracts.load.gridTitle">Rasteransicht</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="loadTopdownBody" class="collapsible-body" hidden>
+                  <div id="topdownLevelFilter" class="level-filter" aria-label="Ebenenfilter Rasteransicht"></div>
+                  <div class="ship-schematic topdown-schematic">
+                    <div class="ship-axis">
+                      <span data-i18n="contracts.load.front">Vorne</span>
+                    </div>
+                    <div class="ship-frame">
+                      <div id="shipGrid" class="ship-grid" aria-live="polite"></div>
+                    </div>
+                    <div class="ship-axis">
+                      <span data-i18n="contracts.load.rear">Heck</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </section>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="fleet">
+          <section class="fleet-shell">
+            <section class="panel panel-fleet-summary">
+              <div id="fleetSummary" class="summary-cards fleet-summary"></div>
+            </section>
+
+            <section class="panel panel-fleet-form" data-fleet-view="form" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 id="fleetFormTitle" data-i18n="fleet.form.title.entry">Flotteneintrag</h2>
+                  <p id="fleetFormDescription" data-i18n="fleet.form.description.entry">Lege jedes Schiff als eigenen Eintrag an, auch wenn es später zerstört oder durch einen Patch ersetzt wurde.</p>
+                </div>
+              </div>
+
+              <form id="fleetForm" class="stack">
+                <input type="hidden" name="entryId" />
+                <input type="hidden" name="imageUrl" />
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="fleet.form.manufacturer">
+                    Hersteller
+                    <select id="fleetManufacturerSelect" required></select>
+                  </label>
+
+                  <label data-i18n-label="fleet.form.model">
+                    Modell
+                    <select name="shipId" id="fleetPresetSelect" required></select>
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="fleet.form.registration">
+                    Registriernummer
+                    <input type="text" name="registration" placeholder="z. B. XD-4711-XD" data-i18n-placeholder="fleet.form.registrationPlaceholder" />
+                  </label>
+
+                  <label data-i18n-label="fleet.form.refuelContainerSize">
+                    Refuel-Behältergröße (SCU)
+                    <span id="fleetRefuelContainerFieldsMount"></span>
+                  </label>
+                </div>
+
+                <div id="fleetRefuelContainerFields" class="fleet-refuel-fields" hidden></div>
+
+                <div class="shipdb-image-editor fleet-image-editor">
+                  <div class="shipdb-image-source">
+                    <div>
+                      <strong data-i18n="fleet.image.title">Individuelles Flottenbild</strong>
+                      <p class="field-help" data-i18n="fleet.image.description">Gilt nur für diesen Flotteneintrag. Ohne eigenes Bild wird das Profilbild aus der Schiffsdatenbank verwendet.</p>
+                    </div>
+                    <div class="shipdb-image-actions">
+                      <label class="secondary-button icon-text-button shipdb-image-import-button">
+                        <span class="button-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M11 16V8.8l-2.6 2.6L7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2Zm-6 3v-5h2v3h10v-3h2v5H5Z" />
+                          </svg>
+                        </span>
+                        <span data-i18n="fleet.image.import">Bild importieren</span>
+                        <input id="fleetImageFileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+                      </label>
+                      <button id="fleetImageRecognizeButton" class="secondary-button" type="button" data-i18n="fleet.image.recognize">Registriernummer erkennen</button>
+                      <button id="fleetImageRemoveButton" class="ghost-button" type="button" data-i18n="fleet.image.remove">Bild entfernen</button>
+                    </div>
+                    <div id="fleetImageStatus" class="form-hint form-hint-neutral shipdb-image-status" aria-live="polite" hidden></div>
+                  </div>
+                  <figure id="fleetImagePreviewWrap" class="shipdb-image-preview" hidden>
+                    <img id="fleetImagePreview" alt="" />
+                    <figcaption data-i18n="fleet.image.preview">Bildvorschau</figcaption>
+                  </figure>
+                </div>
+
+                <label class="fleet-checkbox-row" data-i18n-title="fleet.form.pledgePurchasedHint">
+                  <input type="checkbox" name="pledgePurchased" id="fleetPledgePurchased" />
+                  <span data-i18n="fleet.form.pledgePurchased">Mit Echtgeld gekauft</span>
+                </label>
+
+                <div id="fleetDispatcherCrewFields" class="grid-2 compact-grid" hidden>
+                  <label data-i18n-label="fleet.form.owner">
+                    Eigentümer
+                    <input type="text" name="ownerName" id="fleetOwnerInput" placeholder="z. B. Orga, Spielername oder Handle" data-i18n-placeholder="fleet.form.ownerPlaceholder" />
+                  </label>
+
+                  <label data-i18n-label="fleet.form.pilot">
+                    Pilot
+                    <input type="text" name="pilotName" id="fleetPilotInput" list="pilotSuggestions" placeholder="z. B. aktueller Einsatzpilot" data-i18n-placeholder="fleet.form.pilotPlaceholder" />
+                  </label>
+                </div>
+
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="fleet.form.acquiredOn">
+                    Seit wann in der Flotte?
+                    <input type="date" name="acquiredOn" required />
+                  </label>
+
+                  <label data-i18n-label="fleet.form.status">
+                    Status
+                    <select name="status" id="fleetStatusSelect">
+                      <option value="active" data-i18n="fleet.status.active">Aktiv</option>
+                      <option value="destroyed" data-i18n="fleet.status.destroyed">Zerstört</option>
+                      <option value="patch-replaced" data-i18n="fleet.status.patch-replaced">Durch Patch ersetzt</option>
+                      <option value="wipe-replaced" data-i18n="fleet.status.wipe-replaced">Durch Wipe ersetzt</option>
+                      <option value="wipe-removed" data-i18n="fleet.status.wipe-removed">Durch Wipe entfernt</option>
+                      <option value="sold" data-i18n="fleet.status.sold">Verkauft</option>
+                      <option value="melted" data-i18n="fleet.status.melted">Eingetauscht</option>
+                      <option value="inactive" data-i18n="fleet.status.inactive">Nicht aktiv</option>
+                    </select>
+                  </label>
+
+                  <label data-i18n-label="fleet.form.endedOn">
+                    Bis wann behalten?
+                    <input type="date" name="endedOn" id="fleetEndedOn" />
+                  </label>
+
+                  <label id="fleetPatchVersionWrap" data-i18n-label="fleet.form.patchVersion" hidden>
+                    Patchversion
+                    <input type="text" name="patchVersion" id="fleetPatchVersion" placeholder="z. B. 4.2.1" data-i18n-placeholder="fleet.form.patchVersionPlaceholder" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="fleet.form.notes">
+                  Notizen
+                  <textarea
+                    name="notes"
+                    rows="3"
+                    placeholder="z. B. Lieblingsschiff, besondere Runs, warum es ersetzt wurde ..."
+                    data-i18n-placeholder="fleet.form.notesPlaceholder"
+                  ></textarea>
+                </label>
+
+                <div id="fleetDurationHint" class="form-hint" aria-live="polite"></div>
+
+                <div class="fleet-form-actions">
+                  <button id="fleetSubmitButton" type="submit" class="primary-button" data-i18n="fleet.form.saveShip">Schiff speichern</button>
+                  <button id="fleetCancelButton" type="button" class="secondary-button" hidden data-i18n="fleet.form.cancel">Bearbeitung abbrechen</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="fleet-view-section" data-fleet-view="ships">
+              <div id="fleetEmpty" class="empty-state">
+                <span data-i18n="fleet.empty.ships">Noch keine Schiffe hinterlegt. Starte mit deinem ersten Flotteneintrag.</span>
+              </div>
+              <div id="fleetList" class="fleet-list"></div>
+            </section>
+
+            <section class="panel panel-fleet-archive" data-fleet-view="archive" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="fleet.archive.title">Flottenarchiv</h2>
+                  <p data-i18n="fleet.archive.description">Verkaufte, eingetauschte, zerstörte oder durch Patch und Wipe ersetzte Einträge bleiben hier nachvollziehbar.</p>
+                </div>
+              </div>
+
+              <div id="fleetArchiveEmpty" class="empty-state">
+                <span data-i18n="fleet.empty.archive">Noch keine archivierten Schiffe vorhanden.</span>
+              </div>
+              <div id="fleetArchiveList" class="fleet-list"></div>
+            </section>
+
+            <section id="fleetDossier" class="panel panel-fleet-dossier" data-fleet-view="dossier" hidden></section>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="finance">
+          <section class="finance-layout">
+            <section class="panel panel-finance-summary">
+              <div id="financeSummary" class="summary-cards fleet-summary"></div>
+            </section>
+
+            <section class="panel panel-finance-form" data-finance-view="entry" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 id="financeFormTitle">Neue Buchung erfassen</h2>
+                  <p data-i18n="finance.form.description">Trage Einnahmen und Ausgaben ein und verknüpfe sie bei Bedarf mit Schiffen oder Aufträgen.</p>
+                </div>
+              </div>
+              <form id="financeForm" class="stack">
+                <input type="hidden" name="entryId" />
+
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="finance.form.date">
+                    Datum
+                    <input type="date" name="bookedOn" required />
+                  </label>
+
+                  <label data-i18n-label="finance.form.scope">
+                    Bereich
+                    <select name="scope" id="financeScopeSelect">
+                      <option value="mission" data-i18n="finance.scope.mission">Aufträge</option>
+                      <option value="cargo" data-i18n="finance.scope.cargo">Cargo</option>
+                      <option value="ship" data-i18n="finance.scope.ship">Schiff</option>
+                      <option value="service" data-i18n="finance.scope.service">Service</option>
+                      <option value="other" data-i18n="finance.scope.other">Sonstiges</option>
+                    </select>
+                  </label>
+
+                  <label data-i18n-label="finance.form.flow">
+                    Richtung
+                    <select name="flow">
+                      <option value="income" data-i18n="finance.flow.income">Einnahme</option>
+                      <option value="expense" data-i18n="finance.flow.expense">Ausgabe</option>
+                    </select>
+                  </label>
+                </div>
+
+                <fieldset class="finance-amount-mode">
+                  <legend data-i18n="finance.form.inputMode">Betrag erfassen über</legend>
+                  <div class="finance-amount-mode-options">
+                    <label>
+                      <input type="radio" name="amountInputMode" value="amount" checked />
+                      <span data-i18n="finance.form.modeAmount">Betrag</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="amountInputMode" value="endingBalance" />
+                      <span data-i18n="finance.form.modeEndingBalance">Endkontostand</span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <div class="grid-3 compact-grid">
+                  <label data-i18n-label="finance.form.category">
+                    Kategorie
+                    <select name="category" id="financeCategorySelect" required></select>
+                  </label>
+
+                  <label id="financeAmountField" data-i18n-label="finance.form.amount">
+                    Betrag (aUEC)
+                    <input id="financeAmountInput" type="number" name="amountAuec" min="1" step="1" placeholder="z. B. 42000" required />
+                  </label>
+
+                  <label id="financeEndingBalanceField" data-i18n-label="finance.form.endingBalance" hidden>
+                    Endkontostand (aUEC)
+                    <input id="financeEndingBalanceInput" type="number" name="endingBalanceAuec" min="0" step="1" placeholder="z. B. 764381" data-i18n-placeholder="finance.form.endingBalancePlaceholder" disabled />
+                  </label>
+
+                  <label data-i18n-label="finance.form.reference">
+                    Bezug
+                    <input type="text" name="reference" id="financeReferenceInput" list="financeReferenceSuggestions" placeholder="z. B. Testauftrag oder Freelancer MAX" data-i18n-placeholder="finance.form.referencePlaceholder" />
+                  </label>
+                </div>
+                <small id="financeBalanceCalculation" class="finance-balance-calculation" aria-live="polite" hidden></small>
+
+                <div class="grid-2 compact-grid">
+                  <label id="financeShipField">
+                    <span id="financeShipFieldLabel" data-i18n="finance.form.ship">Schiff / Flotteneintrag</span>
+                    <select name="fleetEntryId" id="financeShipSelect">
+                      <option value="">Kein Schiff verknüpft</option>
+                    </select>
+                  </label>
+
+                  <label id="financeMissionField">
+                    <span data-i18n="finance.form.mission">Auftrag</span>
+                    <select name="missionId" id="financeMissionSelect">
+                      <option value="">Kein Auftrag verknüpft</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div id="financeShipWorkflowFields" class="grid-2 compact-grid" hidden>
+                  <label>
+                    <span id="financeShipWorkflowProfileLabel" data-i18n="finance.form.purchaseProfile">Schiffsprofil für Kauf</span>
+                    <select name="targetShipProfileId" id="financeShipWorkflowProfileSelect">
+                      <option value="">Profil auswählen</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span id="financeShipWorkflowRegistrationLabel" data-i18n="finance.form.registration">Registriernummer</span>
+                    <input type="text" name="targetRegistration" id="financeShipWorkflowRegistrationInput" placeholder="z. B. XD-4711-XD" />
+                  </label>
+                </div>
+
+                <label data-i18n-label="finance.form.notes">
+                  Notiz
+                  <textarea name="notes" rows="3" placeholder="z. B. Erstbetankung, Reparatur nach Bounty-Run oder Auftrag ausbezahlt" data-i18n-placeholder="finance.form.notesPlaceholder"></textarea>
+                </label>
+
+                <div id="financeHint" class="form-hint form-hint-neutral" aria-live="polite"></div>
+
+                <div class="fleet-form-actions">
+                  <button id="financeSubmitButton" type="submit" class="primary-button">Buchung speichern</button>
+                  <button id="financeCancelButton" type="button" class="secondary-button" hidden data-i18n="finance.form.cancel">Bearbeitung abbrechen</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel panel-finance-list" data-finance-view="statement">
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="finance.statement.title">Kontoauszug</h2>
+                  <p data-i18n="finance.statement.description">Buchungen chronologisch mit Filtern nach Zeitraum, Richtung, Bereich und Suchbegriff.</p>
+                </div>
+              </div>
+
+              <div class="finance-filter-bar finance-statement-filters">
+                <label data-i18n-label="finance.filter.period">
+                  Zeitraum
+                  <select id="financeStatementPeriodType">
+                    <option value="all" data-i18n="finance.period.all">Gesamt</option>
+                    <option value="day" data-i18n="finance.period.day">Tag</option>
+                    <option value="week" data-i18n="finance.period.week">Woche</option>
+                    <option value="month" data-i18n="finance.period.month">Monat</option>
+                    <option value="year" data-i18n="finance.period.year">Jahr</option>
+                  </select>
+                </label>
+
+                <label data-i18n-label="finance.filter.flow">
+                  Richtung
+                  <select id="financeFlowFilter">
+                    <option value="all" data-i18n="finance.filter.all">Alle</option>
+                    <option value="income" data-i18n="finance.filter.incomeOnly">Nur Einnahmen</option>
+                    <option value="expense" data-i18n="finance.filter.expenseOnly">Nur Ausgaben</option>
+                  </select>
+                </label>
+
+                <label data-i18n-label="finance.filter.scope">
+                  Bereich
+                  <select id="financeScopeFilter">
+                    <option value="all" data-i18n="finance.filter.allScopes">Alle Bereiche</option>
+                    <option value="mission" data-i18n="finance.scope.mission">Aufträge</option>
+                    <option value="cargo" data-i18n="finance.scope.cargo">Cargo</option>
+                    <option value="ship" data-i18n="finance.scope.ship">Schiff</option>
+                    <option value="service" data-i18n="finance.scope.service">Service</option>
+                    <option value="other" data-i18n="finance.scope.other">Sonstiges</option>
+                  </select>
+                </label>
+
+                <label data-i18n-label="finance.filter.search">
+                  Suche
+                  <input id="financeSearchInput" type="search" placeholder="z. B. Reparatur, C2 oder Testauftrag" data-i18n-placeholder="finance.filter.searchPlaceholder" />
+                </label>
+              </div>
+              <small id="financeStatementPeriodMeta" class="finance-filter-meta" hidden></small>
+
+              <div id="financeEmpty" class="empty-state" data-i18n="finance.statement.empty">Für den gewählten Zeitraum und die aktuellen Filter sind keine Buchungen vorhanden.</div>
+              <div id="financeList" class="finance-table" aria-live="polite"></div>
+            </section>
+
+            <section class="panel panel-finance-pnl" data-finance-view="pnl" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="finance.pnl.title">GuV-Rechnung</h2>
+                  <p data-i18n="finance.pnl.description">Auswertung von Einnahmen, Ausgaben und Ergebnis nach Tag, Woche, Monat oder Jahr.</p>
+                </div>
+              </div>
+
+              <div class="finance-filter-bar finance-pnl-controls">
+                <label data-i18n-label="finance.pnl.period">
+                  Zeitraum
+                  <select id="financePnlPeriodType">
+                    <option value="day" data-i18n="finance.period.day">Tag</option>
+                    <option value="week" data-i18n="finance.period.week">Woche</option>
+                    <option value="month" data-i18n="finance.period.month">Monat</option>
+                    <option value="year" data-i18n="finance.period.year">Jahr</option>
+                  </select>
+                </label>
+
+                <label data-i18n-label="finance.pnl.anchorDate">
+                  Stichtag
+                  <input id="financePnlAnchorDate" type="date" />
+                </label>
+
+                <button id="financePnlTodayButton" type="button" class="secondary-button" data-i18n="finance.pnl.today">Heute</button>
+              </div>
+
+              <div id="financePnlSummary" class="summary-cards fleet-summary"></div>
+              <div id="financePnlTable" class="finance-table finance-pnl-table"></div>
+            </section>
+
+            <section class="panel panel-finance-assets" data-finance-view="assets" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="finance.assets.title">Vermögensübersicht</h2>
+                  <p data-i18n="finance.assets.description">Kontostand, offene Auftragsforderungen und geschätzter Flottenwert.</p>
+                </div>
+              </div>
+
+              <div id="financeAssetsSummary" class="summary-cards fleet-summary"></div>
+              <div id="financeAssetsTable" class="finance-table finance-assets-table"></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="statistics">
+          <section class="statistics-shell">
+            <div class="statistics-view" data-statistics-view="overview">
+              <section class="panel statistics-summary-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                    <h2 data-i18n="statistics.title">Einsatzstatistik</h2>
+                  </div>
+                  <span class="statistics-scope" data-i18n="statistics.scope">Gesamter Verlauf</span>
+                </div>
+                <div id="statisticsSummary" class="summary-cards fleet-summary"></div>
+              </section>
+
+              <section class="panel statistics-highlights-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                    <h2 data-i18n="statistics.highlights.title">Highlights</h2>
+                  </div>
+                </div>
+                <div id="statisticsHighlights" class="statistics-highlight-grid"></div>
+              </section>
+            </div>
+
+            <div class="statistics-view" data-statistics-view="operations" hidden>
+              <section class="panel panel-collapsible statistics-accordion-panel" data-statistics-section="customers">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="customers" aria-expanded="true" aria-controls="statisticsCustomersBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.customers.title">Auftraggeber</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsCustomersBody" class="collapsible-body statistics-section-body">
+                  <div id="statisticsCustomers" class="statistics-table"></div>
+                </div>
+              </section>
+
+              <section class="panel panel-collapsible statistics-accordion-panel" data-statistics-section="pickups">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="pickups" aria-expanded="false" aria-controls="statisticsPickupsBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.pickups.title">Abholorte</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsPickupsBody" class="collapsible-body statistics-section-body" hidden>
+                  <div id="statisticsPickups" class="statistics-ranking"></div>
+                </div>
+              </section>
+
+              <section class="panel panel-collapsible statistics-accordion-panel" data-statistics-section="dropoffs">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="dropoffs" aria-expanded="false" aria-controls="statisticsDropoffsBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.dropoffs.title">Lieferziele</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsDropoffsBody" class="collapsible-body statistics-section-body" hidden>
+                  <div id="statisticsDropoffs" class="statistics-ranking"></div>
+                </div>
+              </section>
+
+              <section class="panel panel-collapsible statistics-accordion-panel" data-statistics-section="destinations">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="destinations" aria-expanded="false" aria-controls="statisticsDestinationsBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.destinations.title">Angeflogene Orte</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsDestinationsBody" class="collapsible-body statistics-section-body" hidden>
+                  <div id="statisticsDestinations" class="statistics-ranking"></div>
+                </div>
+              </section>
+
+              <section class="panel panel-collapsible statistics-accordion-panel statistics-stop-history-panel" data-statistics-section="history">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="history" aria-expanded="false" aria-controls="statisticsHistoryBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="contracts.history.title">Stop-Historie</span>
+                      <span class="panel-toggle-text" data-i18n="contracts.history.description">Hier siehst du, welche Ziele bereits abgeschlossen und ausgeladen wurden.</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsHistoryBody" class="collapsible-body statistics-section-body" hidden>
+                  <div id="stopHistoryEmpty" class="empty-state" data-i18n="contracts.history.empty">Noch kein Stop abgeschlossen.</div>
+                  <div id="stopHistoryList" class="stop-history-list"></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="statistics-view" data-statistics-view="ships" hidden>
+              <section class="panel panel-collapsible statistics-accordion-panel" data-statistics-section="ship-models">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="ship-models" aria-expanded="true" aria-controls="statisticsShipsBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.ships.title">Schiffsmodelle</span>
+                      <span class="panel-toggle-text" data-i18n="statistics.ships.description">Aufträge und operative Buchungen je Schiffsmodell; Registriernummern werden zusammengefasst.</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsShipsBody" class="collapsible-body statistics-section-body">
+                  <div id="statisticsShips" class="statistics-table"></div>
+                </div>
+              </section>
+
+              <section class="panel panel-collapsible statistics-accordion-panel statistics-fleet-performance-panel" data-statistics-section="fleet-entries">
+                <div class="panel-header">
+                  <button class="panel-toggle statistics-section-toggle" type="button" data-statistics-section-toggle="fleet-entries" aria-expanded="true" aria-controls="statisticsFleetEntriesBody">
+                    <span class="panel-toggle-copy">
+                      <span class="panel-toggle-title" data-i18n="statistics.fleet.entriesTitle">Einzelauswertungen</span>
+                      <span class="panel-toggle-text" data-i18n="statistics.fleet.entriesDescription">Betriebsergebnis je Flotteneintrag; Anschaffung, Verkauf und Upgrades bleiben unberücksichtigt.</span>
+                    </span>
+                    <span class="collapse-indicator" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <div id="statisticsFleetEntriesBody" class="collapsible-body statistics-section-body">
+                  <div id="statisticsFleetPerformanceSummary" class="summary-cards fleet-summary"></div>
+                  <div id="statisticsFleetPerformanceGroups" class="statistics-fleet-performance-groups"></div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="settings">
+          <section class="settings-page">
+            <div class="settings-view is-active" data-settings-view="profile">
+              <section class="panel settings-content-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                    <h2 data-i18n="settings.tabs.profile">Profil</h2>
+                    <p data-i18n="settings.profileDescription">Sprache und persönliche Pilotendaten für diese Anwendung.</p>
+                  </div>
+                </div>
+                <div class="settings-form-grid">
+                  <label class="language-select" data-i18n-label="settings.language">
+                    Sprache
+                    <select id="uiLanguageSelect"></select>
+                  </label>
+                  <label id="soloPilotProfileGroup" class="settings-profile-field" data-i18n-label="settings.pilotName">
+                    Pilot / Handle
+                    <input id="soloPilotNameInput" type="text" maxlength="80" placeholder="z. B. Tsche" data-i18n-placeholder="settings.pilotNamePlaceholder" />
+                  </label>
+                </div>
+              </section>
+
+              <section id="soloAppearancePanel" class="panel settings-content-panel">
+                <div class="panel-header panel-header-stack"><div><h2 data-i18n="settings.accent.title">Akzentfarbe</h2></div></div>
+                <div class="solo-accent-controls">
+                  <div class="solo-accent-presets" role="group" aria-label="Farbvorschläge" data-i18n-aria-label="settings.accent.presets">
+                    <button type="button" class="solo-accent-swatch" data-accent-color="#79dfed" data-accent-de="Eisblau" data-accent-en="Ice blue" style="--swatch:#79dfed" aria-label="Eisblau" aria-pressed="true"></button>
+                    <button type="button" class="solo-accent-swatch" data-accent-color="#efbd72" data-accent-de="Bernstein" data-accent-en="Amber" style="--swatch:#efbd72" aria-label="Bernstein" aria-pressed="false"></button>
+                    <button type="button" class="solo-accent-swatch" data-accent-color="#80ddb1" data-accent-de="Mint" data-accent-en="Mint" style="--swatch:#80ddb1" aria-label="Mint" aria-pressed="false"></button>
+                    <button type="button" class="solo-accent-swatch" data-accent-color="#b5a0f0" data-accent-de="Violett" data-accent-en="Violet" style="--swatch:#b5a0f0" aria-label="Violett" aria-pressed="false"></button>
+                    <button type="button" class="solo-accent-swatch" data-accent-color="#ee9bac" data-accent-de="Rosé" data-accent-en="Rose" style="--swatch:#ee9bac" aria-label="Rosé" aria-pressed="false"></button>
+                  </div>
+                  <label class="solo-accent-custom"><span data-i18n="settings.accent.custom">Eigene Farbe</span><input id="soloAccentColor" type="color" value="#79dfed" /><output id="soloAccentValue" for="soloAccentColor">#79DFED</output></label>
+                  <button id="soloAccentReset" class="secondary-button" type="button" data-i18n="settings.accent.reset">Standard</button>
+                </div>
+                <p class="form-hint" data-i18n="settings.accent.hint">Gilt für diese App bzw. diesen Browser.</p>
+                <p id="soloAccentStatus" class="form-hint" role="status" hidden></p>
+              </section>
+
+              <section id="soloSoundPanel" class="panel settings-content-panel solo-sound-panel">
+                <div class="panel-header panel-header-stack"><div>
+                  <h2 data-sound-text="title">Interface-Sounds</h2>
+                </div></div>
+                <div class="solo-sound-controls">
+                  <label class="solo-checkbox"><input id="soloSoundEnabled" type="checkbox" /><span data-sound-text="enable">Interface-Sounds aktivieren</span></label>
+                  <label class="solo-sound-volume" for="soloSoundVolume"><span data-sound-text="volume">Gesamtlautstärke</span><output id="soloSoundLevel" for="soloSoundVolume">25 %</output><input id="soloSoundVolume" type="range" min="0" max="100" step="5" value="25" /></label>
+                </div>
+                <label class="solo-checkbox"><input id="soloImportSoundsEnabled" type="checkbox" checked /><span data-sound-text="imports">Auftragsimport begleiten (auch im Hintergrund)</span></label>
+                <p class="solo-sound-format" data-sound-text="format">WAV (unkomprimiertes PCM), Mono oder Stereo, 8–96 kHz. Maximal 2 MB und 3 Sekunden pro Datei.</p>
+                <div id="soloSoundRows" class="solo-sound-rows"></div>
+                <div><button id="soloSoundReload" class="secondary-button" type="button" data-sound-text="reload">Sounddateien neu laden</button></div>
+                <p id="soloSoundStatus" class="form-hint" role="status" aria-live="polite" hidden></p>
+              </section>
+            </div>
+
+            
+
+            <div class="settings-view" data-settings-view="companion" hidden>
+              <section class="panel settings-content-panel solo-panel">
+                <div class="panel-header panel-header-stack"><div>
+                  <p class="flight-eyebrow">SYSTEMS / UPLINK</p>
+                  <h2 data-solo-text="title">Companion &amp; Heimnetz</h2>
+                </div></div>
+                <form id="soloSettingsForm" class="settings-form-grid">
+                  <div class="solo-network-settings">
+                    <label class="solo-port-field"><span data-solo-text="port">Port</span><input id="soloPort" name="port" type="number" min="1024" max="65535" step="1" value="4174" required /></label>
+                    <div class="solo-network-access">
+                      <span class="solo-network-caption" data-solo-text="address">Aktuell erreichbar</span>
+                      <div id="soloLanUrls" class="solo-addresses" aria-live="polite"></div>
+                      <small id="soloNetworkHint" class="solo-network-note"></small>
+                    </div>
+                    <div class="solo-network-footer">
+                      <label class="solo-checkbox"><input name="lanEnabled" type="checkbox" checked /><span data-solo-text="allowLan">Im eigenen Netz freigeben</span></label>
+                      <small id="soloRestartHint" class="solo-restart-notice" role="status" hidden data-solo-text="restart">Änderungen gelten nach einem Neustart.</small>
+                    </div>
+                  </div>
+                  <div class="solo-hotkey-field">
+                    <label for="soloHotkey" data-solo-text="hotkey">Screenshot-Tastenkürzel</label>
+                    <div class="solo-hotkey-controls"><input id="soloHotkey" name="captureHotkey" value="Ctrl+Shift+F12" readonly aria-describedby="soloHotkeyHint" /><button id="soloHotkeyRecord" class="secondary-button" type="button" aria-controls="soloHotkey" aria-pressed="false">Aufnehmen</button></div>
+                    <small id="soloHotkeyHint" class="form-hint" role="status" aria-live="polite">Anklicken und Tastenkombination drücken.</small>
+                  </div>
+                  <label><span data-solo-text="mode">Aufnahmebereich</span><select name="captureMode"><option value="active-monitor" data-solo-text="activeMonitor">Bildschirm des aktiven Fensters</option><option value="virtual-desktop" data-solo-text="desktop">Gesamter Desktop</option></select></label>
+                  <label><span data-solo-text="retention">Screenshots aufbewahren</span><input name="captureRetention" type="number" min="1" max="1000" value="100" required /></label>
+                  <label><span data-solo-text="pilot">Pilot / Handle für Importe</span><input name="pilotName" maxlength="80" /></label>
+                  <label class="solo-checkbox"><input name="captureEnabled" type="checkbox" checked /><span data-solo-text="autoCapture">Screenshot-Erfassung beim Start aktivieren</span></label>
+                  <div class="solo-actions"><button class="primary-button" type="submit" data-solo-text="save">Einstellungen speichern</button><button id="soloCaptureToggle" class="secondary-button" type="button">Erfassung pausieren</button></div>
+                </form>
+                <p id="soloPcSettingsHint" class="form-hint" hidden data-solo-text="pcOnly">Netzwerk und Screenshot-Erfassung werden direkt am PC eingestellt.</p>
+                <p id="soloStatus" role="status" aria-live="polite"></p>
+                <p id="soloSettingsMessage" role="status" aria-live="polite"></p>
+              </section>
+            </div>
+            <div class="settings-view" data-settings-view="transfer" hidden>
+              <section id="personalTransferPanel" class="panel settings-content-panel"></section>
+            </div>
+            <div class="settings-view" data-settings-view="about" hidden>
+              <section id="soloAboutPanel" class="panel settings-content-panel solo-about-panel" aria-label="Über Citizen Tools">
+                <div class="panel-header"><div><p class="flight-eyebrow">CITIZEN TOOLS / FLIGHT DECK</p><h2 data-i18n="settings.tabs.about">Über Citizen Tools</h2></div><span id="soloAboutVersion" class="solo-about-version"></span></div>
+                <div id="soloAboutContent"></div>
+              </section>
+            </div>
+            <div class="settings-view settings-database-view" data-settings-view="database" hidden>
+              <section class="panel settings-content-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                    <h2 data-i18n="settings.backupGroup">Datensicherung</h2>
+                    <p data-i18n="settings.backupDescription">Serverdaten sichern, Erinnerungsintervall festlegen oder einen vorhandenen Stand wiederherstellen.</p>
+                  </div>
+                </div>
+                <div class="settings-backup-layout">
+                  <div id="backupReminderStatus" class="settings-backup-status" data-state="loading">
+                    <i aria-hidden="true"></i>
+                    <span>
+                      <strong id="backupReminderStatusText" data-i18n="settings.backupReminder.loading">Backup-Status wird geladen</strong>
+                      <small id="backupReminderStatusMeta"></small>
+                    </span>
+                  </div>
+                  <label class="settings-backup-reminder">
+                    <span data-i18n="settings.backupReminder.label">Erinnern nach</span>
+                    <select id="backupReminderDaysSelect">
+                      <option value="0" data-i18n="settings.backupReminder.off">Nie</option>
+                      <option value="3" data-i18n="settings.backupReminder.days3">3 Tagen</option>
+                      <option value="7" data-i18n="settings.backupReminder.days7">7 Tagen</option>
+                      <option value="14" data-i18n="settings.backupReminder.days14">14 Tagen</option>
+                      <option value="30" data-i18n="settings.backupReminder.days30">30 Tagen</option>
+                    </select>
+                  </label>
+                  <div class="settings-backup-actions">
+                    <button id="backupButton" class="secondary-button settings-backup-action" type="button">
+                      <span class="button-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M12 3a5 5 0 0 0-5 5v1H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2V8a5 5 0 0 0-5-5Zm-3 6V8a3 3 0 1 1 6 0v1H9Zm2 3h2v4h-2v-4Z" />
+                        </svg>
+                      </span>
+                      <span data-i18n="settings.backupDownload">Backup herunterladen</span>
+                    </button>
+                    <button id="restoreButton" class="secondary-button settings-backup-action" type="button">
+                      <span class="button-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 1 1-10.39-4.01L6.2 7.58A8 8 0 1 0 20 13c0-4.42-3.58-8-8-8Z" />
+                        </svg>
+                      </span>
+                      <span data-i18n="settings.backupRestore">Backup wiederherstellen</span>
+                    </button>
+                    <input id="restoreInput" type="file" accept=".zip,.sqlite3,.db,application/zip,application/octet-stream" hidden />
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel settings-content-panel">
+                <div class="panel-header panel-header-stack">
+                  <div>
+                    <h2 data-i18n="settings.databaseManagement">Datenbanken verwalten</h2>
+                    <p data-i18n="settings.databaseDescription">Schiffsprofile sowie Orte und OCR-Aliase zentral pflegen.</p>
+                  </div>
+                </div>
+                <div class="settings-database-actions">
+                  <button class="settings-panel-action" type="button" data-settings-go="ships">
+                    <span>
+                      <strong data-i18n="settings.shipDatabase">Schiffsdatenbank</strong>
+                      <small data-i18n="settings.shipDatabaseDescription">Schiffstypen, Cargo-Grids und technische Daten</small>
+                    </span>
+                  </button>
+                  <button class="settings-panel-action" type="button" data-settings-go="systems">
+                    <span>
+                      <strong data-i18n="settings.systemDatabase">Systemdatenbank</strong>
+                      <small data-i18n="settings.systemDatabaseDescription">Orte, Systeme und erkannte OCR-Aliase</small>
+                    </span>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="ships">
+          <nav class="shipdb-subnav" aria-label="Schiffsdatenbank-Navigation">
+            <button class="secondary-button shipdb-view-tab" type="button" data-shipdb-view-target="create" data-i18n="shipdb.tabs.create">Neues Schiff anlegen</button>
+            <button class="primary-button shipdb-view-tab" type="button" data-shipdb-view-target="database" data-i18n="shipdb.tabs.database">Datenbank</button>
+          </nav>
+
+          <section class="shipdb-layout">
+            <section class="panel panel-shipdb-form" data-shipdb-view="create" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="shipdb.form.title">Schiffseintrag</h2>
+                  <p data-i18n="shipdb.form.description">Pflege hier deine Schiffstypen. Ein Cargo-Grid ist nur nötig, wenn das Schiff für Frachtaufträge nutzbar sein soll.</p>
+                </div>
+              </div>
+
+              <form id="shipDbForm" class="stack shipdb-form">
+                <input type="hidden" name="entryId" />
+
+                <section class="shipdb-section">
+                  <div class="shipdb-section-head">
+                    <div>
+                      <h3 data-i18n="shipdb.form.sectionData">Schiffsdaten</h3>
+                      <p data-i18n="shipdb.form.sectionDataDescription">Hersteller und Stammdaten reichen für Flotte und Finanzen aus; das Cargogrid darunter ist optional.</p>
+                    </div>
+                    <div id="shipDbCargoSummaryCard" class="shipdb-derived-card" hidden>
+                      <span data-i18n="shipdb.form.cargoSummary">Berechneter Frachtraum</span>
+                      <div class="shipdb-derived-values">
+                        <strong id="shipDbCargoScuValue">0 SCU</strong>
+                        <small><span data-i18n="shipdb.form.official">offiziell</span> <span id="shipDbCargoOfficialValue">0 SCU</span></small>
+                        <small><span data-i18n="shipdb.form.overload">Überladung</span> <span id="shipDbCargoOverloadValue">0 SCU</span></small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid-4 compact-grid">
+                    <label data-i18n-label="shipdb.form.manufacturer">
+                      Hersteller
+                      <select name="manufacturerSelect" id="shipDbManufacturerSelect" required></select>
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.model">
+                      Modell
+                      <input type="text" name="model" placeholder="z. B. Hercules" required />
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.variant">
+                      Variante
+                      <input type="text" name="variant" placeholder="z. B. C2" />
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.shipClass">
+                      Schiffsklasse
+                      <select name="shipClass" id="shipDbClassSelect"></select>
+                    </label>
+                  </div>
+
+                  <label id="shipDbManufacturerCustomWrap" hidden data-i18n-label="shipdb.form.customManufacturer">
+                    Eigener Hersteller
+                    <input type="text" name="manufacturerCustom" id="shipDbManufacturerCustom" placeholder="z. B. Esperia" />
+                  </label>
+
+                  <div class="grid-4 compact-grid">
+                    <label data-i18n-label="shipdb.form.hydrogenTank">
+                      Wasserstofftank
+                      <input type="number" name="hydrogenFuel" min="0" step="0.01" placeholder="z. B. 660000.5" />
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.quantumTank">
+                      Quantentank
+                      <input type="number" name="quantumFuel" min="0" step="0.01" placeholder="z. B. 11000.5" />
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.hangarSize">
+                      Hangargröße
+                      <select name="hangarSize">
+                        <option value="" data-i18n="hangar.none">Keine Auswahl</option>
+                        <option value="S" data-i18n="hangar.S">Klein · S</option>
+                        <option value="M" data-i18n="hangar.M">Mittel · M</option>
+                        <option value="L" data-i18n="hangar.L">Groß · L</option>
+                        <option value="XL" data-i18n="hangar.XL">Extra groß · XL</option>
+                        <option value="XXL" data-i18n="hangar.XXL">Extra extra groß · XXL</option>
+                      </select>
+                    </label>
+
+                    <label data-i18n-label="shipdb.form.price">
+                      Preis (aUEC)
+                      <input type="number" name="priceAuec" min="0" step="1" placeholder="z. B. 4925123" />
+                    </label>
+                  </div>
+
+                  <div class="grid-2 compact-grid">
+                    <label data-i18n-label="shipdb.form.refuelContainers">
+                      Refuel-Behälter
+                      <select name="refuelContainerCount">
+                        <option value="" data-i18n="shipdb.form.none">Keine</option>
+                        <option value="2">2</option>
+                        <option value="4">4</option>
+                        <option value="6">6</option>
+                      </select>
+                    </label>
+                    <label hidden data-stale-hangar-field="true">
+                      Hangargröße
+                      <select name="hangarSize">
+                        <option value="">Keine Auswahl</option>
+                        <option value="S">Klein · S</option>
+                        <option value="M">Mittel · M</option>
+                        <option value="L">Groß · L</option>
+                        <option value="XL">Extra groß · XL</option>
+                        <option value="XXL">Extra extra groß · XXL</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="shipdb-image-editor">
+                    <div class="shipdb-image-source">
+                      <label data-i18n-label="shipdb.form.imageUrl">
+                        Bildquelle
+                        <input type="text" name="imageUrl" inputmode="url" placeholder="https://... oder assets/ships/mein-schiff.webp" data-i18n-placeholder="shipdb.form.imagePlaceholder" />
+                      </label>
+                      <div class="shipdb-image-actions">
+                        <label class="secondary-button icon-text-button shipdb-image-import-button">
+                          <span class="button-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false">
+                              <path d="M11 16V8.8l-2.6 2.6L7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2Zm-6 3v-5h2v3h10v-3h2v5H5Z" />
+                            </svg>
+                          </span>
+                          <span data-i18n="shipdb.form.importImage">Bild importieren</span>
+                          <input id="shipDbImageFileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+                        </label>
+                        <button id="shipDbImageRemoveButton" class="ghost-button" type="button" data-i18n="shipdb.form.removeImage">Bild entfernen</button>
+                      </div>
+                      <div id="shipDbImageImportStatus" class="form-hint form-hint-neutral shipdb-image-status" aria-live="polite" hidden></div>
+                    </div>
+                    <figure id="shipDbImagePreviewWrap" class="shipdb-image-preview" hidden>
+                      <img id="shipDbImagePreview" alt="" />
+                      <figcaption data-i18n="shipdb.form.imagePreview">Bildvorschau</figcaption>
+                    </figure>
+                  </div>
+                  <input type="hidden" name="presetId" id="shipDbPresetSelect" />
+                </section>
+
+                <section class="shipdb-section">
+                  <div class="shipdb-section-head">
+                    <div>
+                      <h3 data-i18n="shipdb.form.gridTitle">Cargogrid</h3>
+                      <p data-i18n="shipdb.form.gridDescription">Optional: Baue dein Raster aus 1-SCU-Zellen, wenn dieses Schiff Frachtaufträge übernehmen soll.</p>
+                    </div>
+                  </div>
+
+                  <div class="shipdb-grid-layout">
+                    <div class="shipdb-grid-column">
+                      <div class="shipdb-grid-toolbar">
+                        <label data-i18n-label="shipdb.form.rows">
+                          Reihen
+                          <input type="number" id="shipDbGridRows" min="2" max="30" step="1" value="8" />
+                        </label>
+
+                        <label data-i18n-label="shipdb.form.cols">
+                          Spalten
+                          <input type="number" id="shipDbGridCols" min="2" max="12" step="1" value="6" />
+                        </label>
+
+                        <label data-i18n-label="shipdb.form.levels">
+                          Ebenen
+                          <input type="number" id="shipDbGridLevels" min="1" max="8" step="1" value="1" />
+                        </label>
+
+                        <label data-i18n-label="shipdb.form.maxContainer">
+                          Max. Container
+                          <select name="maxContainerSizeKey">
+                            <option value="" data-i18n="shipdb.form.auto">Automatisch</option>
+                            <option value="none" data-i18n="shipdb.form.noStandardContainer">Kein Standardcontainer</option>
+                            <option value="1">1 SCU</option>
+                            <option value="2">2 SCU</option>
+                            <option value="4">4 SCU</option>
+                            <option value="8">8 SCU</option>
+                            <option value="16">16 SCU</option>
+                            <option value="24">24 SCU</option>
+                            <option value="32">32 SCU</option>
+                          </select>
+                        </label>
+
+                        <button id="shipDbGridClearLevel" type="button" class="secondary-button" data-i18n="shipdb.form.clearLevel">Ebene leeren</button>
+                        <button id="shipDbGridClearAll" type="button" class="ghost-button" data-i18n="shipdb.form.clearAll">Alles leeren</button>
+                      </div>
+
+                      <div id="shipDbGridMode" class="shipdb-grid-mode" aria-label="Grid-Modus">
+                        <button type="button" class="primary-button shipdb-grid-mode-button" data-shipdb-mode="base" data-i18n="shipdb.form.officialGrid">Offizielles Grid</button>
+                        <button type="button" class="secondary-button shipdb-grid-mode-button" data-shipdb-mode="overload" data-i18n="shipdb.form.overload">Überladung</button>
+                      </div>
+
+                      <div id="shipDbGridStats" class="summary-cards shipdb-grid-stats"></div>
+
+                      <div id="shipDbLevelTabs" class="shipdb-level-tabs" aria-label="Ebenenauswahl"></div>
+
+                      <div class="shipdb-grid-stage">
+                        <div id="shipDbGrid" class="shipdb-grid-builder" aria-label="Cargo-Grid-Editor"></div>
+                      </div>
+                    </div>
+
+                    <aside class="iso-panel shipdb-iso-panel is-static-preview">
+                      <div class="panel-header panel-header-stack">
+                        <div>
+                          <h3 data-i18n="shipdb.form.isoTitle">Isometrische Vorschau</h3>
+                          <p data-i18n="shipdb.form.isoDescription">Nur zur Ansicht. Die Darstellung passt sich live an dein gebautes Grid an.</p>
+                        </div>
+                      </div>
+
+                      <div id="shipDbIsoStats" class="summary-cards shipdb-grid-stats"></div>
+
+                      <div class="iso-frame">
+                        <div id="shipDbIsoEmpty" class="iso-empty" hidden></div>
+                        <svg id="shipDbIsoPreview" class="iso-view" aria-label="Isometrische Vorschau des aktuellen Schiffstyps"></svg>
+                      </div>
+                    </aside>
+                  </div>
+                </section>
+
+                <section class="shipdb-section">
+                  <label data-i18n-label="shipdb.form.note">
+                    Notiz
+                    <textarea name="notes" rows="3" placeholder="z. B. geliehen, Wunschschiff oder eigene Messwerte"></textarea>
+                  </label>
+                </section>
+
+                <div class="fleet-form-actions">
+                  <button id="shipDbSubmitButton" type="submit" class="primary-button" data-i18n="shipdb.form.save">Schiff speichern</button>
+                  <button id="shipDbCancelButton" type="button" class="secondary-button" hidden data-i18n="common.cancelEdit">Bearbeitung abbrechen</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel panel-shipdb-list" data-shipdb-view="database">
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="shipdb.database.title">Schiffsdatenbank</h2>
+                  <p data-i18n="shipdb.database.description">Alle Schiffstypen sind hier direkt bearbeitbar. Wenn sich Werte oder Grid-Strukturen durch Patches ändern, passt du sie genau an dieser Stelle an.</p>
+                </div>
+              </div>
+
+              <div id="shipDbSummary" class="summary-cards fleet-summary"></div>
+
+              <div id="shipDbEmpty" class="empty-state" data-i18n="shipdb.form.emptyDatabase">Noch keine Schiffsdaten vorhanden.</div>
+              <div id="shipDbList" class="fleet-list"></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="page-section" data-page="systems">
+          <nav class="shipdb-subnav systemdb-subnav" aria-label="Systemdatenbank-Navigation" data-i18n-aria-label="systemdb.navAria">
+            <button class="secondary-button systemdb-view-tab" type="button" data-systemdb-view-target="create" data-i18n="systemdb.tabs.create">Neuen Ort anlegen</button>
+            <button class="primary-button systemdb-view-tab" type="button" data-systemdb-view-target="database" data-i18n="systemdb.tabs.database">Datenbank</button>
+          </nav>
+
+          <section class="systemdb-layout">
+            <section class="panel panel-systemdb-form" data-systemdb-view="create" hidden>
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 id="systemDbFormTitle" data-i18n="systemdb.form.title">Ortseintrag</h2>
+                  <p data-i18n="systemdb.form.description">Pflege den kanonischen Namen und bekannte Schreibweisen für Ortsauswahl und OCR-Abgleich.</p>
+                </div>
+              </div>
+
+              <form id="systemDbForm" class="stack systemdb-form">
+                <input type="hidden" name="locationId" />
+                <div class="grid-4 compact-grid systemdb-primary-fields">
+                  <label data-i18n-label="systemdb.form.name">
+                    Name
+                    <input type="text" name="name" required maxlength="200" placeholder="z. B. Seraphim Station" data-i18n-placeholder="systemdb.form.namePlaceholder" />
+                  </label>
+                  <label data-i18n-label="systemdb.form.system">
+                    Sternensystem
+                    <input type="text" name="starSystem" maxlength="120" list="systemDbSystemSuggestions" placeholder="z. B. Stanton" data-i18n-placeholder="systemdb.form.systemPlaceholder" />
+                  </label>
+                  <label data-i18n-label="systemdb.form.parent">
+                    Gebiet / übergeordneter Ort
+                    <input type="text" name="parentLocation" maxlength="160" placeholder="z. B. CRU-L4 oder Crusader" data-i18n-placeholder="systemdb.form.parentPlaceholder" />
+                  </label>
+                  <label data-i18n-label="systemdb.form.type">
+                    Typ
+                    <select name="type" id="systemDbTypeSelect"></select>
+                  </label>
+                </div>
+
+                <div class="grid-2 compact-grid">
+                  <label data-i18n-label="systemdb.form.status">
+                    Status
+                    <select name="status" id="systemDbStatusSelect"></select>
+                  </label>
+                  <label data-i18n-label="systemdb.form.aliases">
+                    Aliase / OCR-Schreibweisen
+                    <textarea name="aliases" rows="4" placeholder="Eine Schreibweise pro Zeile" data-i18n-placeholder="systemdb.form.aliasesPlaceholder"></textarea>
+                  </label>
+                </div>
+
+                <label data-i18n-label="systemdb.form.notes">
+                  Notiz
+                  <textarea name="notes" rows="3" maxlength="2000" placeholder="Optionale Hinweise zur Lage oder Benennung" data-i18n-placeholder="systemdb.form.notesPlaceholder"></textarea>
+                </label>
+
+                <div id="systemDbFormStatus" class="form-hint" hidden aria-live="polite"></div>
+                <div class="form-actions">
+                  <button id="systemDbSubmitButton" type="submit" class="primary-button" data-i18n="systemdb.form.save">Ort speichern</button>
+                  <button id="systemDbCancelButton" type="button" class="secondary-button" data-i18n="common.cancelEdit" hidden>Bearbeitung abbrechen</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel panel-systemdb-list" data-systemdb-view="database">
+              <div class="panel-header panel-header-stack">
+                <div>
+                  <h2 data-i18n="systemdb.database.title">Systemdatenbank</h2>
+                  <p data-i18n="systemdb.database.description">Zentrale Orte und Aliase für Aufträge, Auswahlfelder und OCR-Korrekturen.</p>
+                </div>
+                <button id="systemDbRefreshButton" class="toolbar-icon-button tooltip-button" type="button" aria-label="Aktualisieren" data-tooltip="Aktualisieren" data-i18n-aria-label="common.refresh" data-i18n-tooltip="common.refresh">
+                  <span class="button-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h8V3l-3.3 3.3z" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+
+              <div id="systemDbSummary" class="summary-cards fleet-summary"></div>
+
+              <div class="systemdb-toolbar">
+                <label data-i18n-label="systemdb.filter.search">
+                  Suche
+                  <input id="systemDbSearch" type="search" placeholder="Name, Alias oder Gebiet" data-i18n-placeholder="systemdb.filter.searchPlaceholder" />
+                </label>
+                <label data-i18n-label="systemdb.filter.system">
+                  Sternensystem
+                  <select id="systemDbSystemFilter"></select>
+                </label>
+                <label data-i18n-label="systemdb.filter.type">
+                  Typ
+                  <select id="systemDbTypeFilter"></select>
+                </label>
+                <label data-i18n-label="systemdb.filter.status">
+                  Status
+                  <select id="systemDbStatusFilter"></select>
+                </label>
+              </div>
+
+              <div id="systemDbStatus" class="form-hint form-hint-neutral" aria-live="polite"></div>
+              <div id="systemDbEmpty" class="empty-state" data-i18n="systemdb.database.empty" hidden>Noch keine Orte vorhanden.</div>
+              <div id="systemDbList" class="systemdb-table"></div>
+            </section>
+          </section>
+        </section>
+      </main>
+
+      <footer class="app-footer" aria-label="Companion-Aktivität">
+        <button
+          id="companionImportActivity"
+          class="companion-import-activity"
+          type="button"
+          data-state="processing"
+          aria-live="polite"
+          aria-expanded="false"
+          aria-controls="companionImportQueuePanel"
+          data-i18n-aria-label="contracts.import.progress.openQueue"
+          hidden
+        >
+          <span class="companion-import-activity-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10M9 9h6M9 15h6" />
+            </svg>
+          </span>
+          <span class="companion-import-activity-copy">
+            <strong id="companionImportActivityTitle">Screenshot wird ausgewertet</strong>
+            <small id="companionImportActivityMeta">Texterkennung läuft</small>
+          </span>
+          <span id="companionImportActivityCount" class="companion-import-activity-count">1</span>
+          <span class="companion-import-activity-chevron" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg>
+          </span>
+        </button>
+
+        <section id="companionImportQueuePanel" class="companion-import-queue-panel" aria-labelledby="companionImportQueueTitle" hidden>
+          <header class="companion-import-queue-head">
+            <div>
+              <span data-i18n="contracts.import.liveKicker">Companion</span>
+              <strong id="companionImportQueueTitle" data-i18n="contracts.import.progress.queueTitle">Aufnahme-Warteschlange</strong>
+              <small id="companionImportQueueMeta">Aktuelle und zuletzt verarbeitete Screenshots</small>
+            </div>
+            <button
+              id="companionImportQueueClose"
+              class="ghost-button icon-only-button tooltip-button"
+              type="button"
+              aria-label="Warteschlange schließen"
+              data-tooltip="Warteschlange schließen"
+              data-i18n-aria-label="contracts.import.progress.closeQueue"
+              data-i18n-tooltip="contracts.import.progress.closeQueue"
+            >
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false"><path d="M5.6 4.2 12 10.6l6.4-6.4 1.4 1.4-6.4 6.4 6.4 6.4-1.4 1.4-6.4-6.4-6.4 6.4-1.4-1.4 6.4-6.4-6.4-6.4 1.4-1.4Z" /></svg>
+              </span>
+            </button>
+          </header>
+          <div id="companionImportQueueList" class="companion-import-queue-list" role="list"></div>
+          <footer class="companion-import-queue-actions">
+            <button id="companionImportOpenContracts" class="secondary-button" type="button" data-i18n="contracts.import.progress.openContracts">Aufträge öffnen</button>
+          </footer>
+        </section>
+
+        <div class="settings-menu" data-settings-menu>
+          <button
+            id="settingsMenuButton"
+            class="secondary-button icon-only-button toolbar-icon-button settings-menu-button"
+            type="button"
+            aria-label="Einstellungen"
+            title="Einstellungen"
+            data-tooltip="Einstellungen"
+            data-i18n-aria-label="settings.button"
+            data-i18n-title="settings.button"
+            data-i18n-tooltip="settings.button"
+          >
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M19.4 13.5c.04-.5.04-1 .04-1.5s0-1-.04-1.5l2.1-1.6-2-3.46-2.5 1a7.4 7.4 0 0 0-2.6-1.5L14 2h-4l-.4 2.94a7.4 7.4 0 0 0-2.6 1.5l-2.5-1-2 3.46 2.1 1.6A9.4 9.4 0 0 0 4.56 12c0 .5 0 1 .04 1.5L2.5 15.1l2 3.46 2.5-1a7.4 7.4 0 0 0 2.6 1.5L10 22h4l.4-2.94a7.4 7.4 0 0 0 2.6-1.5l2.5 1 2-3.46-2.1-1.6zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <template id="missionTemplate">
+      <article class="mission-card">
+        <div class="mission-head">
+          <button class="mission-toggle toggle-mission" type="button" aria-expanded="true">
+            <span class="mission-color"></span>
+            <span class="mission-toggle-copy">
+              <span class="mission-title"></span>
+              <span class="mission-route"></span>
+            </span>
+            <span class="collapse-indicator" aria-hidden="true"></span>
+          </button>
+          <div class="mission-head-actions">
+            <span class="mission-assignment-warning tooltip-button" hidden aria-label="Schiffszuordnung prüfen" title="Schiffszuordnung prüfen" data-tooltip="Schiffszuordnung prüfen">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 2 1 21h22L12 2zm1 14h-2V8h2v8zm0 3h-2v-2h2v2z" />
+                </svg>
+              </span>
+            </span>
+            <span class="mission-duplicate-warning tooltip-button" hidden aria-label="Möglichen Doppelauftrag prüfen" title="Möglichen Doppelauftrag prüfen" data-tooltip="Möglichen Doppelauftrag prüfen">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 3h10v4h4v14H7V3zm2 2v14h10V9h-4V5H9zm-6 2h2v12h-2V7zm8 4h6v2h-6v-2zm0 4h6v2h-6v-2z" />
+                </svg>
+              </span>
+            </span>
+            <span class="mission-status-badge" hidden></span>
+            <button class="secondary-button transfer-mission icon-only-button tooltip-button" type="button" aria-label="Auftrag aktivem Schiff zuordnen" title="Auftrag aktivem Schiff zuordnen" data-tooltip="Auftrag umladen" hidden>
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 7h10l-3-3 1.4-1.4L21 8l-5.6 5.4L14 12l3-3H7V7zm10 10H7l3 3-1.4 1.4L3 16l5.6-5.4L10 12l-3 3h10v2z" />
+                </svg>
+              </span>
+            </button>
+            
+            <button class="secondary-button edit-mission icon-only-button tooltip-button" type="button" aria-label="Auftrag bearbeiten" title="Auftrag bearbeiten" data-tooltip="Bearbeiten">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M19.4 13.5c.04-.5.04-1 .04-1.5s0-1-.04-1.5l2.1-1.6-2-3.46-2.5 1a7.4 7.4 0 0 0-2.6-1.5L14 2h-4l-.4 2.94a7.4 7.4 0 0 0-2.6 1.5l-2.5-1-2 3.46 2.1 1.6A9.4 9.4 0 0 0 4.56 12c0 .5 0 1 .04 1.5L2.5 15.1l2 3.46 2.5-1a7.4 7.4 0 0 0 2.6 1.5L10 22h4l.4-2.94a7.4 7.4 0 0 0 2.6-1.5l2.5 1 2-3.46-2.1-1.6zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z" />
+                </svg>
+              </span>
+            </button>
+            <button class="secondary-button complete-mission icon-only-button tooltip-button" type="button" aria-label="Auftrag abschließen" title="Auftrag abschließen" data-tooltip="Abschließen" hidden>
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M9.2 16.2 4.8 11.8 3.4 13.2 9.2 19 21 7.2 19.6 5.8 9.2 16.2z" />
+                </svg>
+              </span>
+            </button>
+            <button class="primary-button pay-mission icon-only-button tooltip-button" type="button" aria-label="Auftrag abschließen und bezahlen" title="Auftrag abschließen und bezahlen" data-tooltip="Bezahlt buchen" hidden>
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M15.8 6.2c-1-.8-2.1-1.2-3.5-1.2-2.7 0-4.7 1.5-5.5 4H5v2h1.4a8 8 0 0 0 0 2H5v2h1.8c.8 2.5 2.8 4 5.5 4 1.4 0 2.6-.4 3.6-1.1l-.9-1.8c-.8.5-1.6.8-2.6.8-1.5 0-2.7-.7-3.3-1.9h4.7v-2H8.6a6.2 6.2 0 0 1 0-2h5.2V9H9.1c.6-1.2 1.8-1.9 3.3-1.9 1 0 1.8.3 2.6.9l.8-1.8z" />
+                </svg>
+              </span>
+            </button>
+            <button class="ghost-button delete-mission icon-only-button tooltip-button" type="button" aria-label="Auftrag löschen" title="Auftrag löschen" data-tooltip="Löschen">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 8h10l-1 12H8L7 8z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div class="mission-body">
+          <div class="mission-meta"></div>
+          <div class="mission-dispatch-assignment" hidden></div>
+          <div class="mission-segments"></div>
+          <p class="mission-slots"></p>
+          <p class="mission-notes"></p>
+          <div class="container-list"></div>
+        </div>
+      </article>
+    </template>
+
+    <template id="consignmentTemplate">
+      <article class="consignment-item">
+        <div class="consignment-item-head">
+          <button type="button" class="consignment-toggle" aria-expanded="true">
+            <strong class="consignment-item-title" data-i18n="contracts.quick.cargo">Fracht</strong>
+            <span class="collapse-indicator" aria-hidden="true"></span>
+          </button>
+          <div class="consignment-item-actions">
+            <button type="button" class="ghost-button consignment-remove icon-only-button" aria-label="Fracht entfernen" title="Fracht entfernen" data-i18n-aria-label="contracts.consignments.remove" data-i18n-title="contracts.consignments.remove">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 8h10l-1 12H8L7 8z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div class="consignment-body">
+          <div class="consignment-primary-row">
+            <label data-i18n-label="contracts.consignments.load">
+              Ladung
+              <input type="text" data-field="title" placeholder="z. B. Quartz, Corundum oder Raffineriecharge" />
+            </label>
+            <label data-i18n-label="contracts.consignments.expectedTotalScu">
+              Gesamtmenge
+              <input type="number" data-field="expectedTotalScu" min="1" step="1" placeholder="optional" />
+            </label>
+          </div>
+
+          <div class="consignment-route-builder">
+            <div class="consignment-subhead">
+              <span class="consignment-section-label" data-i18n="contracts.consignments.routes">Strecken</span>
+              <button type="button" class="secondary-button consignment-route-add" data-i18n="contracts.consignments.addRoute">Strecke hinzufügen</button>
+            </div>
+            <div class="route-group-list" data-role="route-group-list"></div>
+          </div>
+          <div class="form-hint consignment-hint" data-role="consignment-hint"></div>
+        </div>
+      </article>
+    </template>
+
+    <div id="missionImportDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog mission-import-dialog" role="dialog" aria-modal="true" aria-labelledby="missionImportDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="contracts.import.kicker">Spielimport</span>
+          <h2 id="missionImportDialogTitle" data-i18n="contracts.import.title">Auftrag importieren</h2>
+        </div>
+
+        <section class="mission-live-import" aria-labelledby="missionLiveImportTitle">
+          <div class="mission-live-import-head">
+            <div>
+              <span class="app-dialog-kicker" data-i18n="contracts.import.liveKicker">Companion</span>
+              <h3 id="missionLiveImportTitle" data-i18n="contracts.import.liveTitle">Live-Import</h3>
+            </div>
+            <button id="missionImportRefresh" class="toolbar-icon-button tooltip-button" type="button" aria-label="Aktualisieren" data-tooltip="Aktualisieren" data-i18n-aria-label="common.refresh" data-i18n-tooltip="common.refresh">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h8V3l-3.3 3.3z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+          <div id="missionImportInboxStatus" class="mission-import-inbox-status" aria-live="polite"></div>
+          <div id="missionImportInboxList" class="mission-import-inbox-list"></div>
+        </section>
+
+        <div id="missionImportDropzone" class="mission-import-dropzone" tabindex="0">
+          <span class="mission-import-dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 5h3l1.4-2h7.2L17 5h3a2 2 0 0 1 2 2v12H2V7a2 2 0 0 1 2-2zm8 3a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm0 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" />
+            </svg>
+          </span>
+          <div class="mission-import-dropzone-copy">
+            <strong data-i18n="contracts.import.dropzoneTitle">Screenshot einfügen oder ablegen</strong>
+            <span data-i18n="contracts.import.dropzoneMeta">PNG, JPG oder WebP</span>
+          </div>
+          <div class="mission-import-source-actions">
+            <button id="missionImportClipboardButton" class="secondary-button" type="button" data-i18n="contracts.import.clipboard">Zwischenablage</button>
+            <label class="secondary-button mission-import-file-button">
+              <span data-i18n="contracts.import.chooseFile">Datei auswählen</span>
+              <input id="missionImportFileInput" type="file" accept="image/*" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div id="missionImportStatus" class="form-hint" aria-live="polite" hidden></div>
+
+        <figure id="missionImportImageWrap" class="mission-import-image" hidden>
+          <img id="missionImportImage" alt="" />
+        </figure>
+
+        <section id="missionImportPreview" class="mission-import-preview" aria-labelledby="missionImportPreviewTitle" hidden>
+          <div class="mission-import-preview-head">
+            <div>
+              <span class="app-dialog-kicker" data-i18n="contracts.import.previewKicker">Erkannter Entwurf</span>
+              <h3 id="missionImportPreviewTitle" data-i18n="contracts.import.previewTitle">Angaben prüfen</h3>
+            </div>
+            <strong id="missionImportPreviewSummary" class="mission-import-preview-summary"></strong>
+          </div>
+          <div id="missionImportDuplicateWarning" class="mission-import-duplicate-warning" hidden aria-live="polite"></div>
+          <div id="missionImportConsignmentList" class="mission-import-consignment-list"></div>
+        </section>
+
+        <div class="app-dialog-actions">
+          <button id="missionImportCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="missionImportApply" class="primary-button" type="button" data-i18n="contracts.import.apply" disabled>In Auftrag übernehmen</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="shipMissionDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="shipMissionDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="contracts.form.changeShip">Schiff wechseln</span>
+          <h2 id="shipMissionDialogTitle" data-i18n="fleet.dialog.title">Aufträge zugeordnet</h2>
+        </div>
+        <p id="shipMissionDialogMessage" class="app-dialog-message"></p>
+        <div id="shipMissionDialogList" class="app-dialog-list"></div>
+        <div class="app-dialog-actions">
+          <button id="shipMissionDialogCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="shipMissionDialogConfirm" class="primary-button" type="button" data-i18n="fleet.dialog.confirmSwitch">Trotzdem wechseln</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="fleetReplacementDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="fleetReplacementDialogTitle">
+        <div class="app-dialog-head">
+          <span id="fleetReplacementDialogKicker" class="app-dialog-kicker">Flottenhistorie</span>
+          <h2 id="fleetReplacementDialogTitle">Ersatzschiff anlegen?</h2>
+        </div>
+        <p id="fleetReplacementDialogMessage" class="app-dialog-message"></p>
+        <label class="app-dialog-field" data-i18n-label="fleet.replacement.registration">
+          Neue Registriernummer
+          <input type="text" id="fleetReplacementRegistration" placeholder="z. B. AB-1234-CD" data-i18n-placeholder="fleet.replacement.registrationPlaceholder" />
+        </label>
+        <div class="app-dialog-actions">
+          <button id="fleetReplacementDialogAbort" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="fleetReplacementDialogCancel" class="secondary-button" type="button">Nein, nur archivieren</button>
+          <button id="fleetReplacementDialogConfirm" class="primary-button" type="button">Ersatz anlegen</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="fleetWipeDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog fleet-wipe-dialog" role="dialog" aria-modal="true" aria-labelledby="fleetWipeDialogTitle">
+        <form id="fleetWipeForm" class="stack">
+          <div class="app-dialog-head">
+            <span class="app-dialog-kicker" data-i18n="fleet.wipe.kicker">Flottenhistorie</span>
+            <h2 id="fleetWipeDialogTitle" data-i18n="fleet.wipe.title">Patchwechsel verwalten</h2>
+          </div>
+          <p id="fleetWipeDialogMessage" class="app-dialog-message"></p>
+          <fieldset class="fleet-patch-mode">
+            <legend data-i18n="fleet.wipe.modeLabel">Vorgang</legend>
+            <label>
+              <input id="fleetWipeModeReset" type="radio" name="fleetWipeMode" value="reset" checked />
+              <span>
+                <strong data-i18n="fleet.wipe.modeReset">Schiffsreset</strong>
+                <small data-i18n="fleet.wipe.modeResetHint">Alle Schiffe bleiben im Besitz und erhalten eine neue Flotteninstanz.</small>
+              </span>
+            </label>
+            <label>
+              <input id="fleetWipeModeFull" type="radio" name="fleetWipeMode" value="wipe" />
+              <span>
+                <strong data-i18n="fleet.wipe.modeFull">Vollständiger Wipe</strong>
+                <small data-i18n="fleet.wipe.modeFullHint">Ingame gekaufte Schiffe werden entfernt, Echtgeldschiffe werden neu angelegt.</small>
+              </span>
+            </label>
+          </fieldset>
+          <div id="fleetWipeSummary" class="summary-cards fleet-wipe-summary"></div>
+          <div class="grid-2 compact-grid">
+            <label data-i18n-label="fleet.wipe.patchVersion">
+              Patchversion
+              <input id="fleetWipePatchVersion" type="text" required placeholder="z. B. 4.2.1" data-i18n-placeholder="fleet.form.patchVersionPlaceholder" />
+            </label>
+            <label data-i18n-label="fleet.wipe.date">
+              Stichtag
+              <input id="fleetWipeDate" type="date" required />
+            </label>
+          </div>
+          <section id="fleetWipeReplacementSection" class="fleet-wipe-replacements" hidden>
+            <div class="shipdb-section-head">
+              <div>
+                <h3 data-i18n="fleet.wipe.registrationsTitle">Neue Registriernummern</h3>
+                <p data-i18n="fleet.wipe.registrationsDescription">Optional: Trage die Nummern der neu angelegten Schiffsinstanzen ein. Leere Felder können später ergänzt werden.</p>
+              </div>
+            </div>
+            <div id="fleetWipeReplacementList" class="app-dialog-list fleet-wipe-replacement-list"></div>
+          </section>
+          <p id="fleetWipeMissionWarning" class="form-hint form-hint-warning" hidden></p>
+          <div class="app-dialog-actions">
+            <button id="fleetWipeCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+            <button id="fleetWipeConfirm" class="primary-button" type="submit" data-i18n="fleet.wipe.confirmReset">Schiffsreset durchführen</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    
+
+    <div id="missionConfirmDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="missionConfirmDialogTitle">
+        <div class="app-dialog-head">
+          <span id="missionConfirmDialogKicker" class="app-dialog-kicker" data-i18n="contracts.dialog.kicker">Auftragsstatus</span>
+          <h2 id="missionConfirmDialogTitle">Auftrag abschließen?</h2>
+        </div>
+        <p id="missionConfirmDialogMessage" class="app-dialog-message"></p>
+        <div class="app-dialog-actions">
+          <button id="missionConfirmDialogCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="missionConfirmDialogConfirm" class="primary-button" type="button">Bestätigen</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="missionPayoutSplitDialog" class="app-dialog-backdrop" hidden>
+      <form id="missionPayoutSplitForm" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="missionPayoutSplitTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker">Organisation</span>
+          <h2 id="missionPayoutSplitTitle">Erlös aufteilen</h2>
+        </div>
+        <p id="missionPayoutSplitMessage" class="app-dialog-message"></p>
+        <fieldset class="mission-payout-split-mode">
+          <legend>Aufteilung</legend>
+          <label><input type="radio" name="missionPayoutSplitMode" value="percent" checked /> Prozent</label>
+          <label><input type="radio" name="missionPayoutSplitMode" value="amount" /> aUEC</label>
+        </fieldset>
+        <div id="missionPayoutSplitList" class="mission-payout-split-list"></div>
+        <p id="missionPayoutSplitHint" class="form-hint" aria-live="polite"></p>
+        <div class="app-dialog-actions">
+          <button id="missionPayoutSplitCancel" class="secondary-button" type="button">Abbrechen</button>
+          <button class="primary-button" type="submit">Aufteilung speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="restorePreviewDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog restore-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="restorePreviewDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="settings.restorePreview.kicker">Datensicherung</span>
+          <h2 id="restorePreviewDialogTitle" data-i18n="settings.restorePreview.title">Backup wiederherstellen?</h2>
+        </div>
+        <div class="restore-preview-file">
+          <strong id="restorePreviewFile"></strong>
+          <span id="restorePreviewMeta"></span>
+        </div>
+        <div class="table-scroll restore-preview-table-wrap">
+          <table class="restore-preview-table">
+            <thead>
+              <tr>
+                <th data-i18n="settings.restorePreview.area">Bereich</th>
+                <th data-i18n="settings.restorePreview.current">Aktuell</th>
+                <th data-i18n="settings.restorePreview.backup">Backup</th>
+              </tr>
+            </thead>
+            <tbody id="restorePreviewRows"></tbody>
+          </table>
+        </div>
+        <p id="restorePreviewImages" class="restore-preview-images"></p>
+        <p class="app-dialog-message restore-preview-warning" data-i18n="settings.restorePreview.warning">Der aktuelle Serverstand wird ersetzt. Vorher legt der Server automatisch eine Sicherung der vorhandenen Datenbank an.</p>
+        <div class="app-dialog-actions">
+          <button id="restorePreviewCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="restorePreviewConfirm" class="secondary-button-danger" type="button" data-i18n="settings.restoreConfirm">Wiederherstellen</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="runQuantityDialog" class="app-dialog-backdrop" hidden>
+      <form id="runQuantityDialogForm" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="runQuantityDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="run.dialog.kicker">Einsatzmodus</span>
+          <h2 id="runQuantityDialogTitle" data-i18n="run.quantity.title">Abholmenge eintragen</h2>
+        </div>
+        <p id="runQuantityDialogMission" class="app-dialog-message"></p>
+        <label class="app-dialog-field">
+          <span data-i18n="run.quantity.label">Tatsächliche Abholmenge</span>
+          <input id="runQuantityDialogInput" type="number" min="1" step="1" inputmode="numeric" required />
+        </label>
+        <p id="runQuantityDialogHint" class="form-hint"></p>
+        <div class="app-dialog-actions">
+          <button id="runQuantityDialogCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button class="primary-button" type="submit" data-i18n="run.quantity.apply">Menge übernehmen</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="financeQuickExpenseDialog" class="app-dialog-backdrop" hidden>
+      <form id="financeQuickExpenseForm" class="app-dialog finance-quick-expense-dialog" role="dialog" aria-modal="true" aria-labelledby="financeQuickExpenseTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="finance.quick.kicker">Betriebsablauf</span>
+          <h2 id="financeQuickExpenseTitle" data-i18n="finance.quick.title">Betriebskosten erfassen</h2>
+        </div>
+        <p id="financeQuickExpenseShip" class="app-dialog-message"></p>
+
+        <div class="grid-2 compact-grid">
+          <label data-i18n-label="finance.quick.date">
+            Datum
+            <input id="financeQuickExpenseDate" type="date" name="bookedOn" required />
+          </label>
+          <label data-i18n-label="finance.quick.category">
+            Art
+            <select id="financeQuickExpenseCategory" name="category" required>
+              <option value="Betankung" data-i18n="finance.category.refuel">Betankung</option>
+              <option value="Treibstoffankauf" data-i18n="finance.category.fuelPurchase">Treibstoffankauf</option>
+              <option value="Reparatur" data-i18n="finance.category.repair">Reparatur</option>
+              <option value="Versicherung" data-i18n="finance.category.insurance">Versicherung</option>
+              <option value="Claim" data-i18n="finance.category.claim">Claim</option>
+              <option value="Hangargebühr" data-i18n="finance.category.hangarFee">Hangargebühr</option>
+              <option value="Service-Sonstiges" data-i18n="finance.category.serviceOther">Service-Sonstiges</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset class="finance-amount-mode">
+          <legend data-i18n="finance.form.inputMode">Betrag erfassen über</legend>
+          <div class="finance-amount-mode-options">
+            <label>
+              <input type="radio" name="quickExpenseAmountMode" value="amount" checked />
+              <span data-i18n="finance.form.modeAmount">Betrag</span>
+            </label>
+            <label>
+              <input type="radio" name="quickExpenseAmountMode" value="endingBalance" />
+              <span data-i18n="finance.form.modeEndingBalance">Endkontostand</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="grid-2 compact-grid">
+          <label id="financeQuickExpenseAmountField" data-i18n-label="finance.form.amount">
+            Betrag (aUEC)
+            <input id="financeQuickExpenseAmount" type="number" name="amountAuec" min="1" step="1" required />
+          </label>
+          <label id="financeQuickExpenseEndingBalanceField" data-i18n-label="finance.form.endingBalance" hidden>
+            Endkontostand (aUEC)
+            <input id="financeQuickExpenseEndingBalance" type="number" name="endingBalanceAuec" min="0" step="1" disabled />
+          </label>
+          <label data-i18n-label="finance.quick.reference">
+            Ort / Bezug
+            <input id="financeQuickExpenseReference" type="text" name="reference" placeholder="z. B. Seraphim Station" data-i18n-placeholder="finance.quick.referencePlaceholder" />
+          </label>
+        </div>
+        <small id="financeQuickExpenseBalanceCalculation" class="finance-balance-calculation" aria-live="polite" hidden></small>
+
+        <label data-i18n-label="finance.form.notes">
+          Notiz
+          <textarea id="financeQuickExpenseNotes" name="notes" rows="2" placeholder="Optionale Notiz"></textarea>
+        </label>
+
+        <div class="app-dialog-actions">
+          <button id="financeQuickExpenseCancel" type="button" class="secondary-button" data-i18n="common.cancel">Abbrechen</button>
+          <button type="submit" class="primary-button" data-i18n="finance.quick.save">Kosten buchen</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="systemDbDeleteDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="systemDbDeleteDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="systemdb.dialog.kicker">Systemdatenbank</span>
+          <h2 id="systemDbDeleteDialogTitle" data-i18n="systemdb.dialog.deleteTitle">Ort löschen?</h2>
+        </div>
+        <p id="systemDbDeleteDialogMessage" class="app-dialog-message"></p>
+        <div class="app-dialog-actions">
+          <button id="systemDbDeleteDialogCancel" class="secondary-button" type="button" data-i18n="common.cancel">Abbrechen</button>
+          <button id="systemDbDeleteDialogConfirm" class="primary-button" type="button" data-i18n="common.delete">Löschen</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="locationAliasSuggestionDialog" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog location-alias-suggestion-dialog" role="dialog" aria-modal="true" aria-labelledby="locationAliasSuggestionDialogTitle">
+        <div class="app-dialog-head">
+          <span class="app-dialog-kicker" data-i18n="contracts.alias.kicker">OCR-Lernhilfe</span>
+          <h2 id="locationAliasSuggestionDialogTitle" data-i18n="contracts.alias.title">Ortskorrekturen merken?</h2>
+        </div>
+        <p class="app-dialog-message" data-i18n="contracts.alias.message">Die ursprünglichen OCR-Schreibweisen können als Aliase gespeichert und bei späteren Importen automatisch erkannt werden.</p>
+        <div id="locationAliasSuggestionList" class="location-alias-suggestion-list"></div>
+        <p id="locationAliasSuggestionStatus" class="form-hint" hidden aria-live="polite"></p>
+        <div class="app-dialog-actions">
+          <button id="locationAliasSuggestionCancel" class="secondary-button" type="button" data-i18n="contracts.alias.notNow">Nicht jetzt</button>
+          <button id="locationAliasSuggestionConfirm" class="primary-button" type="button" data-i18n="contracts.alias.save">Ausgewählte Aliase speichern</button>
+        </div>
+      </section>
+    </div>
+
+    <datalist id="locationSuggestions"></datalist>
+    <datalist id="pilotSuggestions"></datalist>
+    <datalist id="systemDbSystemSuggestions"></datalist>
+    <datalist id="missionContainerSizeSuggestions">
+      <option value="1"></option>
+      <option value="2"></option>
+      <option value="4"></option>
+      <option value="8"></option>
+      <option value="16"></option>
+      <option value="24"></option>
+      <option value="32"></option>
+    </datalist>
+
+    <datalist id="financeReferenceSuggestions"></datalist>
+
+    <script data-solo-src="scripts/config.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.1.23"></script>
+    
+    
+    
+    
+    <script data-solo-src="scripts/state-persistence.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/presets.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/mission-duplicates.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/mission-domain.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/mission-import-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/unload-guidance.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/route-run-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/run-view-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/fleet.js?solo=0.1.23"></script>
+    
+    <script data-solo-src="scripts/shipdb.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/finance.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.1.23"></script>
+    
+    <script data-solo-src="scripts/systemdb.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/location-alias-learning.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/backup-ui.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/ledger-automation.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-connection.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-theme.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-effects.js?solo=0.1.23"></script>
+    <script data-solo-src="app.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/sound-presets.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-sounds.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.1.23"></script>
+  <script data-solo-src="scripts/solo-hotkey.js?solo=0.1.23"></script>
+  <script data-solo-src="scripts/solo-ui.js?solo=0.1.23"></script>
+  <script data-solo-src="scripts/solo-about.js?solo=0.1.23"></script>
+    <script data-solo-src="scripts/personal-transfer.js?solo=0.1.23"></script>
+    <script src="scripts/solo-loader.js?solo=0.1.23"></script>
+  </body>
+</html>

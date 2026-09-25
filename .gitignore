@@ -1,0 +1,41 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Build outputs, archives and local upload preparation
+/build/
+/dist/
+/.build/
+/github-upload/
+*.exe
+*.dll
+*.zip
+*.7z
+
+# Local state, captures and browser profiles
+data/
+Captures/
+WebView/
+/Sounds/
+settings.json
+capture-state.json
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+*.bak
+
+# Credentials and machine-specific files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+Thumbs.db
+Desktop.ini
+.DS_Store

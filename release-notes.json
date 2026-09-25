@@ -1,0 +1,406 @@
+[
+  {
+    "version": "0.1.23",
+    "de": {
+      "title": "GPL-Lizenz & aktuelle Oberfläche",
+      "changes": [
+        "Die Windows-App umgeht nach einem Update veraltete Oberflächen im Browsercache; Einstellungen und Spielstände bleiben erhalten.",
+        "Deutsche Uhrbeschriftungen: Schiffszeit / UTC und Ortszeit.",
+        "Eigener Code unter GPLv3 oder später, mit Herkunftshinweis auf Tschensen und Link zum GitHub-Projekt."
+      ]
+    },
+    "en": {
+      "title": "GPL license & fresh interface",
+      "changes": [
+        "The Windows app bypasses stale interface caches after an update while retaining settings and saved data.",
+        "Clock labels follow the interface language: Ship time / UTC and Local time in English.",
+        "Original code licensed under GPLv3 or later, with attribution to Tschensen and a link to the GitHub project."
+      ]
+    }
+  },
+  {
+    "version": "0.1.22",
+    "de": {
+      "title": "Ortszeit neben UTC",
+      "changes": [
+        "UTC und LOCAL stehen gemeinsam im Kopfbereich, auch auf schmalen Geräten.",
+        "Beide Uhren laufen sekündlich mit demselben PC-Zeitabgleich; die Ortszeit berücksichtigt die Zeitzone des Geräts sowie Sommer- und Winterzeit."
+      ]
+    },
+    "en": {
+      "title": "Local time alongside UTC",
+      "changes": [
+        "UTC and LOCAL appear together in the header, including on narrow devices.",
+        "Both clocks update every second using the same PC time alignment; local time follows the device time zone and daylight saving time."
+      ]
+    }
+  },
+  {
+    "version": "0.1.21",
+    "de": {
+      "title": "Gemeinsamer Spielstand im Heimnetz",
+      "changes": [
+        "Windows-App und Webansicht übernehmen OCR-Aufträge gemeinsam, ohne doppelte Importe oder unnötige Konfliktmeldungen.",
+        "Bearbeiten, Löschen und Abschließen auf dem Tablet bleiben auch bei unabhängigen Änderungen auf dem PC erhalten."
+      ]
+    },
+    "en": {
+      "title": "Shared state across home-network devices",
+      "changes": [
+        "Desktop and browser views commit OCR imports once, without duplicate imports or spurious conflict messages.",
+        "Tablet edits, deletions and completions are preserved alongside independent changes on the PC."
+      ]
+    }
+  },
+  {
+    "version": "0.1.20",
+    "de": {
+      "title": "Lizenzen & Versionsverlauf",
+      "changes": [
+        "Neuer Bereich Über Citizen Tools mit aktueller Version, Lizenztexten und Versionsverlauf.",
+        "Lizenzhinweise für eigenen Programmcode und Drittanbieterbedingungen separat abrufbar."
+      ]
+    },
+    "en": {
+      "title": "Licenses & release history",
+      "changes": [
+        "New About Citizen Tools page with version information, license texts and release history.",
+        "License notices for original application code and third-party terms available separately."
+      ]
+    }
+  },
+  {
+    "version": "0.1.19",
+    "de": {
+      "title": "Tastenkürzel per Tastendruck",
+      "changes": [
+        "Screenshot-Tastenkürzel anklicken, Kombination drücken und speichern.",
+        "Esc und Abbrechen behalten die bisherige Kombination; während der Aufnahme löst der alte Hotkey keinen Screenshot aus."
+      ]
+    },
+    "en": {
+      "title": "Record keyboard shortcuts",
+      "changes": [
+        "Click the screenshot shortcut, press a combination and save.",
+        "Escape and Cancel preserve the previous combination; recording suppresses accidental screenshots."
+      ]
+    }
+  },
+  {
+    "version": "0.1.18",
+    "de": {
+      "title": "Verbindung & UTC-Zeit",
+      "changes": [
+        "Website prüft die Erreichbarkeit der Windows-Suite und verbindet sich nach einem Ausfall automatisch wieder.",
+        "UTC-Uhr wird mit der PC-Zeit abgeglichen; offene Eingaben bleiben bei Unterbrechungen erhalten."
+      ]
+    },
+    "en": {
+      "title": "Connection & UTC clock",
+      "changes": [
+        "The website checks the Windows suite connection and reconnects after an outage.",
+        "The UTC clock aligns with PC time; open form input survives interruptions."
+      ]
+    }
+  },
+  {
+    "version": "0.1.17",
+    "de": {
+      "title": "Routenfortschritt & Akzentfarbe",
+      "changes": [
+        "Erledigte Routenziele mit Prozentangabe und kompakter Vorschau.",
+        "Eigene Akzentfarbe oder fünf Farbvorschläge unter Profil."
+      ]
+    },
+    "en": {
+      "title": "Route progress & accent color",
+      "changes": [
+        "Completed route stops with percentage and compact preview.",
+        "Custom accent color or five presets in Profile settings."
+      ]
+    }
+  },
+  {
+    "version": "0.1.16",
+    "de": {
+      "title": "Schiffsbilder in der Modellstatistik",
+      "changes": [
+        "Fehlende Datenbankbilder werden durch ein Flottenbild desselben Modells ergänzt."
+      ]
+    },
+    "en": {
+      "title": "Ship images in model statistics",
+      "changes": [
+        "Fleet images of the same model fill in missing database images."
+      ]
+    }
+  },
+  {
+    "version": "0.1.15",
+    "de": {
+      "title": "Mehr Platz beim Anlegen",
+      "changes": [
+        "Auftrag anlegen nutzt die volle Seitenbreite und zeigt das aktive Schiff mit Bild.",
+        "Verbesserte Feldanordnung für mittelbreite Tablets."
+      ]
+    },
+    "en": {
+      "title": "Roomier contract creation",
+      "changes": [
+        "Create Contract uses the full page width and shows the active ship image.",
+        "Improved field arrangement for medium-width tablets."
+      ]
+    }
+  },
+  {
+    "version": "0.1.14",
+    "de": {
+      "title": "Schiffsbilder in weiteren Karten",
+      "changes": [
+        "Schiffsbilder in Auftragsköpfen, Verladung und Statistik.",
+        "Aufträge zeigen das tatsächlich zugewiesene Schiff."
+      ]
+    },
+    "en": {
+      "title": "Ship images across the app",
+      "changes": [
+        "Ship images in contract headers, cargo loading and statistics.",
+        "Contracts show their assigned ship."
+      ]
+    }
+  },
+  {
+    "version": "0.1.13",
+    "de": {
+      "title": "Schiffsbild & lebendige Anzeigen",
+      "changes": [
+        "Aktives Schiff mit Flotten- oder Datenbankbild auf der Startseite.",
+        "Kompakte Anzeigen für Routenziele, Frachtraum und Zahlungen."
+      ]
+    },
+    "en": {
+      "title": "Ship image & live indicators",
+      "changes": [
+        "Active ship image from the fleet or ship database on the home page.",
+        "Compact route, cargo capacity and payment indicators."
+      ]
+    }
+  },
+  {
+    "version": "0.1.12",
+    "de": {
+      "title": "Rückmeldungen beim Import",
+      "changes": [
+        "Scanlinie und Verarbeitungssignal beim Screenshot-Import.",
+        "Dezente Hervorhebung tatsächlich geänderter Werte auf der Startseite."
+      ]
+    },
+    "en": {
+      "title": "Import feedback",
+      "changes": [
+        "Scan line and processing indicator during screenshot import.",
+        "Subtle highlighting of values that actually change on the home page."
+      ]
+    }
+  },
+  {
+    "version": "0.1.11",
+    "de": {
+      "title": "Kompakte Startseite",
+      "changes": [
+        "Aktueller Auftrag und aktive Aufträge zusammengefasst.",
+        "Heute wichtig bündelt nächsten Halt, Verladung, Zahlungen und Standort."
+      ]
+    },
+    "en": {
+      "title": "Compact home page",
+      "changes": [
+        "Current contract and active contracts combined.",
+        "Today at a glance combines next stop, loading, payments and location."
+      ]
+    }
+  },
+  {
+    "version": "0.1.10",
+    "de": {
+      "title": "Vollbild im Browser",
+      "changes": [
+        "Vollbild-Schaltflächen wieder im Browser verfügbar; im Windows-App-Fenster ausgeblendet."
+      ]
+    },
+    "en": {
+      "title": "Browser fullscreen",
+      "changes": [
+        "Fullscreen controls restored in browsers and hidden in the native Windows window."
+      ]
+    }
+  },
+  {
+    "version": "0.1.9",
+    "de": {
+      "title": "Eigene Sounds & Lautstärken",
+      "changes": [
+        "Für jeden Sound eigene WAV-Datei oder Standardton wählen.",
+        "Einzelne Lautstärkeregler und Probehören."
+      ]
+    },
+    "en": {
+      "title": "Custom sounds & volume levels",
+      "changes": [
+        "Choose a custom WAV file or the default for each sound.",
+        "Individual volume controls and sound previews."
+      ]
+    }
+  },
+  {
+    "version": "0.1.8",
+    "de": {
+      "title": "Sounds für die Auftragserkennung",
+      "changes": [
+        "Austauschbare WAV-Signale für Einlesen, Verarbeitung, Erfolg und Fehler.",
+        "Importtöne lassen sich gesondert schalten."
+      ]
+    },
+    "en": {
+      "title": "Contract recognition sounds",
+      "changes": [
+        "Replaceable WAV signals for reading, processing, success and failure.",
+        "Separate switch for import sounds."
+      ]
+    }
+  },
+  {
+    "version": "0.1.7",
+    "de": {
+      "title": "Interface-Sounds",
+      "changes": [
+        "Optionale Töne für Bedienung, Navigation und Rückmeldungen.",
+        "Gesamtlautstärke und Probehören unter Profil."
+      ]
+    },
+    "en": {
+      "title": "Interface sounds",
+      "changes": [
+        "Optional sounds for controls, navigation and feedback.",
+        "Master volume and previews in Profile settings."
+      ]
+    }
+  },
+  {
+    "version": "0.1.6",
+    "de": {
+      "title": "Übergänge & Animationen",
+      "changes": [
+        "Weiche Bereichswechsel und animierte Navigation, Karten und Dialoge.",
+        "Systemeinstellung für reduzierte Bewegung wird berücksichtigt."
+      ]
+    },
+    "en": {
+      "title": "Transitions & animations",
+      "changes": [
+        "Smooth page transitions and animated navigation, cards and dialogs.",
+        "Respects the reduced-motion system preference."
+      ]
+    }
+  },
+  {
+    "version": "0.1.5",
+    "de": {
+      "title": "Windows-Fensterbedienung",
+      "changes": [
+        "Wirkungslose Vollbild-Schaltflächen aus der Windows-Suite entfernt."
+      ]
+    },
+    "en": {
+      "title": "Windows window controls",
+      "changes": [
+        "Removed ineffective fullscreen controls from the Windows suite."
+      ]
+    }
+  },
+  {
+    "version": "0.1.4",
+    "de": {
+      "title": "Persönlicher Datentransfer",
+      "changes": [
+        "Persönliche Daten als Datei exportieren und mit Vorschau importieren.",
+        "Zusammenführen oder Ersetzen mit Wiederherstellungskopie."
+      ]
+    },
+    "en": {
+      "title": "Personal data transfer",
+      "changes": [
+        "Export personal data to a file and preview it before importing.",
+        "Merge or replace with a recovery copy."
+      ]
+    }
+  },
+  {
+    "version": "0.1.3",
+    "de": {
+      "title": "Kompaktes Heimnetz & fester Ordner",
+      "changes": [
+        "Port und aktuelle Erreichbarkeit nebeneinander.",
+        "Updates verwenden denselben Programmordner und feste Paketnamen."
+      ]
+    },
+    "en": {
+      "title": "Compact network settings & stable folder",
+      "changes": [
+        "Port and current address displayed together.",
+        "Updates use the same application folder and stable package names."
+      ]
+    }
+  },
+  {
+    "version": "0.1.2",
+    "de": {
+      "title": "Flight Deck",
+      "changes": [
+        "Neue Gestaltung mit UTC-Uhr, Orbitgrafik, Navigationssymbolen und Schnellaktionen.",
+        "Server-Port in der Anwendung einstellbar."
+      ]
+    },
+    "en": {
+      "title": "Flight Deck",
+      "changes": [
+        "New design with a UTC clock, orbit graphic, navigation icons and quick actions.",
+        "Configurable server port in the application."
+      ]
+    }
+  },
+  {
+    "version": "0.1.1",
+    "de": {
+      "title": "Zuverlässiger Start",
+      "changes": [
+        "Geordnetes Laden der Oberfläche behebt nicht reagierende Schaltflächen.",
+        "Erneutes Laden bei vorübergehenden Verbindungsproblemen."
+      ]
+    },
+    "en": {
+      "title": "Reliable startup",
+      "changes": [
+        "Ordered interface loading fixes unresponsive controls.",
+        "Retries for transient loading failures."
+      ]
+    }
+  },
+  {
+    "version": "0.1.0",
+    "de": {
+      "title": "Erste Windows-Ausgabe",
+      "changes": [
+        "App-Fenster, lokaler Server und Screenshot-Companion in einem Programm.",
+        "Persönlicher Spielstand ohne Konten, Organisationen oder Gruppen; Zugriff im Heimnetz."
+      ]
+    },
+    "en": {
+      "title": "First Windows edition",
+      "changes": [
+        "Native window, local server and screenshot companion in one application.",
+        "Personal data without accounts, organizations or groups; access from the home network."
+      ]
+    }
+  }
+]

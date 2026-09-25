@@ -1,0 +1,466 @@
+[
+  {
+    "id": "CITIZEN-TOOLS-GPL.txt",
+    "file": "CITIZEN-TOOLS-GPL.txt",
+    "title": "Citizen Tools",
+    "license": "GPL-3.0-or-later",
+    "group": "project",
+    "source": "https://github.com/Tschensen/CitizenTools"
+  },
+  {
+    "id": "CITIZEN-TOOLS-NOTICE.txt",
+    "file": "CITIZEN-TOOLS-NOTICE.txt",
+    "title": "Geltungsbereich / License scope",
+    "license": "Hinweise / Notices",
+    "group": "project",
+    "source": ""
+  },
+  {
+    "id": "APACHE-2.0.txt",
+    "file": "APACHE-2.0.txt",
+    "title": "Tesseract OCR 5.3.0 & Sprachdaten / language data",
+    "license": "Apache-2.0",
+    "group": "third-party",
+    "source": "https://github.com/tesseract-ocr/tesseract"
+  },
+  {
+    "id": "TESSERACT-AUTHORS.txt",
+    "file": "TESSERACT-AUTHORS.txt",
+    "title": "Tesseract · Authors",
+    "license": "Copyright notices",
+    "group": "third-party",
+    "source": "https://github.com/tesseract-ocr/tesseract"
+  },
+  {
+    "id": "proxy_tools-LICENSE.txt",
+    "file": "proxy_tools-LICENSE.txt",
+    "title": "proxy_tools 0.1.0 · Werkzeug proxy",
+    "license": "BSD-2-Clause (source header / original LICENSE)",
+    "group": "third-party",
+    "source": "https://github.com/jtushman/proxy_tools"
+  },
+  {
+    "id": "WEBVIEW2-RUNTIME.txt",
+    "file": "WEBVIEW2-RUNTIME.txt",
+    "title": "Microsoft Edge WebView2 Runtime",
+    "license": "Microsoft Software License Terms",
+    "group": "third-party",
+    "source": "https://developer.microsoft.com/microsoft-edge/api/eula/webview2"
+  },
+  {
+    "id": "WEBVIEW2-SDK-LICENSE.txt",
+    "file": "WEBVIEW2-SDK-LICENSE.txt",
+    "title": "Microsoft WebView2 SDK 1.0.3856.49",
+    "license": "BSD-3-Clause",
+    "group": "third-party",
+    "source": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3856.49"
+  },
+  {
+    "id": "WEBVIEW2-SDK-NOTICE.txt",
+    "file": "WEBVIEW2-SDK-NOTICE.txt",
+    "title": "Microsoft WebView2 SDK · Third-party notices",
+    "license": "Third-party notices",
+    "group": "third-party",
+    "source": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3856.49"
+  },
+  {
+    "id": "GPL-2.0.txt",
+    "file": "GPL-2.0.txt",
+    "title": "GPL-2.0",
+    "license": "GPL-2.0",
+    "group": "third-party",
+    "source": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt"
+  },
+  {
+    "id": "GPL-3.0.txt",
+    "file": "GPL-3.0.txt",
+    "title": "GPL-3.0",
+    "license": "GPL-3.0",
+    "group": "third-party",
+    "source": "https://www.gnu.org/licenses/gpl-3.0.txt"
+  },
+  {
+    "id": "LGPL-2.1.txt",
+    "file": "LGPL-2.1.txt",
+    "title": "LGPL-2.1",
+    "license": "LGPL-2.1",
+    "group": "third-party",
+    "source": "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt"
+  },
+  {
+    "id": "LGPL-3.0.txt",
+    "file": "LGPL-3.0.txt",
+    "title": "LGPL-3.0",
+    "license": "LGPL-3.0",
+    "group": "third-party",
+    "source": "https://www.gnu.org/licenses/lgpl-3.0.txt"
+  },
+  {
+    "id": "LEPTONICA.txt",
+    "file": "LEPTONICA.txt",
+    "title": "Leptonica 1.78.0",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/DanBloomberg/leptonica/1.78.0/leptonica-license.txt"
+  },
+  {
+    "id": "LIBARCHIVE.txt",
+    "file": "LIBARCHIVE.txt",
+    "title": "libarchive 3.5.0",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libarchive/libarchive/v3.5.0/COPYING"
+  },
+  {
+    "id": "LIBPNG.txt",
+    "file": "LIBPNG.txt",
+    "title": "libpng 1.6.34",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.34/LICENSE"
+  },
+  {
+    "id": "LIBJPEG-TURBO.txt",
+    "file": "LIBJPEG-TURBO.txt",
+    "title": "libjpeg-turbo 1.5.3",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/1.5.3/LICENSE.md"
+  },
+  {
+    "id": "LIBJPEG-IJG.txt",
+    "file": "LIBJPEG-IJG.txt",
+    "title": "libjpeg IJG",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/1.5.3/README.ijg"
+  },
+  {
+    "id": "LIBTIFF.txt",
+    "file": "LIBTIFF.txt",
+    "title": "libtiff 4.0.9",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.0.9/COPYRIGHT"
+  },
+  {
+    "id": "LIBWEBP.txt",
+    "file": "LIBWEBP.txt",
+    "title": "libwebp 0.6.1",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/webmproject/libwebp/v0.6.1/COPYING"
+  },
+  {
+    "id": "OPENJPEG.txt",
+    "file": "OPENJPEG.txt",
+    "title": "OpenJPEG 2.3.0",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/uclouvain/openjpeg/v2.3.0/LICENSE"
+  },
+  {
+    "id": "ZLIB.txt",
+    "file": "ZLIB.txt",
+    "title": "zlib 1.2.11",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/madler/zlib/v1.2.11/README"
+  },
+  {
+    "id": "ICU.txt",
+    "file": "ICU.txt",
+    "title": "ICU 64.2",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/unicode-org/icu/release-64-2/icu4c/LICENSE"
+  },
+  {
+    "id": "LZ4.txt",
+    "file": "LZ4.txt",
+    "title": "LZ4 1.7.5",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/lz4/lz4/v1.7.5/lib/LICENSE"
+  },
+  {
+    "id": "ZSTD.txt",
+    "file": "ZSTD.txt",
+    "title": "Zstandard 1.4.5",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/facebook/zstd/v1.4.5/LICENSE"
+  },
+  {
+    "id": "XZ.txt",
+    "file": "XZ.txt",
+    "title": "XZ 5.2.3",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/tukaani-project/xz/v5.2.3/COPYING"
+  },
+  {
+    "id": "CURL.txt",
+    "file": "CURL.txt",
+    "title": "libcurl",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/curl/curl/curl-7_77_0/COPYING"
+  },
+  {
+    "id": "NGHTTP2.txt",
+    "file": "NGHTTP2.txt",
+    "title": "nghttp2 1.31.0",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/nghttp2/nghttp2/v1.31.0/COPYING"
+  },
+  {
+    "id": "LIBFFI.txt",
+    "file": "LIBFFI.txt",
+    "title": "libffi",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libffi/libffi/v3.2.1/LICENSE"
+  },
+  {
+    "id": "EXPAT.txt",
+    "file": "EXPAT.txt",
+    "title": "libexpat",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libexpat/libexpat/R_2_2_5/expat/COPYING"
+  },
+  {
+    "id": "LIBXML2.txt",
+    "file": "LIBXML2.txt",
+    "title": "libxml2",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/GNOME/libxml2/v2.9.7/Copyright"
+  },
+  {
+    "id": "HARFBUZZ.txt",
+    "file": "HARFBUZZ.txt",
+    "title": "Harfbuzz",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/1.7.6/COPYING"
+  },
+  {
+    "id": "FONTCONFIG.txt",
+    "file": "FONTCONFIG.txt",
+    "title": "Fontconfig",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/fontconfig/fontconfig/2.12.6/COPYING"
+  },
+  {
+    "id": "FREETYPE.txt",
+    "file": "FREETYPE.txt",
+    "title": "FreeType",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-8-1/docs/FTL.TXT"
+  },
+  {
+    "id": "LIBSSH2.txt",
+    "file": "LIBSSH2.txt",
+    "title": "libssh2",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libssh2/libssh2/libssh2-1.8.0/COPYING"
+  },
+  {
+    "id": "OPENSSL-1.txt",
+    "file": "OPENSSL-1.txt",
+    "title": "OpenSSL 1.0.2",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/openssl/openssl/OpenSSL_1_0_2u/LICENSE"
+  },
+  {
+    "id": "GCC-EXCEPTION.txt",
+    "file": "GCC-EXCEPTION.txt",
+    "title": "GNU runtime exception",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/gcc-mirror/gcc/master/COPYING.RUNTIME"
+  },
+  {
+    "id": "GLIB.txt",
+    "file": "GLIB.txt",
+    "title": "GLib",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/GNOME/glib/2.54.3/COPYING"
+  },
+  {
+    "id": "PANGO.txt",
+    "file": "PANGO.txt",
+    "title": "Pango",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/GNOME/pango/1.40.14/COPYING"
+  },
+  {
+    "id": "BZIP2.txt",
+    "file": "BZIP2.txt",
+    "title": "Bzip2",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/libarchive/bzip2/bzip2-1.0.6/LICENSE"
+  },
+  {
+    "id": "MINGW-W64.txt",
+    "file": "MINGW-W64.txt",
+    "title": "mingw-w64 runtime",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://raw.githubusercontent.com/mingw-w64/mingw-w64/master/COPYING"
+  },
+  {
+    "id": "CAIRO.txt",
+    "file": "CAIRO.txt",
+    "title": "Cairo · licensing",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "id": "CAIRO-LGPL.txt",
+    "file": "CAIRO-LGPL.txt",
+    "title": "Cairo · LGPL 2.1",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "id": "CAIRO-MPL.txt",
+    "file": "CAIRO-MPL.txt",
+    "title": "Cairo · MPL 1.1",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://cairographics.org/releases/cairo-1.14.12.tar.xz"
+  },
+  {
+    "id": "PIXMAN.txt",
+    "file": "PIXMAN.txt",
+    "title": "Pixman",
+    "license": "Original license / notices",
+    "group": "third-party",
+    "source": "https://cairographics.org/releases/pixman-0.34.0.tar.gz"
+  },
+  {
+    "id": "OCR-RUNTIME-NOTICES.txt",
+    "file": "OCR-RUNTIME-NOTICES.txt",
+    "title": "OCR-Bibliotheken · Herkunft / Provenance",
+    "license": "GPL / LGPL / other licenses",
+    "group": "third-party",
+    "source": "https://github.com/UB-Mannheim/tesseract/wiki"
+  },
+  {
+    "id": "MICROSOFT-NOTICES.txt",
+    "file": "MICROSOFT-NOTICES.txt",
+    "title": "Microsoft · WebView2 & SmartScreen",
+    "license": "Required notices",
+    "group": "third-party",
+    "source": "https://learn.microsoft.com/en-us/microsoft-edge/privacy-whitepaper#smartscreen"
+  },
+  {
+    "id": "THIRD-PARTY-NOTICES-de.txt",
+    "file": "THIRD-PARTY-NOTICES-de.txt",
+    "title": "Third-party overview (de)",
+    "license": "Notices",
+    "group": "third-party",
+    "source": ""
+  },
+  {
+    "id": "THIRD-PARTY-NOTICES-en.txt",
+    "file": "THIRD-PARTY-NOTICES-en.txt",
+    "title": "Third-party overview (en)",
+    "license": "Notices",
+    "group": "third-party",
+    "source": ""
+  },
+  {
+    "id": "pywebview-LICENSE",
+    "file": "pywebview-LICENSE",
+    "title": "pywebview 6.2.1",
+    "license": "BSD-3-Clause",
+    "group": "third-party",
+    "source": "https://github.com/r0x0r/pywebview"
+  },
+  {
+    "id": "pythonnet-AUTHORS.md",
+    "file": "pythonnet-AUTHORS.md",
+    "title": "pythonnet 3.1.0 · Authors",
+    "license": "MIT",
+    "group": "third-party",
+    "source": "https://github.com/pythonnet/pythonnet"
+  },
+  {
+    "id": "pythonnet-LICENSE",
+    "file": "pythonnet-LICENSE",
+    "title": "pythonnet 3.1.0",
+    "license": "MIT",
+    "group": "third-party",
+    "source": "https://github.com/pythonnet/pythonnet"
+  },
+  {
+    "id": "clr_loader-LICENSE",
+    "file": "clr_loader-LICENSE",
+    "title": "clr_loader 0.3.1",
+    "license": "MIT",
+    "group": "third-party",
+    "source": "https://github.com/pythonnet/clr-loader"
+  },
+  {
+    "id": "cffi-LICENSE",
+    "file": "cffi-LICENSE",
+    "title": "cffi 2.1.1",
+    "license": "MIT-0 / dependency notices",
+    "group": "third-party",
+    "source": "https://cffi.readthedocs.io/"
+  },
+  {
+    "id": "pycparser-LICENSE",
+    "file": "pycparser-LICENSE",
+    "title": "pycparser 3.0",
+    "license": "BSD-3-Clause",
+    "group": "third-party",
+    "source": "https://github.com/eliben/pycparser"
+  },
+  {
+    "id": "bottle-LICENSE",
+    "file": "bottle-LICENSE",
+    "title": "bottle 0.13.4",
+    "license": "MIT",
+    "group": "third-party",
+    "source": "https://bottlepy.org/"
+  },
+  {
+    "id": "typing_extensions-LICENSE",
+    "file": "typing_extensions-LICENSE",
+    "title": "typing_extensions 4.16.0",
+    "license": "PSF-2.0",
+    "group": "third-party",
+    "source": "https://github.com/python/typing_extensions"
+  },
+  {
+    "id": "PYINSTALLER-COPYING.txt",
+    "file": "PYINSTALLER-COPYING.txt",
+    "title": "PyInstaller 6.22.2",
+    "license": "GPL-2.0-or-later + Bootloader Exception / Apache-2.0",
+    "group": "third-party",
+    "source": "https://pyinstaller.org/en/stable/license.html"
+  },
+  {
+    "id": "PYTHON-PSF-LICENSE.txt",
+    "file": "PYTHON-PSF-LICENSE.txt",
+    "title": "Python 3.14.6",
+    "license": "PSF-2.0 / dependency notices",
+    "group": "third-party",
+    "source": "https://docs.python.org/3/license.html"
+  }
+]

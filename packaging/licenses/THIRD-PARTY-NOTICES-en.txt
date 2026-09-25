@@ -1,0 +1,11 @@
+Citizen Tools - Third-party notices
+
+Original code is under MIT (CITIZEN-TOOLS-MIT.txt). Third-party components
+retain their own terms. License documents and project sources are listed
+in catalog.json and in the application license viewer.
+
+Complete provenance and corresponding source for all legacy OCR DLLs
+remain undocumented. See OCR-RUNTIME-NOTICES.txt and
+CITIZEN-TOOLS-NOTICE.txt for the outstanding redistribution review.
+
+Microsoft terms and notices: WEBVIEW2-RUNTIME.txt and MICROSOFT-NOTICES.txt.
