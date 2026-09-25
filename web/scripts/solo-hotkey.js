@@ -1,8 +1,6 @@
 /* Key recording releases the global shortcut briefly, without stopping OCR. */
-window.createSoloHotkeyRecorder = ({form, enabled}) => {
+window.createSoloHotkeyRecorder = ({form, enabled, button = document.getElementById("soloHotkeyRecord"), hint = document.getElementById("soloHotkeyHint")}) => {
   const field = form.elements.captureHotkey;
-  const button = document.getElementById("soloHotkeyRecord");
-  const hint = document.getElementById("soloHotkeyHint");
   const texts = {
     de: {record:"Aufnehmen", cancel:"Abbrechen", idle:"Anklicken und Tastenkombination drücken.", preparing:"Aufnahme wird vorbereitet …", listening:"Jetzt Tastenkombination drücken · Esc bricht ab.", saved:"Übernommen · Einstellungen speichern zum Aktivieren.", cancelled:"Abgebrochen · Bisherige Kombination bleibt erhalten.", invalid:"Strg, Alt, Umschalt oder Win + Buchstabe, Zahl, F1–F24, Einfg, Pause oder Druck verwenden.", error:"Aufnahme nicht verfügbar. Bitte erneut versuchen."},
     en: {record:"Record", cancel:"Cancel", idle:"Click and press your key combination.", preparing:"Preparing to record …", listening:"Press your key combination · Esc cancels.", saved:"Recorded · Save settings to activate.", cancelled:"Cancelled · Previous combination kept.", invalid:"Use Ctrl, Alt, Shift or Win + a letter, digit, F1–F24, Insert, Pause or Print Screen.", error:"Recording unavailable. Please try again."},
@@ -93,5 +91,5 @@ window.createSoloHotkeyRecorder = ({form, enabled}) => {
   window.addEventListener("pagehide", () => { if (session) finish(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && session) finish(); });
   render();
-  return {get recording(){return phase !== "idle";}, render, saved(){note="idle"; render();}};
+  return {get recording(){return phase !== "idle";}, render, cancel(){if (phase !== 'idle') finish();}, saved(){note="idle"; render();}};
 };

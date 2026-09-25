@@ -23,13 +23,13 @@ insbesondere für GPL-/LGPL-Bibliotheken im separaten OCR-Paket und für die
 Microsoft-Laufzeiten. Hinweise und Originaltexte stehen unter
 Einstellungen → Über Citizen Tools → Lizenzen sowie im Ordner licenses.
 
-Einzelne Komponenten der übernommenen OCR-Distribution haben weitergehende
-Pflichten bei der Weitergabe von Binärdateien, einschließlich der Bereitstellung
-zugehöriger Quellen. Der mitgelieferte Citizen-Tools-Quellcode ist kein Ersatz
-für die entsprechenden Quellen dieser Bibliotheken. Die vollständige Herkunft
-und die zugehörigen Build-Quellen aller alten OCR-DLLs sind in diesem Projekt
-nicht dokumentiert. Eine vollständige Prüfung der Weitergabe dieses OCR-Pakets
-ist daher noch offen; die GPL-Freigabe betrifft den eigenen Programmcode.
+Die OCR-Laufzeit besteht aus unveränderten, in packaging/ocr-lock.json
+festgehaltenen MSYS2-Paketen. Die zugehörigen Quellen, Patches und Build-Rezepte
+stehen im Release als CitizenTools-Solo-OCR-Sources.zip neben Installer und
+Portable-ZIP bereit. Dieses Archiv ergänzt CitizenTools-Solo-Source.zip mit
+dem eigenen Programmcode. Beim Weitergeben der Binärpakete beide Quellpakete
+nach den jeweiligen Lizenzbedingungen anbieten. Anleitung: docs/OCR-SOURCES.md.
+Downloads: https://github.com/Tschensen/CitizenTools/releases
 
 Star Citizen, Roberts Space Industries, Cloud Imperium Games und zugehörige
 Marken, Spielinhalte und Bilder gehören ihren jeweiligen Rechteinhabern.
@@ -61,11 +61,13 @@ exclusive right to the underlying idea.
 Third-party components retain their own licenses. The project license does
 not relicense them or replace their conditions, including source requirements.
 The separate OCR bundle contains GPL/LGPL libraries; Microsoft runtimes have
-their own terms. The complete provenance and corresponding build sources of
-all legacy OCR DLLs are not documented in this project. A complete
-redistribution review of that binary OCR bundle remains outstanding.
-The included Citizen Tools source archive does not replace corresponding
-source for third-party libraries.
+their own terms. OCR binaries are unmodified files from the MSYS2 packages
+pinned in packaging/ocr-lock.json. Corresponding sources, patches and build
+recipes are provided as CitizenTools-Solo-OCR-Sources.zip alongside the Windows
+downloads. This supplements CitizenTools-Solo-Source.zip with our own code.
+When conveying binaries, provide both source archives under the applicable
+licenses. See docs/OCR-SOURCES.md for details and rebuilding instructions.
+Downloads: https://github.com/Tschensen/CitizenTools/releases
 
 Star Citizen and related trademarks, game content and imagery belong to their
 respective owners. This is an independent fan project without official

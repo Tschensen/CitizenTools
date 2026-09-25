@@ -1,12 +1,32 @@
 [
   {
+    "version": "0.1.24",
+    "de": {
+      "title": "Dein Cockpit & erster Start",
+      "changes": [
+        "Cockpit-Karten pro App oder Browser ein-/ausblenden, innerhalb ihrer Bereiche umsortieren und auf die Standardansicht zurücksetzen.",
+        "Ein optionaler Assistent führt durch Pilot, erstes Schiff, Screenshot-Taste und Heimnetz. Vorhandene Spielstände bleiben erhalten; erneut aufrufbar unter Einstellungen → Profil.",
+        "Gleichzeitige Erststarts auf PC und weiteren Geräten erzeugen keine Konfliktmeldung durch Standarddaten."
+      ]
+    },
+    "en": {
+      "title": "Your cockpit & first launch",
+      "changes": [
+        "Show, hide and reorder cockpit cards within their sections, independently for each app or browser; restore the default layout at any time.",
+        "An optional assistant guides you through pilot, first ship, screenshot shortcut and home network setup. Existing saved data is preserved; reopen it under Settings → Profile.",
+        "Simultaneous first launches on PC and additional devices no longer report conflicts caused by built-in defaults."
+      ]
+    }
+  },
+  {
     "version": "0.1.23",
     "de": {
       "title": "GPL-Lizenz & aktuelle Oberfläche",
       "changes": [
         "Die Windows-App umgeht nach einem Update veraltete Oberflächen im Browsercache; Einstellungen und Spielstände bleiben erhalten.",
         "Deutsche Uhrbeschriftungen: Schiffszeit / UTC und Ortszeit.",
-        "Eigener Code unter GPLv3 oder später, mit Herkunftshinweis auf Tschensen und Link zum GitHub-Projekt."
+        "Eigener Code unter GPLv3 oder später, mit Herkunftshinweis auf Tschensen und Link zum GitHub-Projekt.",
+        "Veröffentlichungspakete mit Tesseract 5.5.3, dokumentierter OCR-Laufzeit und zugehörigen Quellpaketen."
       ]
     },
     "en": {
@@ -14,7 +34,8 @@
       "changes": [
         "The Windows app bypasses stale interface caches after an update while retaining settings and saved data.",
         "Clock labels follow the interface language: Ship time / UTC and Local time in English.",
-        "Original code licensed under GPLv3 or later, with attribution to Tschensen and a link to the GitHub project."
+        "Original code licensed under GPLv3 or later, with attribution to Tschensen and a link to the GitHub project.",
+        "Release packages include Tesseract 5.5.3, documented OCR components and corresponding source archives."
       ]
     }
   },

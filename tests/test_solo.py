@@ -50,6 +50,15 @@ class SoloIntegrationTests(unittest.TestCase):
             self.assertEqual(self.api(path, raw=True)[0], 404, path)
         self.assertEqual(self.api('/api/state?scope=dispatcher')[0], 400)
 
+    def test_setup_completion_is_local_config_and_survives_restart(self):
+        self.assertFalse(self.api('/api/solo/status')[1]['settings']['setupCompleted'])
+        code, result = self.api('/api/solo/settings', {'setupCompleted': True, 'port': self.runtime.httpd.server_port})
+        self.assertEqual(code, 200)
+        self.assertTrue(result['settings']['setupCompleted'])
+        self.assertEqual(self.api('/api/state')[1]['state'], None)
+        self.assertTrue(SoloRuntime(self.root, port=0, lan=False).settings['setupCompleted'])
+        self.assertEqual(self.api('/api/solo/settings', {'setupCompleted': 'true'})[0], 400)
+
     def test_interface_ignores_old_cache_validators_and_native_url_changes_with_version(self):
         self.assertEqual(self.runtime.desktop_url, self.runtime.url + '/?desktop=1&v=' + VERSION)
         for route in ['/?desktop=1', '/index.html', '/solo.css', '/scripts/solo-connection.js']:

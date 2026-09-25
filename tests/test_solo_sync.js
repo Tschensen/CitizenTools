@@ -26,6 +26,16 @@ const response = (status, payload) => ({status,ok:status>=200&&status<300,json:a
 (async () => {
   {
     const {c}=fixture();
+    c.defaultState={missions:[],fleet:[],shipLibrary:[{id:'ship:default',model:'Default',createdAt:'a'}],pilots:[{id:'solo',name:'Solo-Pilot',createdAt:'a'}]};
+    c.state=structuredClone(c.defaultState);c.state.shipLibrary[0].createdAt='b';c.state.pilots[0].createdAt='b';
+    assert.equal(c.soloHasPersonalState(c.state),false,'Fresh clients must not upload default reference data');
+    c.state.shipLibrary[0].model='My customized ship';
+    assert.equal(c.soloHasPersonalState(c.state),true,'Custom ship profiles must still be preserved');
+    c.state=structuredClone(c.defaultState);c.state.pilots[0].name='My pilot';
+    assert.equal(c.soloHasPersonalState(c.state),true,'A chosen pilot must be preserved');
+  }
+  {
+    const {c}=fixture();
     c.fetch=async()=>response(200,{state:{marker:'other device'},updatedAt:'r2'});
     await c.fetchRemoteState();
     assert.equal(vm.runInContext('soloRevision',c),'r1','A background read must not acknowledge a revision that has not been applied');
@@ -155,5 +165,5 @@ const response = (status, payload) => ({status,ok:status>=200&&status<300,json:a
     c.document.activeElement=null;c.fetch=async()=>response(200,{state:c.state,updatedAt:'r2'});
     await c.pollSoloState();assert.equal(renders,1,'The deferred redraw must happen when editing ends');
   }
-  console.log('14 Solo synchronization tests passed.');
+  console.log('15 Solo synchronization tests passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

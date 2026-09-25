@@ -23,7 +23,7 @@ import transfer
 import solo_sounds
 import solo_about
 
-VERSION = "0.1.23"
+VERSION = "0.1.24"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -74,6 +74,7 @@ class SoloRuntime:
             "lanEnabled": True, "port": DEFAULT_PORT, "captureEnabled": True,
             "captureHotkey": capture.DEFAULT_HOTKEY, "captureMode": "active-monitor",
             "captureRetention": capture.DEFAULT_CAPTURE_RETENTION, "pilotName": "",
+            "setupCompleted": False,
         }
         if self.config_path.is_file():
             # A damaged config is reported instead of silently overwritten.
@@ -101,7 +102,7 @@ class SoloRuntime:
     def validate_settings(payload: object) -> dict:
         if not isinstance(payload, dict): raise ValueError("Ungültige Einstellungen.")
         result = {}
-        for key in ("lanEnabled", "captureEnabled"):
+        for key in ("lanEnabled", "captureEnabled", "setupCompleted"):
             if key in payload:
                 if not isinstance(payload[key], bool): raise ValueError(f"Ungültiger Wert: {key}")
                 result[key] = payload[key]

@@ -1247,7 +1247,7 @@ function renderHub() {
   ]
     .map(
       (card) => `
-        <div class="summary-card hub-summary-card${card.key === "ship" ? " hub-ship-card" : ""}${card.mission ? " hub-mission-summary" : ""}${card.target ? " is-clickable" : ""}"${card.target ? ` role="button" tabindex="0" data-hub-target="${escapeHtml(card.target)}" aria-label="${escapeHtml(t("hub.openCard", { label: card.label }))}"` : ""}>
+        <div data-cockpit-card="${card.key}" class="summary-card hub-summary-card${card.key === "ship" ? " hub-ship-card" : ""}${card.mission ? " hub-mission-summary" : ""}${card.target ? " is-clickable" : ""}"${card.target ? ` role="button" tabindex="0" data-hub-target="${escapeHtml(card.target)}" aria-label="${escapeHtml(t("hub.openCard", { label: card.label }))}"` : ""}>
           ${card.key === "ship" ? `<div class="hub-ship-art" aria-hidden="true">${renderShipProfileMedia(activeShipMedia, "hub-ship-media")}</div>` : ""}
           <div class="hub-summary-heading"><span>${escapeHtml(card.label)}</span>${card.badge ? `<span class="hub-mission-count" data-flight-stat="mission-count">${escapeHtml(card.badge)}</span>` : ""}</div>
           <strong data-flight-stat="${card.key}" title="${escapeHtml(String(card.value))}">${escapeHtml(String(card.value))}</strong>
@@ -1309,7 +1309,7 @@ function renderHub() {
       const meterLabel = card.meter ? `${card.meter.label}: ${card.meter.value.toLocaleString(locale)} / ${card.meter.max.toLocaleString(locale)}` : "";
       const paymentLabel = unpaidMissions.length > 0 ? t("hub.today.paymentsPending") : t("hub.today.paymentsClear");
       return `
-      <article class="hub-today-card is-${escapeHtml(card.state)}" role="button" tabindex="0" data-hub-target="${escapeHtml(card.target)}" aria-label="${escapeHtml(t("hub.openCard", { label: card.label }))}">
+      <article data-cockpit-card="${card.key}" class="hub-today-card is-${escapeHtml(card.state)}" role="button" tabindex="0" data-hub-target="${escapeHtml(card.target)}" aria-label="${escapeHtml(t("hub.openCard", { label: card.label }))}">
         <span class="hub-today-label">${escapeHtml(card.label)}<i class="hub-status-light" aria-hidden="true"></i></span>
         <strong data-flight-stat="${card.key}">${escapeHtml(String(card.value))}</strong>
         <p>${escapeHtml(String(card.meta))}</p>
@@ -1322,6 +1322,7 @@ function renderHub() {
     `; }).join("");
     bindHubTargets(hubTodayList);
   }
+  window.soloCockpit?.apply();
   window.soloEffects?.hub({
     ship:[activeFleetEntry?.id, activeFleetEntry?.manufacturer, activeFleetEntry?.model],
     'mission-count':activeMissionCount,

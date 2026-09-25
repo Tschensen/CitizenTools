@@ -54,7 +54,7 @@ def main():
             with request.urlopen(runtime.url + "/api/solo/status", timeout=5) as response:
                 status = json.load(response)
             with request.urlopen(runtime.url + "/", timeout=5) as response:
-                assert b"Solo" in response.read()
+                assert b'flightLocalClock' in response.read()
             assert status["edition"] == "solo" and status["ocrAvailable"]
             (root / "smoke-result.json").write_text(json.dumps(status, indent=2), encoding="utf-8")
             return 0

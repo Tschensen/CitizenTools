@@ -7,6 +7,19 @@ let soloHydrated = false;
 let soloBaseState = null;
 let soloRenderPending = false;
 
+// Seeded ships and the default pilot are reference data, not a personal edit.
+// Two fresh clients must not race to upload independently timestamped defaults.
+function soloHasPersonalState(candidate) {
+  const comparable = value => {
+    const clean = soloCleanState(sanitizeState(cloneData(value)));
+    for (const name of ['shipLibrary', 'pilots']) {
+      for (const entry of clean[name] || []) delete entry.createdAt;
+    }
+    return clean;
+  };
+  return !soloEqual(comparable(candidate), comparable(defaultState));
+}
+
 // A dropped LAN connection must not hold a polling/save lock indefinitely.
 // The timeout also covers reading the response body.
 async function soloRequestJson(url, options = {}, timeoutMs = 10000) {

@@ -100,7 +100,7 @@ async function initializeRemotePersistence(mode = activeAppMode, { preserveEditi
       applySoloState(payload);
     } else {
       soloBaseState = null;
-      if (hasMeaningfulState(state)) await saveRemoteState(cloneData(state), hydrationMode);
+      if (typeof soloHasPersonalState === 'function' ? soloHasPersonalState(state) : hasMeaningfulState(state)) await saveRemoteState(cloneData(state), hydrationMode);
       else soloBaseState = soloCleanState(state);
     }
   } catch (error) {

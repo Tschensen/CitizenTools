@@ -1,0 +1,45 @@
+/* Compact cockpit controls and touch-friendly first-run setup. */
+.flight-deck-panel #hubSummary { grid-template-columns: var(--cockpit-columns, minmax(0,1fr) minmax(0,1.65fr) repeat(2,minmax(0,.9fr))); }
+[data-cockpit-card][hidden], #hubSummary[hidden], #hubTodayList[hidden], .solo-setup-fields[hidden], .solo-setup-welcome[hidden] { display: none !important; }
+.flight-quick-actions [data-cockpit-open] { padding-inline: 12px; font-size: .78rem; }
+.solo-cockpit-dialog, .solo-setup-dialog { width: min(640px,100%); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; gap: 14px; }
+.solo-cockpit-dialog { width: min(680px,100%); }
+.solo-cockpit-dialog .app-dialog-message, .solo-setup-dialog .form-hint { margin: 0; }
+.solo-cockpit-dialog .form-hint, .solo-setup-dialog .form-hint { border: 0; background: none; padding: 0; font-size: .82rem; font-weight: 400; line-height: 1.5; color: var(--muted-strong); }
+#soloCockpitGroups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.solo-cockpit-group h3 { margin: 0 0 8px; font-size: .86rem; color: var(--flight-cyan); }
+.solo-cockpit-row { display: grid; grid-template-columns: minmax(0,1fr) 40px 40px; align-items: center; gap: 4px; padding: 6px 0; border-bottom: 1px solid #8bb1c323; }
+.solo-cockpit-row label { display: flex; align-items: center; gap: 8px; font-size: .82rem; min-height: 44px; cursor: pointer; }
+.solo-cockpit-row input { width: 18px; height: 18px; min-height: 0; accent-color: var(--flight-cyan); flex-shrink: 0; }
+.solo-cockpit-row button { min-height: 44px; padding: 4px; font-size: 1.12rem; }
+.solo-cockpit-row button:disabled { opacity: .25; }
+.solo-personalize-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.solo-personalize-actions button { min-height: 44px; }
+.solo-setup-welcome { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; border-left: 3px solid var(--flight-cyan); padding: 14px 18px; background: linear-gradient(100deg,rgba(var(--flight-rgb),.1),#0b1822); }
+.solo-setup-welcome > div:first-child { flex: 1; min-width: 200px; }
+.solo-setup-welcome h2 { margin: 0 0 5px; font-size: 1.05rem; }
+.solo-setup-welcome p { margin: 0; font-size: .85rem; color: var(--muted-strong); }
+.solo-setup-progress { list-style: none; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; margin: 0; padding: 0; }
+.solo-setup-progress li { padding: 10px 4px; color: var(--muted); border-bottom: 2px solid #8bb1c323; font-size: .78rem; white-space: nowrap; }
+.solo-setup-progress li[aria-current] { color: var(--flight-cyan); border-color: var(--flight-cyan); }
+.solo-setup-progress li.is-done { color: #80ddb1; border-color: #80ddb170; }
+.solo-setup-fields { display: grid; gap: 14px; min-width: 0; }
+fieldset.solo-setup-fields { margin: 0; padding: 0; border: 0; }
+.solo-setup-fields > label:not(.solo-checkbox) { display: grid; gap: 7px; }
+.solo-setup-fields input:not([type=checkbox]), .solo-setup-fields select { width: 100%; min-height: 44px; min-width: 0; }
+.solo-setup-fields .solo-checkbox input { width: 18px; height: 18px; min-height: 0; }
+.solo-setup-address { padding: 12px 14px; border: 1px solid rgba(var(--flight-rgb),.2); border-radius: 6px; background: #07121a; display: grid; gap: 8px; }
+.solo-setup-address > strong { color: var(--flight-cyan); font-size: .8rem; }
+.solo-setup-dialog .app-dialog-actions > button { min-height: 44px; }
+.solo-setup-error { color: #ffb6ab; margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .flight-deck-panel #hubSummary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .flight-deck-panel #hubSummary[data-visible-cards="1"] { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 600px) {
+  #soloCockpitGroups { grid-template-columns: minmax(0,1fr); gap: 16px; }
+  .solo-cockpit-dialog, .solo-setup-dialog { padding: 16px; }
+  .solo-setup-progress li { font-size: .67rem; }
+  #soloSetupDialog, #soloCockpitDialog { padding: 10px; }
+}
+@media (max-width: 520px) { .flight-deck-panel #hubSummary { grid-template-columns: minmax(0,1fr); } }

@@ -1,12 +1,11 @@
-Citizen Tools - Drittanbieterhinweise
+Citizen Tools – Drittanbieterhinweise
 
-Der eigene Programmcode steht unter MIT (CITIZEN-TOOLS-MIT.txt).
-Zusatzkomponenten behalten ihre eigenen Lizenzen. Die zugehoerigen Texte
-und Projektquellen stehen in catalog.json und in der Lizenzansicht der App.
+Der eigene Programmcode steht unter GPL-3.0-or-later (CITIZEN-TOOLS-GPL.txt).
+Zusatzkomponenten behalten ihre eigenen Lizenzen. Originaltexte und
+Projektquellen stehen in catalog.json und in der Lizenzansicht der App.
 
-Die Herkunft und die zugehoerigen Quellen aller alten OCR-DLLs sind nicht
-vollstaendig dokumentiert. Der offene Pruefstand ist in
-OCR-RUNTIME-NOTICES.txt und CITIZEN-TOOLS-NOTICE.txt festgehalten.
+Die OCR-Komponenten stammen aus festgehaltenen MSYS2-Paketen. Die zugehörigen
+Quellen stehen im Release als CitizenTools-Solo-OCR-Sources.zip bereit.
+Herkunft: OCR-RUNTIME-NOTICES.txt; Bedingungen: CITIZEN-TOOLS-NOTICE.txt.
 
-Microsoft-Bedingungen und Hinweise: WEBVIEW2-RUNTIME.txt und
-MICROSOFT-NOTICES.txt.
+Microsoft-Bedingungen: WEBVIEW2-RUNTIME.txt und MICROSOFT-NOTICES.txt.

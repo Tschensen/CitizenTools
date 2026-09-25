@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.1.23 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.1.24 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
@@ -26,10 +26,10 @@ Zielplattform: Windows 10/11, 64 Bit. Fertige Downloads gehören in den
 Eine EXE benötigt den zugehörigen Ordner `_internal`; für die portable Nutzung
 immer das vollständige ZIP entpacken.
 
-**Stand der Veröffentlichung:** Der Quellcode wird separat bereitgestellt.
-Vor der öffentlichen Weitergabe der bestehenden Windows-Pakete müssen Herkunft
-und zugehörige Quellen einiger älterer OCR-DLLs noch vollständig geklärt werden.
-Details stehen in [NOTICE.md](NOTICE.md).
+Für die Installation `CitizenTools-Solo-Setup.exe` verwenden; für die portable
+Nutzung `CitizenTools-Solo-Portable.zip`. Die beiden Quellpakete im Release
+enthalten den Projektcode und die zugehörigen OCR-Quellen. Zum Benutzen der App
+werden sie nicht benötigt. Details stehen in [NOTICE.md](NOTICE.md).
 
 ## Heimnetz
 

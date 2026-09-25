@@ -60,6 +60,7 @@
     finally { refreshing = false; }
   }
   const hotkeyRecorder = window.createSoloHotkeyRecorder({form, enabled:() => isPC && loaded && !busy});
+  window.addEventListener('solo-settings-saved', event => { renderStatus(event.detail, true); hotkeyRecorder.saved(); });
   form.addEventListener("submit", async event => {
     event.preventDefault(); if (busy || !isPC || hotkeyRecorder.recording) return; busy = true;
     const sound = window.soloSound?.feedbackFor(event);

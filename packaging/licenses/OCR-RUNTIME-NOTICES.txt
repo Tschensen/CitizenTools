@@ -1,84 +1,59 @@
-OCR-LAUFZEIT / OCR RUNTIME INVENTORY
+OCR runtime / Herkunft und zugehörige Quellen
 
-Tesseract v5.3.0.20221214, Leptonica 1.78.0
+Unmodified MSYS2 UCRT64 packages: Tesseract 5.5.3, Leptonica 1.87.0,
+with English and German language data. Original license documents are
+listed separately by component. Versions below include MSYS2 package revisions.
 
-Diese Liste dokumentiert die uebernommene Laufzeit. Die Lizenztexte stammen
-aus den genannten Originalprojekten. Nicht fuer alle alten DLLs sind die
-exakten Build-Quellen und Distributionshinweise vorhanden. Siehe
-CITIZEN-TOOLS-NOTICE.txt: Die Pruefung der vollstaendigen Weitergabe dieses
-Binaerpakets ist noch offen. Es wird keine vollstaendige Lizenzfreigabe
-der OCR-DLLs unter der Projektlizenz behauptet.
+Exact package URLs, hashes, file ownership and corresponding source archive
+names are recorded in packaging/ocr-lock.json (also licenses/ocr-lock.json
+in the Windows package). Sources, patches and matching build recipes are
+provided in CitizenTools-Solo-OCR-Sources.zip next to the Windows downloads:
+https://github.com/Tschensen/CitizenTools/releases
+See docs/OCR-SOURCES.md for rebuild instructions. No original OCR code was
+modified. Only required executable/DLL files and eng/deu models are bundled.
+Windows system DLLs are not redistributed in this OCR directory.
 
-This inventory records the legacy binary runtime. Exact build sources and
-redistribution notices are not available for every old DLL. See
-CITIZEN-TOOLS-NOTICE.txt; complete redistribution review is still pending.
-The OCR libraries are not relicensed under the project license.
+GPL/LGPL libraries retain their terms; the sources ZIP supplements, rather
+than replaces, CitizenTools-Solo-Source.zip. JBIG-KIT source headers allow
+GPL version 2 or later; GPLv3 is used for this combination. GCC libraries
+include the GCC Runtime Library Exception. The dynamically loaded DLLs can
+be replaced by the user; no signature or integrity checks run in the app.
 
-Besonders zu beachten / In particular:
-- liblzo2, libjbig: GPL; source provision requirements apply.
-- GLib, Pango, libiconv, libintl, libunistring, libidn2: GNU library licenses.
-- Cairo: LGPL 2.1 / MPL 1.1; see its original licensing statement.
-- GCC runtime: GPL with GCC Runtime Library Exception.
-- Other libraries retain their own copyright and license terms.
-
-Projektquellen / Project sources:
-https://github.com/UB-Mannheim/tesseract/wiki
-https://www.oberhumer.com/opensource/lzo/
-https://www.cl.cam.ac.uk/~mgk25/jbigkit/
-https://www.gnu.org/software/libiconv/
-https://www.gnu.org/software/gettext/
-https://www.gnu.org/software/libunistring/
-https://www.gnu.org/software/libidn/
-https://www.lysator.liu.se/~nisse/nettle/
-https://www.pcre.org/
-
-Dateien / Files (SHA-256):
-iconv.dll  806b29c2da610a1f8145dc7934f779dd7a569e4a95beac6433d72a833b01feac
-icudt64.dll  6f7113d864de9ae351401cd451ff50bcdc0229a02aa5940d40886dd8b1efc326
-icuin64.dll  497271d8a61d8860e1e6015cb3b61a68e28362710358e68cd9893a261fb353fc
-icuuc64.dll  8e4b6c0b87de0cd4db74a23ed85b83119f09942ec158a4131a8846afbc6264dc
-libarchive-13.dll  00f394542b7036210f159bf583550bcf4e3f6fbc3d603d97ac7116d52b2fe5ec
-libbz2-1.dll  ba76e2126aa0e0362fb5ca3ba405ff6a7e9e1cb8db40918048e35b6984630a50
-libcairo-2.dll  f74ed5e4f58eebb456b0e7d9dc41b9648494fcc8c60a4ae17b931ce0e3e6d919
-libcurl-4.dll  b710a70a1745cebd7d8fecd344cc4a4d24f154df05e3822da873bd6742ab8bb7
-libeay32.dll  b3c63e90355a2ee35e2fb7f1ccf3c158491517bdb4162fdbb56aa393d4314f4c
-libexpat-1.dll  1d1f9bdf68df3470bd605b1d27c06922208f006661a1eabcb53318a5b6567ba9
-libffi-6.dll  839b0a280eb8957c12be5bf879b19353fc45e9197062273ca090dd9fd7a1a0c3
-libfontconfig-1.dll  4639402be7e2819e912170f26100b0e16ee548d9f40d1684b7a6fb25e3496233
-libfreetype-6.dll  fcb5e18ec101ab1c0d3f364e1d7fab30e7148e5bf396266be81618b15f55e929
-libgcc_s_seh-1.dll  42f95669c6d32a8376758d9f392575e01937daeacc2181489ce74eac12a02a80
-libgif-7.dll  6a57339650903245d86ee3351694e9732c7eca53bb5040027e29fe0f714f8abb
-libglib-2.0-0.dll  d6636c54a8e428abf2b0a1c0e4234303e808a1f72100cfe6fd4f9012177b394b
-libgobject-2.0-0.dll  233b7bc2c21f713edf24c7d39db883d639466c1bcb91290f3738261acea572f8
-libgomp-1.dll  7bfd47da13a9ee894ea16a85f85529adca4077b0c15042db99fc1d55dfaee363
-libharfbuzz-0.dll  52d363a677b7b0b56ef09fbd89096657cd9c3601051ff466eaa48738b7e2df74
-libidn2-0.dll  b165fafa21ae9059a15462879efa41f29e84640be31976d555965b0694bd6ca2
-libintl-8.dll  d4af85fbd8b6c3d789e0cc814fccbcb793bcfb0f34289093c1dcaeafe664c8f2
-libjbig-2.dll  b05159c2f94807498e577b617dde7e84ecd45a1e719690356c70180b5d9221b5
-libjpeg-8.dll  4e07e2bd20b32ebf7bcfe308a31af86c097c1e3ecab29f71365dfc55039d87be
-liblept-5.dll  0cd601363884c4fefb921feae9b8d5e5476df59958a2ee489e6c17018705dcf1
-liblz4-1.dll  0d72a02dbdf68dec140e79d981e51492495cd4d0c11eba404dc90b3071103ed1
-liblzma-5.dll  fc690e6ead8686563d7ae9a32fd16844b66d1edf24ac8cfea993a33f9a8e0fb0
-liblzo2-2.dll  3c9a99d48e1d4aaa34e5d408e79c50cdb83fd6b9ab8b3a196efd6c97af8a7527
-libnettle-6.dll  f4d2b180584d63777deeaef5721223e8c613f3128ecc520b6fbee178bb7aea2f
-libnghttp2-14.dll  62d63cd9e02538b67bc89f59453155190b10f54db2bf9cc7a148a944994350a5
-libopenjp2.dll  720bb3256672440f56a9d1cd65beb9d3306c04948020272d666080858feace6f
-libpango-1.0-0.dll  bce947cba15b4dc7cc331da79ca1551d4bcbf0d897a26fceee3538d10abd2f0c
-libpangocairo-1.0-0.dll  cd06d416cb553e45977445286ac745f0036d4c0370794ccb466e5f88daca8571
-libpangoft2-1.0-0.dll  7fc8173267989fc798f77964d8a38cebc7500ef66421ce17af5088dc30452097
-libpangowin32-1.0-0.dll  64598351bb2cccf7dc1c17e0c2bb75ff473c03c8935a786fc350ed8bb314ad24
-libpcre-1.dll  f454792a3c6fc24948bcf5630c34682482d125bee24c9588cd2710632293cfe5
-libpixman-1-0.dll  39e0c37f201a8d3617aac59062d1a405bbf900e4812cf66ba0a8603422b6bf01
-libpng16-16.dll  a06859349fbfa1ab9da9786bc8da497d3a6df5d8ec57618f13b8b915b31731a5
-libssh2-1.dll  b457d99a3d2aca3e2ddea45befbc557f873792987d97b0c0e24bd2085aafe8a4
-libstdc++-6.dll  63b740e630609516945306a7e529b8530c674b1cf126870f896a09a85564e369
-libtesseract-5.dll  7b3e1d2aa6225e0e94ffc189695223eb7f491460d12a9258e4d2f28bb264d836
-libtiff-5.dll  529b42e0de164c5f4c9e2a80587cb82dc1fa69755fc4fcdd75f6616c810a18c3
-libunistring-2.dll  29f2a7b9ac87e86a8bbf0f29d36afd3479b8960702a5436a107807ed317dc626
-libwebp-7.dll  8de24b18100ead0650d3e60897ecd2a6f8a7e3db5b0631f994a62f9a9698a574
-libwinpthread-1.dll  9795b0dceee5f890ebedf97224c875dc980a9911220cc85418c336c59459aeee
-libxml2-2.dll  400cce5f57bd3fa8c99ae1e604765e8d80ee031486e60256b6c02dde4b4b10e2
-libzstd-1.dll  46df8fd6fe0a2f44189d21bfa276a0dcc27d692068626b13e5f3af2bdf46f445
-ssleay32.dll  9223b1f7e9f1f0b07e862fbeb12f161bf78df75f54758bd31eea8b1fe4b99d66
-tesseract.exe  294a843e691b449b68b486d4c11629fd9a0539a0832844a096bdf7149b7bf69f
-zlib1.dll  f562e75b9a3929f1fefd84b2a76399f7e74e6e5dbda11a7657898f41c3a673f6
+Included packages:
+- mingw-w64-ucrt-x86_64-brotli: 1.2.0-1
+- mingw-w64-ucrt-x86_64-bzip2: 1.0.8-4
+- mingw-w64-ucrt-x86_64-curl: 8.22.0-1
+- mingw-w64-ucrt-x86_64-expat: 2.8.5-1
+- mingw-w64-ucrt-x86_64-gettext-runtime: 1.0-1
+- mingw-w64-ucrt-x86_64-giflib: 6.1.3-1
+- mingw-w64-ucrt-x86_64-jbigkit: 2.1-6
+- mingw-w64-ucrt-x86_64-leptonica: 1.87.0-1
+- mingw-w64-ucrt-x86_64-lerc: 4.1.1-1
+- mingw-w64-ucrt-x86_64-libarchive: 3.8.9-6
+- mingw-w64-ucrt-x86_64-libb2: 0.98.1-3
+- mingw-w64-ucrt-x86_64-libdeflate: 1.26-1
+- mingw-w64-ucrt-x86_64-libgcc: 16.2.0-4
+- mingw-w64-ucrt-x86_64-libgomp: 16.2.0-4
+- mingw-w64-ucrt-x86_64-libiconv: 1.19-1
+- mingw-w64-ucrt-x86_64-libidn2: 2.3.8-4
+- mingw-w64-ucrt-x86_64-libjpeg-turbo: 3.2.0-1
+- mingw-w64-ucrt-x86_64-libpng: 1.6.58-1
+- mingw-w64-ucrt-x86_64-libpsl: 0.21.5-3
+- mingw-w64-ucrt-x86_64-libssh2: 1.11.1-2
+- mingw-w64-ucrt-x86_64-libstdc++: 16.2.0-4
+- mingw-w64-ucrt-x86_64-libtiff: 4.7.2-1
+- mingw-w64-ucrt-x86_64-libunistring: 1.4.2-1
+- mingw-w64-ucrt-x86_64-libwebp: 1.6.0-1
+- mingw-w64-ucrt-x86_64-libwinpthread: 14.0.0.r426.g4564ee4b5-1
+- mingw-w64-ucrt-x86_64-lz4: 1.10.0-1
+- mingw-w64-ucrt-x86_64-nghttp2: 1.70.0-1
+- mingw-w64-ucrt-x86_64-nghttp3: 1.18.0-1
+- mingw-w64-ucrt-x86_64-ngtcp2: 1.25.0-1
+- mingw-w64-ucrt-x86_64-openjpeg2: 2.5.4-2
+- mingw-w64-ucrt-x86_64-openssl: 3.6.4-1
+- mingw-w64-ucrt-x86_64-tesseract-data-deu: 4.1.0-3
+- mingw-w64-ucrt-x86_64-tesseract-data-eng: 4.1.0-3
+- mingw-w64-ucrt-x86_64-tesseract-ocr: 5.5.3-1
+- mingw-w64-ucrt-x86_64-xz: 5.8.4-1
+- mingw-w64-ucrt-x86_64-zlib: 1.3.2-2
+- mingw-w64-ucrt-x86_64-zstd: 1.5.7-2

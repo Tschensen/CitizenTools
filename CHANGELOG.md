@@ -1,10 +1,18 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.1.24 — Dein Cockpit & erster Start
+
+- Cockpit-Karten pro App oder Browser ein-/ausblenden, innerhalb ihrer Bereiche umsortieren und auf die Standardansicht zurücksetzen.
+- Ein optionaler Assistent führt durch Pilot, erstes Schiff, Screenshot-Taste und Heimnetz. Vorhandene Spielstände bleiben erhalten; erneut aufrufbar unter Einstellungen → Profil.
+
+- Gleichzeitige Erststarts auf PC und weiteren Geräten erzeugen keine Konfliktmeldung durch Standarddaten.
+
 ## 0.1.23 — GPL-Lizenz & aktuelle Oberfläche
 
 - Die Windows-App umgeht nach einem Update veraltete Oberflächen im Browsercache; Einstellungen und Spielstände bleiben erhalten.
 - Deutsche Uhrbeschriftungen: Schiffszeit / UTC und Ortszeit.
 - Eigener Code unter GPLv3 oder später
+- Veröffentlichungspakete mit Tesseract 5.5.3, dokumentierter OCR-Laufzeit und zugehörigen Quellpaketen.
 
 ## 0.1.22 — Ortszeit neben UTC
 

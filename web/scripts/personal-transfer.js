@@ -4,7 +4,7 @@
   if (!panel) return;
   const online = Boolean(window.OperationsOnlineAdapter?.getState?.().enabled);
   const de = {
-    title: 'Datentransfer', intro: 'Persönliche Daten als Datei zwischen Online- und Offline-Suite austauschen.',
+    title: 'Datentransfer', intro: 'Persönliche Daten als Datei exportieren oder importieren.',
     detail: 'Schiffsprofile, Flotte, Aufträge, Buchungen, Kontakte und gespeicherte Schiffsbilder. Orgas, Gruppen und Zugangsdaten sind ausgeschlossen.',
     export: 'Transferdatei speichern', import: 'Datei auswählen', merge: 'Zusammenführen', replace: 'Persönliche Daten ersetzen',
     recovery: 'Stand vor letztem Import speichern', area: 'Bereich', current: 'Aktuell', incoming: 'In Datei', updated: 'Gleiche Kennung',
@@ -13,7 +13,7 @@
     replaceHint: 'Ersetzt die persönlichen Daten durch den Dateiinhalt. Der bisherige Stand wird als Wiederherstellungskopie gespeichert.',
     imageHint: 'Enthaltene Bilder: ', confirm: 'Daten jetzt übernehmen?', busy: 'Daten werden verarbeitet …',
     shipLibrary: 'Schiffsprofile', fleet: 'Flotte', missions: 'Aufträge', ledgerEntries: 'Buchungen', contacts: 'Kontakte',
-    note: 'Kontakte bleiben offline für den Rücktransfer erhalten. Standortdatenbank, PC-Einstellungen und nur verlinkte Bilder werden nicht mitgepackt.',
+    note: 'Standortdatenbank, PC-Einstellungen und nur verlinkte Bilder werden nicht mitgepackt.',
     invalid: 'Ungültige oder nicht unterstützte Transferdatei. Bitte erneut aus der Suite exportieren.',
     conflict: 'Der Datenstand hat sich geändert. Bitte die Datei erneut auswählen und die Vorschau prüfen.',
     personal: 'Bitte zuerst in den persönlichen Bereich wechseln und die Gruppenauswahl auf „Alle Aufträge“ setzen.',
@@ -23,7 +23,7 @@
     image: 'Ein gespeichertes Schiffsbild fehlt oder ist ungültig. Bitte das Bild in der Quell-Suite prüfen.',
   };
   const en = {
-    title: 'Data transfer', intro: 'Exchange personal data between the online and offline suites using a file.',
+    title: 'Data transfer', intro: 'Export or import personal data using a file.',
     detail: 'Ship profiles, fleet, missions, transactions, contacts and stored ship images. Organizations, groups and credentials are excluded.',
     export: 'Save transfer file', import: 'Choose file', merge: 'Merge', replace: 'Replace personal data',
     recovery: 'Save state before last import', area: 'Area', current: 'Current', incoming: 'In file', updated: 'Matching ID',
@@ -32,7 +32,7 @@
     replaceHint: 'Replaces personal data with the file contents. The previous state is saved as a recovery copy.',
     imageHint: 'Included images: ', confirm: 'Import this data now?', busy: 'Processing data …',
     shipLibrary: 'Ship profiles', fleet: 'Fleet', missions: 'Missions', ledgerEntries: 'Transactions', contacts: 'Contacts',
-    note: 'Contacts are retained offline for transfer back online. The location database, PC settings and linked-only images are not packaged.',
+    note: 'The location database, PC settings and linked-only images are not packaged.',
     invalid: 'Invalid or unsupported transfer file. Please export it from the suite again.',
     conflict: 'The data has changed. Select the file again and review a fresh preview.',
     personal: 'Switch to your personal workspace and select “All missions” in the group selector first.',

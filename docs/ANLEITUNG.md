@@ -18,7 +18,7 @@ Unter **Einstellungen → Über Citizen Tools** stehen die aktuelle Version, der
 
 Ursprüngliches Projekt: **Tschensen** · [Citizen Tools auf GitHub](https://github.com/Tschensen/CitizenTools).
 
-Der eigene Code steht ab 0.1.23 unter **GNU GPLv3 oder später (`GPL-3.0-or-later`)**; siehe `LICENSE` und `NOTICE.md`. Nutzung und Weitergabe sind auch kommerziell erlaubt. Copyright- und Lizenzhinweise bleiben erhalten, Änderungen werden gekennzeichnet, und bei Weitergabe gelten die GPL-Pflichten einschließlich Bereitstellung des zugehörigen Quellcodes. Zusatzsoftware, Microsoft-Laufzeiten, Marken und Spielinhalte behalten ihre eigenen Bedingungen; siehe `NOTICE.md`. Für einige ältere OCR-DLLs sind Herkunft und zugehörige Quellen nicht vollständig dokumentiert. Die Prüfung der vollständigen Weitergabe des OCR-Binärpakets bleibt offen; die Projektlizenz ersetzt diese Prüfung nicht.
+Der eigene Code steht ab 0.1.23 unter **GNU GPLv3 oder später (`GPL-3.0-or-later`)**; siehe `LICENSE` und `NOTICE.md`. Nutzung und Weitergabe sind auch kommerziell erlaubt. Copyright- und Lizenzhinweise bleiben erhalten, Änderungen werden gekennzeichnet, und bei Weitergabe gelten die GPL-Pflichten einschließlich Bereitstellung des zugehörigen Quellcodes. Zusatzsoftware, Microsoft-Laufzeiten, Marken und Spielinhalte behalten ihre eigenen Bedingungen; siehe `NOTICE.md`. Die verwendete OCR-Laufzeit ist mit Versionen und Prüfsummen festgehalten; ihre zugehörigen Quellen werden im Release als `CitizenTools-Solo-OCR-Sources.zip` mitgeliefert. Siehe [OCR-Quellen](OCR-SOURCES.md).
 
 Neue Versionen werden in `release-notes.json` eingetragen. Oberfläche, herunterladbarer Verlauf und `RELEASE-NOTES.md` im Paket verwenden dieselbe Datei. Der Build prüft, dass der neueste Eintrag zur Programmversion passt, und sammelt die Lizenztexte der tatsächlich installierten Python-Abhängigkeiten.
 
@@ -131,12 +131,29 @@ python -m venv .venv
 node tests\test_solo_sync.js
 ```
 
-Im Quellbetrieb `TESSERACT_CMD` auf die eigene `tesseract.exe` setzen. Zur Diagnose gibt es `--headless`, `--no-capture`, `--localhost`, `--port` und `--data-dir`. Damit lassen sich Tests vollständig in getrennten Datenordnern ausführen.
+Die OCR-Laufzeit vor dem Windows-Build mit `python tools/prepare_ocr.py` vorbereiten; siehe [Build-Anleitung](BUILD.md). Im Quellbetrieb `TESSERACT_CMD` auf die eigene `tesseract.exe` setzen. Zur Diagnose gibt es `--headless`, `--no-capture`, `--localhost`, `--port` und `--data-dir`. Damit lassen sich Tests vollständig in getrennten Datenordnern ausführen.
 
 ```powershell
-.\.venv\Scripts\python.exe tools\build_windows.py --tesseract-dir "Pfad\zur\OCR-Laufzeit" --webview-installer "Pfad\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" --installer
+.\.venv\Scripts\python.exe tools\build_windows.py --tesseract-dir .build\ocr --ocr-sources .build\CitizenTools-Solo-OCR-Sources.zip --webview-installer "Pfad\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" --installer
 ```
 
 Der Build bereitet die vollständige Ausgabe zunächst unter `.build` vor und aktualisiert dann den festen Zielordner `dist`. Installer und ZIP behalten ebenfalls ihre Dateinamen. Die vorherige Ausgabe bleibt als Sicherung im Build-Verzeichnis erhalten; schlägt das Ersetzen fehl, wird sie wiederhergestellt. Mit `--output` lässt sich ein anderer fester Ausgabeordner wählen. Kopiert werden nur Programmcode, Web-Assets, Lizenzen und Laufzeiten. `release.json` enthält Version, Dateigrößen und SHA-256-Prüfsummen. Der Build ist nicht codesigniert.
 
 Die WebView2-Verteilung folgt der [Microsoft-Anleitung zur Offline-Bereitstellung](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#offline-deployment). Fensteranbindung: [pywebview](https://pywebview.flowrl.com/guide/installation).
+
+## Cockpit und Einrichtungsassistent (0.1.24)
+
+Auf der Startseite öffnet **Cockpit anpassen** die Kartenauswahl. Häkchen blenden
+Karten ein oder aus; die Pfeile ändern ihre Reihenfolge innerhalb von „Übersicht“
+und „Heute wichtig“. **Übernehmen** speichert die Ansicht nur für diese App bzw.
+diesen Browser. **Abbrechen** verwirft Änderungen; **Standardansicht** setzt die
+Auswahl im Dialog zurück. Die Frachtkarte erscheint bei einem frachtfähigen Schiff.
+PC und Tablet können dadurch verschiedene Cockpits verwenden.
+
+Ein frischer Spielstand bietet auf der Startseite **Jetzt einrichten** an.
+Der Assistent führt durch Pilot, erstes Schiff, Screenshot-Taste und Heimnetz.
+Ein Schiff kann später gewählt werden; eine vorhandene Flotte wird nicht ersetzt.
+Mit **Einrichtung speichern** werden die Angaben gespeichert. Port und Freigabe
+werden nach einem Neustart wirksam. **Später** blendet den Hinweis aus.
+Unter **Einstellungen → Profil → Einrichtungsassistent** ist er erneut aufrufbar.
+Screenshot- und Netzwerkeinstellungen können nur direkt am PC geändert werden.
