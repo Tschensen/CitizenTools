@@ -19,24 +19,9 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 Windows-App, lokaler Server und Screenshot-Companion starten gemeinsam. Keine Internetverbindung erforderlich!
 
-## Windows verwenden
-
-Zielplattform: Windows 10/11, 64 Bit. Fertige Downloads gehören in den
-[Releases-Bereich](https://github.com/Tschensen/CitizenTools/releases).
-Eine EXE benötigt den zugehörigen Ordner `_internal`; für die portable Nutzung
-immer das vollständige ZIP entpacken.
-
-**Stand der Veröffentlichung:** Der Quellcode wird separat bereitgestellt.
-Vor der öffentlichen Weitergabe der bestehenden Windows-Pakete müssen Herkunft
-und zugehörige Quellen einiger älterer OCR-DLLs noch vollständig geklärt werden.
-Details stehen in [NOTICE.md](NOTICE.md).
-
 ## Heimnetz
 
-Die Windows-App auf dem PC starten. Unter **Einstellungen → Companion** steht
-die Adresse für den Browser der weiteren Geräte. Der PC muss eingeschaltet sein
-und die App muss laufen. Die Geräte bearbeiten denselben Spielstand. Es gibt
-kein Kontensystem; die Freigabe ist für das eigene, vertrauenswürdige Heimnetz gedacht.
+Die Windows-App auf dem PC starten. Unter **Einstellungen → Companion** steht die Adresse für den Browser der weiteren Geräte. Der PC muss eingeschaltet sein und die App muss laufen. Die Geräte bearbeiten denselben Spielstand. Es gibt kein Kontensystem; die Freigabe ist für das eigene, vertrauenswürdige Heimnetz gedacht.
 
 ## Entwickeln und selbst bauen
 
@@ -54,20 +39,11 @@ Der [Versionsverlauf](CHANGELOG.md) enthält auch die bisherigen internen Entwic
 | `tests/` | Automatische Prüfungen |
 | `release-notes.json`, `project.json` | Versionsverlauf und Projektangaben |
 
-Spielstände, Zugangsdaten, Screenshots, Python-Umgebungen und fertige
-Build-Ergebnisse gehören nicht in das Quellcode-Repository. Die `.gitignore`
-berücksichtigt die üblichen lokalen Dateien.
-
 ## Lizenz und Herkunft
 
 Copyright (c) 2026 Tschensen and Citizen Tools contributors.
-Der eigene Code steht unter **GNU GPL Version 3 oder jeder späteren Version**
-(`GPL-3.0-or-later`). Nutzung, Änderungen und Weitergabe sind auch kommerziell
-erlaubt. Copyright- und Lizenzhinweise bleiben erhalten; bei Weitergabe gelten
-die GPL-Bedingungen einschließlich Kennzeichnung von Änderungen und Bereitstellung
-des zugehörigen Quellcodes. Vollständiger Lizenztext: [LICENSE](LICENSE).
+Der eigene Code steht unter **GNU GPL Version 3 oder jeder späteren Version** (`GPL-3.0-or-later`). Nutzung, Änderungen und Weitergabe sind auch kommerziell erlaubt. Copyright- und Lizenzhinweise bleiben erhalten; bei Weitergabe gelten die GPL-Bedingungen einschließlich Kennzeichnung von Änderungen und Bereitstellung des zugehörigen Quellcodes. Vollständiger Lizenztext: [LICENSE](LICENSE).
 
-Zusatzkomponenten, Marken und Spielinhalte behalten ihre eigenen Bedingungen:
-[NOTICE.md](NOTICE.md), [Lizenztexte](packaging/licenses/).
-Citizen Tools ist ein unabhängiges Fanprojekt ohne offizielle Zugehörigkeit zu
-Cloud Imperium Games oder Roberts Space Industries.
+Zusatzkomponenten, Marken und Spielinhalte behalten ihre eigenen Bedingungen: [NOTICE.md](NOTICE.md), [Lizenztexte](packaging/licenses/).
+
+Citizen Tools ist ein unabhängiges Fanprojekt ohne offizielle Zugehörigkeit zu Cloud Imperium Games oder Roberts Space Industries.
