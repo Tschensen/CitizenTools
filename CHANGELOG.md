@@ -1,5 +1,11 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## Unveröffentlicht — Zeitraumvergleich
+
+- Automatischer Vergleich für Heute, letzte sieben Tage, diesen Monat und eigene Zeiträume; der Vergleichszeitraum ist direkt am Filter sichtbar.
+- Unterschiede bei gebuchten Einnahmen, Ausgaben, Betriebsergebnis und erledigten Aufträgen direkt an den vorhandenen Kennzahlen anzeigen, inklusive bisherigem Wert und Prozentänderung bei positivem Vergleichswert.
+- Niedrigere Ausgaben als Verbesserung kennzeichnen; bei null oder negativem Vergleichswert auf irreführende Prozentangaben verzichten. Deutsch und Englisch unterstützen.
+
 ## 0.1.25 — Deine Einsätze im Zeitverlauf
 
 - Zeitraum für die gesamte Statistik wählen: Heute, letzte sieben Tage, dieser Monat, eigener Zeitraum oder gesamter Verlauf. Die Auswahl bleibt pro App bzw. Browser gespeichert.

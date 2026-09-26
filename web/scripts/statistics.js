@@ -39,6 +39,7 @@
     catch { filter = period.normalizeFilter(null); }
     let currentRange = period.getRange(filter);
     const chart = window.StatisticsTrend.createStatisticsChart(helpers);
+    const renderComparison = window.StatisticsTrend.createComparisonRenderer(helpers);
     const dom = {
       periodForm: document.querySelector('#statisticsPeriodForm'),
       periodSelect: document.querySelector('#statisticsPeriod'),
@@ -47,6 +48,7 @@
       periodEnd: document.querySelector('#statisticsEnd'),
       periodError: document.querySelector('#statisticsPeriodError'),
       periodCaption: document.querySelector('#statisticsPeriodCaption'),
+      comparisonCaption: document.querySelector('#statisticsComparisonCaption'),
       periodUndated: document.querySelector('#statisticsPeriodUndated'),
       viewTabs: Array.from(document.querySelectorAll("[data-statistics-view-target]")),
       viewSections: Array.from(document.querySelectorAll("[data-statistics-view]")),
@@ -201,9 +203,9 @@
         });
     }
 
-    function collectStatistics() {
+    function collectStatistics(range = currentRange) {
       const state = getState();
-      const selection = period.selectState(state, currentRange);
+      const selection = period.selectState(state, range);
       const missions = selection.missions.filter(isAccepted);
       const completedMissions = missions.filter(isCompleted);
       const customers = new Map();
@@ -397,18 +399,19 @@
       };
     }
 
-    function renderSummary(data) {
+    function renderSummary(data, comparison) {
       if (!dom.summary) return;
       const cards = [
         [translate("statistics.summary.accepted"), data.knownMissionCount.toLocaleString(locale())],
-        [translate("statistics.summary.completed"), data.knownCompletedMissionCount.toLocaleString(locale())],
+        [translate("statistics.summary.completed"), data.knownCompletedMissionCount.toLocaleString(locale()), 'completed'],
         [translate("statistics.summary.customers"), data.customers.length.toLocaleString(locale())],
         [translate("statistics.summary.transported"), formatScu(data.transportedScu)],
       ];
-      dom.summary.innerHTML = cards.map(([label, value]) => `
+      dom.summary.innerHTML = cards.map(([label, value, metric]) => `
         <div class="summary-card summary-card-compact">
           <span>${escape(label)}</span>
           <strong>${escape(value)}</strong>
+          ${metric ? renderComparison(comparison?.[metric], metric) : ''}
         </div>
       `).join("");
     }
@@ -694,15 +697,29 @@
       if (!dom.summary) return;
       currentRange = period.getRange(filter);
       const data = collectStatistics();
+      const trend = period.buildTrend(data.selection.ledgerEntries, currentRange);
+      const comparisonRange = period.getComparisonRange(currentRange);
+      let comparison = null;
+      if (comparisonRange) {
+        const previous = collectStatistics(comparisonRange);
+        const previousTotals = period.operatingTotals(previous.selection.ledgerEntries);
+        comparison = Object.fromEntries(['income', 'expense', 'result'].map(metric => [metric, period.compareValues(trend.totals[metric], previousTotals[metric])]));
+        comparison.completed = period.compareValues(data.knownCompletedMissionCount, previous.knownCompletedMissionCount);
+      }
       if (dom.periodCaption) {
         const dateLabel = key => new Date(`${key}T12:00:00`).toLocaleDateString(locale());
         dom.periodCaption.textContent = currentRange.preset === 'all' ? translate('statistics.scope') : `${dateLabel(currentRange.start)} – ${dateLabel(currentRange.end)}`;
+        if (dom.comparisonCaption) {
+          dom.comparisonCaption.hidden = !comparisonRange;
+          const dates = comparisonRange ? comparisonRange.start === comparisonRange.end ? dateLabel(comparisonRange.start) : `${dateLabel(comparisonRange.start)} – ${dateLabel(comparisonRange.end)}` : '';
+          dom.comparisonCaption.textContent = comparisonRange ? translate('statistics.comparison.period', { dates }) : '';
+        }
         dom.periodUndated.hidden = currentRange.preset === 'all' || !data.selection.undated;
         dom.periodUndated.textContent = translate('statistics.period.undated', { count: data.selection.undated });
       }
-      chart.render(period.buildTrend(data.selection.ledgerEntries, currentRange));
+      chart.render(trend, comparison);
       helpers.renderStopHistory?.(data.selection.stopHistory);
-      renderSummary(data);
+      renderSummary(data, comparison);
       renderHighlights(data);
       renderTable(dom.customers, data.customers, [
         { label: "statistics.table.customer", render: (row, index) => `<span class="statistics-primary-cell"><small>${index + 1}</small><strong>${escape(row.label)}</strong></span>` },

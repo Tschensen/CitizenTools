@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="solo.css?solo=0.1.25" />
     <link rel="stylesheet" href="personal-transfer.css?solo=0.1.25" />
     <link rel="stylesheet" href="solo-personalize.css?solo=0.1.25" />
-    <link rel="stylesheet" href="statistics-period.css?solo=0.1.25&layout=2" />
+    <link rel="stylesheet" href="statistics-period.css?solo=0.1.25&preview=statisticscompare" />
   </head>
   <body>
     <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
@@ -1616,9 +1616,12 @@
                 </div>
               </form>
               <p id="statisticsPeriodError" class="statistics-period-error" role="alert" data-i18n="statistics.period.invalid" hidden>Bitte einen gültigen Zeitraum wählen: Von muss vor oder auf Bis liegen.</p>
-              <p id="statisticsPeriodCaption" class="statistics-period-caption" aria-live="polite"></p>
+              <div class="statistics-period-caption-group" aria-live="polite">
+                <p id="statisticsPeriodCaption" class="statistics-period-caption"></p>
+                <p id="statisticsComparisonCaption" class="statistics-comparison-caption" hidden></p>
+              </div>
               <p id="statisticsPeriodUndated" class="form-hint" hidden></p>
-              <details class="statistics-period-help"><summary data-i18n="statistics.period.help">So wird gerechnet</summary><p data-i18n="statistics.period.basis"></p></details>
+              <details class="statistics-period-help"><summary data-i18n="statistics.period.help">So wird gerechnet</summary><p data-i18n="statistics.period.basis"></p><p data-i18n="statistics.comparison.basis"></p></details>
             </section>
             <div class="statistics-view" data-statistics-view="overview">
               <section class="panel statistics-summary-panel">
@@ -2835,7 +2838,7 @@
     <datalist id="financeReferenceSuggestions"></datalist>
 
     <script data-solo-src="scripts/config.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.1.25&preview=statisticscompare"></script>
     
     
     
@@ -2857,9 +2860,9 @@
     
     <script data-solo-src="scripts/shipdb.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/finance.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/statistics-period.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/statistics-trend.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/statistics.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/statistics-period.js?solo=0.1.25&preview=statisticscompare"></script>
+    <script data-solo-src="scripts/statistics-trend.js?solo=0.1.25&preview=statisticscompare"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.1.25&preview=statisticscompare"></script>
     
     <script data-solo-src="scripts/systemdb.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/location-alias-learning.js?solo=0.1.25"></script>

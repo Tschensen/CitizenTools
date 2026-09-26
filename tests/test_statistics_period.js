@@ -90,3 +90,76 @@ test('long ranges aggregate without losing totals or end boundaries', () => {
     assert.equal(trend.buckets.reduce((sum, b) => sum + b.income, 0), 300);
   }
 });
+
+test('today compares with the previous calendar day, including New Year', () => {
+  assert.deepEqual(p.getComparisonRange(p.getRange({ preset: 'today' }, new Date(2026, 0, 1, 12))), {
+    preset: 'custom', start: '2025-12-31', end: '2025-12-31',
+  });
+});
+test('seven-day comparison contains exactly the preceding seven days', () => {
+  const range = p.getRange({ preset: 'week' }, new Date(2026, 0, 3, 12));
+  const before = p.getComparisonRange(range);
+  assert.deepEqual(before, { preset: 'custom', start: '2025-12-21', end: '2025-12-27' });
+  assert.ok(!p.contains(before, range.start));
+});
+test('month-to-date uses the same part of the previous month and clamps short months', () => {
+  for (const [current, start, end] of [
+    [new Date(2026, 0, 3), '2025-12-01', '2025-12-03'],
+    [new Date(2026, 2, 31), '2026-02-01', '2026-02-28'],
+    [new Date(2024, 2, 31), '2024-02-01', '2024-02-29'],
+    [new Date(2026, 1, 28), '2026-01-01', '2026-01-28'],
+    [new Date(2026, 4, 1), '2026-04-01', '2026-04-01'],
+  ]) {
+    assert.deepEqual(p.getComparisonRange(p.getRange({ preset: 'month' }, current)), { preset: 'custom', start, end });
+  }
+});
+test('custom ranges preserve inclusive length across leap days and clock changes', () => {
+  for (const [start, end, beforeStart, beforeEnd] of [
+    ['2026-09-01', '2026-09-03', '2026-08-29', '2026-08-31'],
+    ['2024-03-01', '2024-03-02', '2024-02-28', '2024-02-29'],
+    ['2026-03-29', '2026-03-30', '2026-03-27', '2026-03-28'],
+    ['2026-10-25', '2026-10-26', '2026-10-23', '2026-10-24'],
+  ]) {
+    assert.deepEqual(p.getComparisonRange(custom(start, end)), { preset: 'custom', start: beforeStart, end: beforeEnd });
+  }
+});
+test('all-time and invalid ranges have no invented comparison period', () => {
+  for (const range of [{ preset: 'all' }, null, { preset: 'custom', start: '', end: '2026-09-01' }, { preset: 'custom', start: '2026-09-02', end: '2026-09-01' }, custom('0001-01-01', '0001-01-01')]) {
+    assert.equal(p.getComparisonRange(range), null);
+  }
+});
+test('absolute changes and percentages use the actual positive comparison value', () => {
+  assert.deepEqual(p.compareValues(300, 200), { current: 300, previous: 200, delta: 100, percentage: 50 });
+  assert.equal(p.compareValues(50, 200).percentage, -75);
+  assert.equal(p.compareValues(-50, 100).percentage, -150);
+  assert.equal(p.compareValues(200, 200).delta, 0);
+});
+test('zero and negative baselines show absolute changes without misleading percentages', () => {
+  for (const previous of [0, -100]) {
+    const value = p.compareValues(60, previous);
+    assert.equal(value.percentage, null);
+    assert.equal(value.delta, 60 - previous);
+  }
+  assert.equal(p.compareValues(0, 0).delta, 0);
+  assert.equal(p.compareValues(-150, -100).delta, -50);
+  assert.equal(p.compareValues(NaN, 10), null);
+});
+test('operating comparisons exclude ship purchases and undated bookings using the same rules as the chart', () => {
+  const range = custom('2026-09-02', '2026-09-02');
+  const before = p.getComparisonRange(range);
+  const state = { ledgerEntries: [booking('2026-09-01', 100), booking('2026-09-01', 40, 'expense'), booking('2026-09-02', 150), booking('2026-09-02', 20, 'expense'), booking('2026-09-02', 999999, 'expense', { category: 'Schiffskauf' }), booking('', 99999)] };
+  const oldTotals = p.operatingTotals(p.selectState(state, before).ledgerEntries);
+  const currentEntries = p.selectState(state, range).ledgerEntries;
+  const newTotals = p.operatingTotals(currentEntries);
+  assert.deepEqual(newTotals, p.buildTrend(currentEntries, range).totals);
+  assert.equal(p.compareValues(newTotals.income, oldTotals.income).delta, 50);
+  assert.equal(p.compareValues(newTotals.expense, oldTotals.expense).percentage, -50);
+  assert.equal(p.compareValues(newTotals.result, oldTotals.result).delta, 70);
+});
+test('empty current period still compares with a populated previous period', () => {
+  const range = custom('2026-09-02', '2026-09-02');
+  const state = { ledgerEntries: [booking('2026-09-01', 100)] };
+  const current = p.operatingTotals(p.selectState(state, range).ledgerEntries);
+  const previous = p.operatingTotals(p.selectState(state, p.getComparisonRange(range)).ledgerEntries);
+  assert.equal(p.compareValues(current.income, previous.income).percentage, -100);
+});

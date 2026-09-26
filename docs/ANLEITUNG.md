@@ -29,6 +29,23 @@ Datumslose Buchungen fließen im gesamten Verlauf in die Summen ein, können abe
 Der Zeitfilter gilt ebenfalls für Auftraggeber, Orte, Schiffsauswertungen und Stop-Historie.
 Eine kompakte Erklärung lässt sich direkt am Filter unter **So wird gerechnet** aufklappen.
 
+### Zeitraumvergleich (in Entwicklung)
+
+Der Branch `statisticscompare` ergänzt einen automatischen Vergleich direkt an den
+Kennzahlen für erledigte Aufträge, gebuchte Einnahmen, Ausgaben und Betriebsergebnis.
+**Heute** wird mit dem ganzen Vortag verglichen, **Letzte 7 Tage** mit den sieben Tagen davor.
+**Dieser Monat** verwendet den gleichen Abschnitt des Vormonats; bei einem kürzeren
+Vormonat endet der Vergleich an dessen letztem Tag. Eigene Zeiträume werden mit dem
+gleich langen Abschnitt unmittelbar davor verglichen. Beide Grenzen zählen mit.
+Unter dem ausgewählten Zeitraum stehen die genauen Vergleichsdaten. Für **Gesamter Verlauf** entfällt der Vergleich.
+
+An jeder Kennzahl stehen die absolute Änderung und der bisherige Wert.
+Prozentänderungen erscheinen nur bei positivem Vergleichswert; ausgehend von null
+oder einem Verlust bleibt die absolute Änderung aussagekräftig. Niedrigere Ausgaben
+werden als Verbesserung gekennzeichnet. Grundlage sind ausschließlich die vorhandenen
+Aufträge und Buchungen; leere Vergleichszeiträume ergeben einen bisherigen Wert von null.
+Die Auswahl wirkt automatisch und verändert keine gespeicherten Daten.
+
 Version 0.1.19 ergänzt die Aufnahme des Screenshot-Tastenkürzels per Tastendruck: unter Einstellungen → Companion & Heimnetz das Feld oder **Aufnehmen** anklicken, Kombination drücken und **Einstellungen speichern** wählen. **Esc**, Abbrechen oder Verlassen des Feldes behält den vorherigen Wert. Währenddessen bleibt laufende OCR aktiv; nur der bisherige Hotkey wird vorübergehend freigegeben. Bei einem geschlossenen oder getrennten Browser endet die Freigabe automatisch.
 
 Version 0.1.21 korrigiert den gemeinsamen Spielstand von Windows-App und Webansicht im Heimnetz. OCR-Aufträge werden zentral und genau einmal übernommen. Bearbeiten, Löschen und Abschließen auf dem Tablet werden in derselben PC-Datenbank gespeichert; unabhängige Änderungen bleiben auch bei parallelen Importen erhalten. Nur widersprüchliche Änderungen an denselben Daten benötigen weiterhin eine Wiederherstellungskopie. Nach dem Update die App neu starten und die Webansicht auf den anderen Geräten neu laden.
