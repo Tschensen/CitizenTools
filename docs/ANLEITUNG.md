@@ -1,8 +1,33 @@
-# Citizen Tools · Flight Deck · 0.1.23
+# Citizen Tools · Flight Deck · 0.1.25
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Statistik nach Zeitraum
+
+Ab Version 0.1.25 steht über allen Statistikbereichen eine gemeinsame Zeitraumwahl:
+**Gesamter Verlauf**, **Heute**, **Letzte 7 Tage**, **Dieser Monat** und **Eigener Zeitraum**.
+Eigene Start- und Enddaten werden mit **Anwenden** übernommen; beide Tage zählen mit.
+Die Auswahl wird pro App bzw. Browser gespeichert und verändert keine Aufträge oder Buchungen.
+
+Erledigte Aufträge werden nach Abschlussdatum ausgewertet, offene nach Anlagedatum.
+Bei älteren erledigten Aufträgen dienen Zahlungs- oder Anlagedatum als Ersatz.
+Die Fracht eines erledigten Auftrags wird dessen Auswertungsdatum zugerechnet.
+Buchungen verwenden ihren Buchungstag (ersatzweise Anlagedatum), Stopps ihr Abschlussdatum.
+Zeitstempel werden in der Ortszeit des jeweiligen Geräts ausgewertet; reine Buchungsdaten behalten ihren Kalendertag.
+Einträge ohne gültiges Datum sind im gesamten Verlauf weiterhin enthalten und werden bei begrenzten Zeiträumen mit einem Hinweis ausgelassen.
+
+**Ergebnis im Verlauf** zeigt die tatsächlich gebuchten Einnahmen und Ausgaben sowie deren Differenz als Betriebsergebnis.
+Schiffskauf, Schiffsverkauf und Upgrades bleiben wie bei den Schiffsauswertungen unberücksichtigt.
+Noch nicht gebuchte Auftragsvergütungen gehören nicht zum Diagramm. Eine spätere Zahlung verschiebt das Abschlussdatum eines vorhandenen Auftrags nicht.
+Einzelne Zeitpunkte lassen sich durch Antippen des Diagramms oder über den Schieberegler auswählen; dieser ist auch per Tastatur bedienbar.
+**Werte als Tabelle** enthält die genauen Werte aller angezeigten Zeitabschnitte.
+Längere Zeiträume werden automatisch in Abschnitte von sieben Tagen, Monate oder Jahre zusammengefasst.
+Datumslose Buchungen fließen im gesamten Verlauf in die Summen ein, können aber nicht eingezeichnet werden; die Ansicht weist darauf hin.
+
+Der Zeitfilter gilt ebenfalls für Auftraggeber, Orte, Schiffsauswertungen und Stop-Historie.
+Eine kompakte Erklärung lässt sich direkt am Filter unter **So wird gerechnet** aufklappen.
 
 Version 0.1.19 ergänzt die Aufnahme des Screenshot-Tastenkürzels per Tastendruck: unter Einstellungen → Companion & Heimnetz das Feld oder **Aufnehmen** anklicken, Kombination drücken und **Einstellungen speichern** wählen. **Esc**, Abbrechen oder Verlassen des Feldes behält den vorherigen Wert. Währenddessen bleibt laufende OCR aktiv; nur der bisherige Hotkey wird vorübergehend freigegeben. Bei einem geschlossenen oder getrennten Browser endet die Freigabe automatisch.
 

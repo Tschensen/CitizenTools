@@ -23,7 +23,7 @@ import transfer
 import solo_sounds
 import solo_about
 
-VERSION = "0.1.24"
+VERSION = "0.1.25"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES

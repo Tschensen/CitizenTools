@@ -32,7 +32,22 @@
   }
 
   function createStatisticsController({ getState, helpers }) {
+    const period = window.StatisticsPeriod;
+    const periodStorageKey = 'citizen-tools:statistics-period:v1';
+    let filter;
+    try { filter = period.normalizeFilter(JSON.parse(readStoredValue(periodStorageKey))); }
+    catch { filter = period.normalizeFilter(null); }
+    let currentRange = period.getRange(filter);
+    const chart = window.StatisticsTrend.createStatisticsChart(helpers);
     const dom = {
+      periodForm: document.querySelector('#statisticsPeriodForm'),
+      periodSelect: document.querySelector('#statisticsPeriod'),
+      periodCustom: document.querySelector('#statisticsCustomPeriod'),
+      periodStart: document.querySelector('#statisticsStart'),
+      periodEnd: document.querySelector('#statisticsEnd'),
+      periodError: document.querySelector('#statisticsPeriodError'),
+      periodCaption: document.querySelector('#statisticsPeriodCaption'),
+      periodUndated: document.querySelector('#statisticsPeriodUndated'),
       viewTabs: Array.from(document.querySelectorAll("[data-statistics-view-target]")),
       viewSections: Array.from(document.querySelectorAll("[data-statistics-view]")),
       sectionPanels: Array.from(document.querySelectorAll("[data-statistics-section]")),
@@ -188,7 +203,8 @@
 
     function collectStatistics() {
       const state = getState();
-      const missions = list(state.missions).filter(isAccepted);
+      const selection = period.selectState(state, currentRange);
+      const missions = selection.missions.filter(isAccepted);
       const completedMissions = missions.filter(isCompleted);
       const customers = new Map();
       const pickups = new Map();
@@ -215,8 +231,9 @@
           }]),
       );
       const profilesById = new Map(list(state.shipLibrary).map((entry) => [String(entry.id || ""), entry]));
-      const missionsById = new Map(missions.map((mission) => [String(mission.id || ""), mission]));
-      const ledgerEntries = list(state.ledgerEntries);
+      // Attribution must still resolve contracts outside the selected period.
+      const missionsById = new Map(list(state.missions).map((mission) => [String(mission.id || ""), mission]));
+      const ledgerEntries = selection.ledgerEntries;
       const knownMissionIds = new Set(missions.map((mission) => String(mission.id || "")).filter(Boolean));
       const knownCompletedMissionIds = new Set(completedMissions.map((mission) => String(mission.id || "")).filter(Boolean));
       let transportedScu = 0;
@@ -294,7 +311,7 @@
         if (!row) return;
         row.bookingIds.add(String(entry?.id || `booking-${index}`));
         const linkedMissionId = String(entry?.missionId || "").trim();
-        if (linkedMissionId && entry?.flow === "income") {
+        if (linkedMissionId && entry?.flow === "income" && !missionsById.has(linkedMissionId)) {
           knownMissionIds.add(linkedMissionId);
           knownCompletedMissionIds.add(linkedMissionId);
           row.missionIds.add(linkedMissionId);
@@ -354,6 +371,7 @@
       });
 
       return {
+        selection,
         missions,
         completedMissions,
         knownMissionCount: knownMissionIds.size,
@@ -618,6 +636,36 @@
     function init() {
       if (initialized) return;
       initialized = true;
+      if (dom.periodForm) {
+        dom.periodSelect.value = filter.preset;
+        dom.periodStart.value = filter.start || period.dateKey(new Date());
+        dom.periodEnd.value = filter.end || period.dateKey(new Date());
+        dom.periodCustom.hidden = filter.preset !== 'custom';
+        function applyPeriod() {
+          const draft = { preset: dom.periodSelect.value, start: dom.periodStart.value, end: dom.periodEnd.value };
+          if (draft.preset === 'custom' && (!period.dateKey(draft.start) || !period.dateKey(draft.end) || draft.start > draft.end)) {
+            dom.periodError.hidden = false;
+            return;
+          }
+          dom.periodError.hidden = true;
+          filter = period.normalizeFilter(draft);
+          writeStoredValue(periodStorageKey, JSON.stringify(filter));
+          render();
+        }
+        dom.periodSelect.addEventListener('change', () => {
+          dom.periodCustom.hidden = dom.periodSelect.value !== 'custom';
+          dom.periodError.hidden = true;
+          if (dom.periodSelect.value !== 'custom') applyPeriod();
+        });
+        dom.periodForm.addEventListener('submit', event => { event.preventDefault(); applyPeriod(); });
+        const refreshDay = () => {
+          const range = period.getRange(filter);
+          if (range.start !== currentRange.start || range.end !== currentRange.end) render();
+        };
+        window.addEventListener('focus', refreshDay);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
+        window.setInterval(() => { if (!document.hidden) refreshDay(); }, 60000);
+      }
       dom.viewTabs.forEach((button) => {
         button.addEventListener("click", () => {
           activeStatisticsView = normalizeStatisticsView(button.dataset.statisticsViewTarget);
@@ -644,7 +692,16 @@
 
     function render() {
       if (!dom.summary) return;
+      currentRange = period.getRange(filter);
       const data = collectStatistics();
+      if (dom.periodCaption) {
+        const dateLabel = key => new Date(`${key}T12:00:00`).toLocaleDateString(locale());
+        dom.periodCaption.textContent = currentRange.preset === 'all' ? translate('statistics.scope') : `${dateLabel(currentRange.start)} – ${dateLabel(currentRange.end)}`;
+        dom.periodUndated.hidden = currentRange.preset === 'all' || !data.selection.undated;
+        dom.periodUndated.textContent = translate('statistics.period.undated', { count: data.selection.undated });
+      }
+      chart.render(period.buildTrend(data.selection.ledgerEntries, currentRange));
+      helpers.renderStopHistory?.(data.selection.stopHistory);
       renderSummary(data);
       renderHighlights(data);
       renderTable(dom.customers, data.customers, [

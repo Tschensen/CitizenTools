@@ -4488,9 +4488,9 @@ function renderCurrentLocationControl() {
   }
 }
 
-function renderStopHistory() {
+function renderStopHistory(history = state.stopHistory) {
   if (!stopHistoryEmpty || !stopHistoryList) return;
-  const entries = [...state.stopHistory].sort((left, right) => new Date(right.completedAt).getTime() - new Date(left.completedAt).getTime());
+  const entries = [...history].sort((left, right) => new Date(right.completedAt).getTime() - new Date(left.completedAt).getTime());
   stopHistoryEmpty.hidden = entries.length > 0;
   stopHistoryList.innerHTML = "";
 

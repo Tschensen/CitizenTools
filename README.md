@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.1.24 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.1.25 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
@@ -13,6 +13,7 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 - Fracht und Verladung mit Cargo-Grids planen.
 - Routen, nächste Ziele und Fortschritt verfolgen.
 - Flotte, Schiffsdaten, Finanzen und Statistiken verwalten.
+- Statistik nach Zeitraum filtern und gebuchte Einnahmen, Ausgaben und Betriebsergebnis im Diagramm verfolgen.
 - Interface-Sounds und Akzentfarbe individuell einstellen.
 - Auf PC, Tablet und anderen Geräten im Heimnetz denselben Stand bearbeiten.
 - Daten sichern sowie persönliche Daten als Datei exportieren und importieren.

@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.1.25",
+    "de": {
+      "title": "Deine Einsätze im Zeitverlauf",
+      "changes": [
+        "Zeitraum für die gesamte Statistik wählen: Heute, letzte sieben Tage, dieser Monat, eigener Zeitraum oder gesamter Verlauf. Die Auswahl bleibt pro App bzw. Browser gespeichert.",
+        "Gebuchte Einnahmen, Ausgaben und Betriebsergebnis als interaktives Diagramm mit genauen Werten und aufklappbarer Tabelle anzeigen. Größere Zeiträume werden automatisch gebündelt.",
+        "Auftraggeber, Orte, Schiffe und Stop-Historie berücksichtigen denselben Filter. Ältere Einträge ohne Datum bleiben im gesamten Verlauf erhalten; Hinweise machen fehlende Datumsangaben sichtbar.",
+        "Deutsche und englische Beschriftungen sowie eine angepasste Darstellung für schmale Bildschirme."
+      ]
+    },
+    "en": {
+      "title": "Your operations over time",
+      "changes": [
+        "Choose a period across all statistics: today, last seven days, this month, a custom period or all time. Each app or browser remembers its selection.",
+        "Explore booked income, expenses and operating result in an interactive chart with exact values and an expandable data table. Longer periods are grouped automatically.",
+        "Contractors, locations, ships and stop history use the same filter. Older undated records remain available in All time, with notices explaining missing dates.",
+        "German and English labels and a layout adapted to narrow screens."
+      ]
+    }
+  },
+  {
     "version": "0.1.24",
     "de": {
       "title": "Dein Cockpit & erster Start",

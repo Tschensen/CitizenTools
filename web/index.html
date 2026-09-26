@@ -15,9 +15,10 @@
     <title>Citizen Tools · Flight Deck</title>
     <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css?v=232" />
-    <link rel="stylesheet" href="solo.css?solo=0.1.24" />
-    <link rel="stylesheet" href="personal-transfer.css?solo=0.1.24" />
-    <link rel="stylesheet" href="solo-personalize.css?solo=0.1.24" />
+    <link rel="stylesheet" href="solo.css?solo=0.1.25" />
+    <link rel="stylesheet" href="personal-transfer.css?solo=0.1.25" />
+    <link rel="stylesheet" href="solo-personalize.css?solo=0.1.25" />
+    <link rel="stylesheet" href="statistics-period.css?solo=0.1.25&layout=2" />
   </head>
   <body>
     <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
@@ -1597,15 +1598,41 @@
 
         <section class="page-section" data-page="statistics">
           <section class="statistics-shell">
+            <section class="panel statistics-period-panel" aria-label="Statistik-Zeitraum" data-i18n-aria-label="statistics.period.label">
+              <form id="statisticsPeriodForm" class="statistics-period-form" novalidate>
+                <label for="statisticsPeriod"><span data-i18n="statistics.period.label">Zeitraum</span>
+                  <select id="statisticsPeriod">
+                    <option value="all" data-i18n="statistics.scope">Gesamter Verlauf</option>
+                    <option value="today" data-i18n="statistics.period.today">Heute</option>
+                    <option value="week" data-i18n="statistics.period.week">Letzte 7 Tage</option>
+                    <option value="month" data-i18n="statistics.period.month">Dieser Monat</option>
+                    <option value="custom" data-i18n="statistics.period.custom">Eigener Zeitraum</option>
+                  </select>
+                </label>
+                <div id="statisticsCustomPeriod" class="statistics-custom-period" hidden>
+                  <label for="statisticsStart"><span data-i18n="statistics.period.from">Von</span><input id="statisticsStart" type="date" required aria-describedby="statisticsPeriodError" /></label>
+                  <label for="statisticsEnd"><span data-i18n="statistics.period.to">Bis</span><input id="statisticsEnd" type="date" required aria-describedby="statisticsPeriodError" /></label>
+                  <button type="submit" class="secondary-button" data-i18n="statistics.period.apply">Anwenden</button>
+                </div>
+              </form>
+              <p id="statisticsPeriodError" class="statistics-period-error" role="alert" data-i18n="statistics.period.invalid" hidden>Bitte einen gültigen Zeitraum wählen: Von muss vor oder auf Bis liegen.</p>
+              <p id="statisticsPeriodCaption" class="statistics-period-caption" aria-live="polite"></p>
+              <p id="statisticsPeriodUndated" class="form-hint" hidden></p>
+              <details class="statistics-period-help"><summary data-i18n="statistics.period.help">So wird gerechnet</summary><p data-i18n="statistics.period.basis"></p></details>
+            </section>
             <div class="statistics-view" data-statistics-view="overview">
               <section class="panel statistics-summary-panel">
                 <div class="panel-header panel-header-stack">
                   <div>
                     <h2 data-i18n="statistics.title">Einsatzstatistik</h2>
                   </div>
-                  <span class="statistics-scope" data-i18n="statistics.scope">Gesamter Verlauf</span>
                 </div>
                 <div id="statisticsSummary" class="summary-cards fleet-summary"></div>
+              </section>
+
+              <section class="panel statistics-trend-panel" aria-labelledby="statisticsTrendTitle">
+                <div class="panel-header"><h2 id="statisticsTrendTitle" data-i18n="statistics.trend.title">Ergebnis im Verlauf</h2></div>
+                <div id="statisticsTrend"></div>
               </section>
 
               <section class="panel statistics-highlights-panel">
@@ -2807,52 +2834,54 @@
 
     <datalist id="financeReferenceSuggestions"></datalist>
 
-    <script data-solo-src="scripts/config.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.1.24"></script>
+    <script data-solo-src="scripts/config.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.1.25"></script>
     
     
     
     
-    <script data-solo-src="scripts/state-persistence.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/presets.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/mission-duplicates.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/mission-domain.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/mission-import-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/autoload.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/unload-guidance.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/route-optimizer.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/route-run-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/run-view-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/cargo-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/fleet.js?solo=0.1.24"></script>
+    <script data-solo-src="scripts/state-persistence.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/presets.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/mission-duplicates.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/mission-domain.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/mission-import-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/unload-guidance.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/route-run-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/run-view-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/fleet.js?solo=0.1.25"></script>
     
-    <script data-solo-src="scripts/shipdb.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/finance.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/statistics.js?solo=0.1.24"></script>
+    <script data-solo-src="scripts/shipdb.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/finance.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/statistics-period.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/statistics-trend.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.1.25"></script>
     
-    <script data-solo-src="scripts/systemdb.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/location-alias-learning.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/backup-ui.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/ledger-automation.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-merge.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-sync.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-connection.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-theme.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-effects.js?solo=0.1.24"></script>
-    <script data-solo-src="app.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/sound-presets.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-sounds.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.1.24"></script>
-  <script data-solo-src="scripts/solo-hotkey.js?solo=0.1.24"></script>
-  <script data-solo-src="scripts/solo-ui.js?solo=0.1.24"></script>
-  <script data-solo-src="scripts/solo-about.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/personal-transfer.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-dialog.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-cockpit.js?solo=0.1.24"></script>
-    <script data-solo-src="scripts/solo-setup.js?solo=0.1.24"></script>
-    <script src="scripts/solo-loader.js?solo=0.1.24"></script>
+    <script data-solo-src="scripts/systemdb.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/location-alias-learning.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/backup-ui.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/ledger-automation.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-connection.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-theme.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-effects.js?solo=0.1.25"></script>
+    <script data-solo-src="app.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/sound-presets.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-sounds.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.1.25"></script>
+  <script data-solo-src="scripts/solo-hotkey.js?solo=0.1.25"></script>
+  <script data-solo-src="scripts/solo-ui.js?solo=0.1.25"></script>
+  <script data-solo-src="scripts/solo-about.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/personal-transfer.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-dialog.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-cockpit.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/solo-setup.js?solo=0.1.25"></script>
+    <script src="scripts/solo-loader.js?solo=0.1.25"></script>
   </body>
 </html>

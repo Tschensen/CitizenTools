@@ -1,5 +1,12 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.1.25 — Deine Einsätze im Zeitverlauf
+
+- Zeitraum für die gesamte Statistik wählen: Heute, letzte sieben Tage, dieser Monat, eigener Zeitraum oder gesamter Verlauf. Die Auswahl bleibt pro App bzw. Browser gespeichert.
+- Gebuchte Einnahmen, Ausgaben und Betriebsergebnis als interaktives Diagramm mit genauen Werten und aufklappbarer Tabelle anzeigen. Größere Zeiträume werden automatisch gebündelt.
+- Auftraggeber, Orte, Schiffe und Stop-Historie berücksichtigen denselben Filter. Ältere Einträge ohne Datum bleiben im gesamten Verlauf erhalten; Hinweise machen fehlende Datumsangaben sichtbar.
+- Deutsche und englische Beschriftungen sowie eine angepasste Darstellung für schmale Bildschirme.
+
 ## 0.1.24 — Dein Cockpit & erster Start
 
 - Cockpit-Karten pro App oder Browser ein-/ausblenden, innerhalb ihrer Bereiche umsortieren und auf die Standardansicht zurücksetzen.

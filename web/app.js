@@ -712,6 +712,7 @@ const financeController = createFinanceController({
 const statisticsController = createStatisticsController({
   getState: () => state,
   helpers: {
+    renderStopHistory,
     currentUiLanguage,
     escapeHtml,
     formatShipEntryFullName,
@@ -1421,7 +1422,6 @@ function render() {
   renderStopList();
   renderCurrentLocationControl();
   renderRouteProgress();
-  renderStopHistory();
   renderMissions();
   renderFleet();
   financeController.render();
