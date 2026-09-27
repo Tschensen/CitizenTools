@@ -10,6 +10,7 @@ import os
 import re
 import socket
 import shutil
+import sys
 import threading
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer
@@ -22,8 +23,9 @@ from server import app as backend
 import transfer
 import solo_sounds
 import solo_about
+from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -97,6 +99,7 @@ class SoloRuntime:
         self.addresses = lan_addresses()
         self.url = ""
         self.on_status = lambda: None
+        self.updates = UpdateManager(VERSION, self.root, program=Path(sys.executable).parent if getattr(sys, 'frozen', False) else None)
 
     @staticmethod
     def validate_settings(payload: object) -> dict:
@@ -239,6 +242,7 @@ class SoloRuntime:
 
     def stop(self):
         self.closing = True
+        self.updates.stop()
         try: self.stop_capture()
         finally:
             if self.httpd:
@@ -306,6 +310,8 @@ class SoloHandler(backend.CargoPlannerHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path == '/api/solo/updates':
+            return self.send_json(200, self.runtime.updates.status())
         if path == '/api/solo/about':
             try:
                 return self.send_json(200, solo_about.information(VERSION))
@@ -381,6 +387,22 @@ class SoloHandler(backend.CargoPlannerHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path.startswith('/api/solo/updates/'):
+            if not ipaddress.ip_address(self.client_address[0]).is_loopback:
+                return self.send_json(403, {'error': 'update_native_only'})
+            try:
+                payload = self.read_json_body(8192)
+                if not isinstance(payload, dict):
+                    raise UpdateError('update_invalid_request')
+                updates = self.runtime.updates
+                if path.endswith('/check'): result = updates.check()
+                elif path.endswith('/download'): result = updates.download(payload.get('version'))
+                elif path.endswith('/cancel'): result = updates.cancel()
+                elif path.endswith('/preferences'): result = updates.set_automatic(payload.get('automatic'))
+                else: return self.send_json(404, {'error': 'update_invalid_request'})
+                return self.send_json(200, result)
+            except (UpdateError, ValueError, OSError) as exc:
+                return self.send_json(400, {'error': str(exc) if isinstance(exc, UpdateError) else 'update_failed'})
         if path.startswith('/api/solo/sounds/'):
             name = path.removeprefix('/api/solo/sounds/')
             if name not in SOUND_NAMES:

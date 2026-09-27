@@ -33,6 +33,7 @@ Binäre OCR-Laufzeiten und der WebView2-Installer sind nicht im Repository entha
 node tests\test_solo_connection.js
 node tests\test_solo_sync.js
 node tests\test_solo_merge.js
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_updates.py -v
 ```
 
 Die zusätzlichen Integrationstests in `test_personal_transfer.py` benötigen
@@ -57,6 +58,8 @@ mit `--offline` ist keinerlei Netzwerkzugriff möglich.
 Ergebnisse unter `dist/`:
 
 - `CitizenTools-Solo/`: vollständiger Programmordner.
+- `CitizenTools-Solo/CitizenTools-Updater.exe`: separater Updater, der außerhalb des Programmordners auf das Ende der App wartet.
+- `CitizenTools-Solo/installation.json`: Versions- und Dateiliste für die überprüfte portable Aktualisierung.
 - `CitizenTools-Solo-Setup.exe`: Installer.
 - `CitizenTools-Solo-Portable.zip`: vollständige portable Ausgabe.
 - `CitizenTools-Solo-Source.zip`: zugehöriger Projektquellcode.
@@ -76,6 +79,12 @@ Installer, Portable-ZIP und **beide** Quellpakete zusammen in dasselbe GitHub-Re
 hochladen; Prüfsummen und Versionshinweise ebenfalls beilegen. Die großen
 Binär- und OCR-Quellpakete sind Release-Anhänge und gehören nicht ins Git-Repository.
 Den aktuellen Projektcode vor dem Anlegen des Release-Tags committen und pushen.
+
+Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.3.0`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
+
+Die Dateinamen müssen unverändert bleiben. `release.json` enthält zusätzlich den zweisprachigen Versionsverlauf; daraus zeigt der Updater alle Änderungen seit der installierten Version. Für alte Manifeste verwendet er den GitHub-Release-Text. Kein GitHub-Token wird benötigt oder mitgeliefert. Prüfsummen werden vor der Übergabe an den separaten Updater und dort erneut geprüft.
+
+`tools/verify_updates.py --data-dir <leerer-Testordner>` prüft die Oberfläche mit lokalen Test-Releases ohne Netzwerk oder Installation. `tools/verify_update_helper.py --helper <CitizenTools-Updater.exe> --data-dir <leerer-Testordner>` prüft den gebauten Updater mit getrennten Miniaturpaketen einschließlich Warten auf das Programmende und Neustart.
 
 ## Drittanbieter
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      window.soloClientVersion = "0.2.3";
+      window.soloClientVersion = "0.3.0";
       window.soloErrors = [];
       window.soloLoadErrors = [];
       window.addEventListener('error', function (event) {
@@ -15,16 +15,22 @@
     </script>
     <title>Citizen Tools · Flight Deck</title>
     <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?solo=0.2.3" />
-    <link rel="stylesheet" href="solo.css?solo=0.2.3" />
-    <link rel="stylesheet" href="personal-transfer.css?solo=0.2.3" />
-    <link rel="stylesheet" href="solo-personalize.css?solo=0.2.3" />
-    <link rel="stylesheet" href="statistics-period.css?solo=0.2.3" />
+    <link rel="stylesheet" href="styles.css?solo=0.3.0" />
+    <link rel="stylesheet" href="solo.css?solo=0.3.0" />
+    <link rel="stylesheet" href="personal-transfer.css?solo=0.3.0" />
+    <link rel="stylesheet" href="solo-personalize.css?solo=0.3.0" />
+    <link rel="stylesheet" href="statistics-period.css?solo=0.3.0" />
+    <link rel="stylesheet" href="solo-updates.css?solo=0.3.0" />
   </head>
   <body>
     <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
       <span id="soloConnectionMessage"></span>
       <button id="soloConnectionRetry" class="secondary-button" type="button">Jetzt prüfen</button>
+    </aside>
+    <aside id="soloUpdateBanner" class="solo-update-banner" role="status" hidden>
+      <span id="soloUpdateBannerText"></span>
+      <button id="soloUpdateBannerReview" class="secondary-button" type="button">Was ist neu?</button>
+      <button id="soloUpdateDismiss" class="secondary-button" type="button">Hinweis ausblenden</button>
     </aside>
     <div class="app-shell">
       <div class="app-topbar">
@@ -1869,6 +1875,14 @@
               <section id="personalTransferPanel" class="panel settings-content-panel"></section>
             </div>
             <div class="settings-view" data-settings-view="about" hidden>
+              <section id="soloUpdatesPanel" class="panel settings-content-panel solo-updates-panel" aria-label="Updates">
+                <div class="panel-header"><div><p class="flight-eyebrow">CITIZEN TOOLS / SOFTWARE</p><h2 id="soloUpdatesTitle">Updates</h2></div><span id="soloUpdateInstalled" class="solo-about-version"></span></div>
+                <p id="soloUpdateStatus" role="status" aria-live="polite"></p>
+                <div class="solo-update-actions"><button id="soloUpdateCheck" class="secondary-button" type="button">Jetzt nach Updates suchen</button><button id="soloUpdateReview" class="primary-button" type="button" hidden>Was ist neu?</button></div>
+                <p id="soloUpdateChecked" class="solo-about-muted"></p>
+                <label class="solo-update-toggle"><input id="soloUpdateAutomatic" type="checkbox" checked /><span id="soloUpdateAutomaticLabel">Automatisch nach Updates suchen</span></label>
+                <p id="soloUpdatePrivacy" class="solo-about-muted"></p><p id="soloUpdateLocalOnly" class="solo-about-muted"></p>
+              </section>
               <section id="soloAboutPanel" class="panel settings-content-panel solo-about-panel" aria-label="Über Citizen Tools">
                 <div class="panel-header"><div><p class="flight-eyebrow">CITIZEN TOOLS / FLIGHT DECK</p><h2 data-i18n="settings.tabs.about">Über Citizen Tools</h2></div><span id="soloAboutVersion" class="solo-about-version"></span></div>
                 <div id="soloAboutContent"></div>
@@ -2843,6 +2857,24 @@
       </section>
     </div>
 
+    <div id="soloUpdateBackdrop" class="app-dialog-backdrop" hidden>
+      <section class="app-dialog solo-update-dialog" role="dialog" aria-modal="true" aria-labelledby="soloUpdateDialogTitle">
+        <div class="app-dialog-head"><span class="app-dialog-kicker">CITIZEN TOOLS / UPDATE</span><h2 id="soloUpdateDialogTitle">Was ist neu?</h2></div>
+        <div id="soloUpdateNotes" class="solo-update-notes" tabindex="0"></div>
+        <a id="soloUpdateRelease" target="_blank" rel="noopener noreferrer">Release auf GitHub ansehen</a>
+        <p id="soloUpdateSize" class="solo-about-muted"></p>
+        <p id="soloUpdateBefore" class="solo-about-muted"></p><p id="soloUpdateDialogLocal" class="solo-about-muted"></p>
+        <label id="soloUpdateDrafts" class="solo-update-toggle" hidden><input id="soloUpdateDraftConfirm" type="checkbox" /><span id="soloUpdateDraftLabel"></span></label>
+        <p id="soloUpdateDialogStatus" role="status" aria-live="polite"></p>
+        <progress id="soloUpdateProgress" max="1" value="0" hidden></progress><span id="soloUpdateProgressText"></span>
+        <div class="app-dialog-actions">
+          <button id="soloUpdateClose" class="secondary-button" type="button">Später</button>
+          <button id="soloUpdateCancel" class="secondary-button" type="button" hidden>Download abbrechen</button>
+          <button id="soloUpdateDownload" class="primary-button" type="button">Update herunterladen</button>
+          <button id="soloUpdateInstall" class="primary-button" type="button" hidden>Installieren und neu starten</button>
+        </div>
+      </section>
+    </div>
     <datalist id="locationSuggestions"></datalist>
     <datalist id="pilotSuggestions"></datalist>
     <datalist id="systemDbSystemSuggestions"></datalist>
@@ -2858,58 +2890,59 @@
 
     <datalist id="financeReferenceSuggestions"></datalist>
 
-    <script data-solo-src="scripts/config.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.2.3"></script>
+    <script data-solo-src="scripts/config.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.3.0"></script>
     
     
     
     
-    <script data-solo-src="scripts/state-persistence.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/presets.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/mission-duplicates.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/mission-domain.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/mission-import-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/cargo-areas.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/autoload.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/unload-guidance.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/route-optimizer.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/route-run-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/run-view-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/cargo-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/route-order-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/fleet.js?solo=0.2.3"></script>
+    <script data-solo-src="scripts/state-persistence.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/presets.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/mission-duplicates.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/mission-domain.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/mission-import-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/cargo-areas.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/unload-guidance.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/route-run-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/run-view-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/route-order-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/fleet.js?solo=0.3.0"></script>
     
-    <script data-solo-src="scripts/shipdb.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/finance.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/statistics-period.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/statistics-trend.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/statistics.js?solo=0.2.3"></script>
+    <script data-solo-src="scripts/shipdb.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/finance.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/statistics-period.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/statistics-trend.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.3.0"></script>
     
-    <script data-solo-src="scripts/systemdb.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/location-alias-learning.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/backup-ui.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/ledger-automation.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-merge.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-sync.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-connection.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-theme.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-effects.js?solo=0.2.3"></script>
-    <script data-solo-src="app.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/sound-presets.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-sounds.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.2.3"></script>
-  <script data-solo-src="scripts/solo-hotkey.js?solo=0.2.3"></script>
-  <script data-solo-src="scripts/solo-ui.js?solo=0.2.3"></script>
-  <script data-solo-src="scripts/solo-about.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/personal-transfer.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-dialog.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-cockpit.js?solo=0.2.3"></script>
-    <script data-solo-src="scripts/solo-setup.js?solo=0.2.3"></script>
-    <script src="scripts/solo-loader.js?solo=0.2.3"></script>
+    <script data-solo-src="scripts/systemdb.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/location-alias-learning.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/backup-ui.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/ledger-automation.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-connection.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-theme.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-effects.js?solo=0.3.0"></script>
+    <script data-solo-src="app.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/sound-presets.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-sounds.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.3.0"></script>
+  <script data-solo-src="scripts/solo-hotkey.js?solo=0.3.0"></script>
+  <script data-solo-src="scripts/solo-ui.js?solo=0.3.0"></script>
+  <script data-solo-src="scripts/solo-about.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/personal-transfer.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-dialog.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-updates.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-cockpit.js?solo=0.3.0"></script>
+    <script data-solo-src="scripts/solo-setup.js?solo=0.3.0"></script>
+    <script src="scripts/solo-loader.js?solo=0.3.0"></script>
   </body>
 </html>

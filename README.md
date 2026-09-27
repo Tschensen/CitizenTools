@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.2.3 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.3.0 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
@@ -18,7 +18,7 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 - Auf PC, Tablet und anderen Geräten im Heimnetz denselben Stand bearbeiten.
 - Daten sichern sowie persönliche Daten als Datei exportieren und importieren.
 
-Windows-App, lokaler Server und Screenshot-Companion starten gemeinsam. Keine Internetverbindung erforderlich!
+Windows-App, lokaler Server und Screenshot-Companion starten gemeinsam. Alle Spielfunktionen arbeiten offline. Die optionale Update-Prüfung benötigt Internetzugriff auf GitHub.
 
 ## Windows verwenden
 
@@ -31,6 +31,14 @@ Für die Installation `CitizenTools-Solo-Setup.exe` verwenden; für die portable
 Nutzung `CitizenTools-Solo-Portable.zip`. Die beiden Quellpakete im Release
 enthalten den Projektcode und die zugehörigen OCR-Quellen. Zum Benutzen der App
 werden sie nicht benötigt. Details stehen in [NOTICE.md](NOTICE.md).
+
+## Updates
+
+Unter **Einstellungen → Über Citizen Tools → Updates** kannst du nach neuen Versionen suchen und die automatische Prüfung ein- oder ausschalten. Sie läuft beim Start und alle sechs Stunden. **Was ist neu?** zeigt vor dem Download die Änderungen auf Deutsch oder Englisch. Danach kannst du die neue Version herunterladen und **Installieren und neu starten** wählen – auch bei der portablen Ausgabe.
+
+Die Installation erfolgt direkt in der Windows-App. Persönliche Daten und Sounds bleiben erhalten; Programmstand, Datenbank und Einstellungen werden vorher gesichert. Die portable Ausgabe behält ihren Ordner. Schließe weitere Fenster derselben Ausgabe und speichere offene Formulare vor dem Neustart. Der Programmordner muss beschreibbar sein; ein Datenordner innerhalb des Programmordners ist für automatische Updates nicht unterstützt.
+
+Version 0.3.0 einmal wie bisher installieren oder entpacken. Danach ist die integrierte Aktualisierung für künftige Releases nutzbar. Ohne Internet bleibt die Suite verwendbar.
 
 ## Heimnetz
 

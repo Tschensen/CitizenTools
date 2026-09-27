@@ -1,0 +1,19 @@
+.solo-update-banner { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 14px; padding: 8px 16px; border-bottom: 1px solid rgba(var(--accent-rgb), .35); background: #0b1e2c; color: var(--highlight-strong); font-size: .86rem; }
+.solo-update-banner button { min-height: 36px; padding: 6px 12px; }
+.solo-updates-panel { margin-bottom: 16px; }
+.solo-updates-panel .panel-header { align-items: center; flex-wrap: wrap; gap: 12px; }
+.solo-updates-panel .solo-about-version { font-size: .85rem; }
+.solo-update-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.solo-update-toggle { display: flex; gap: 10px; align-items: center; font-size: .9rem; line-height: 1.5; cursor: pointer; }
+.solo-update-toggle input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--highlight); }
+.solo-update-dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto; }
+.solo-update-notes { padding: 4px 16px; max-height: 36dvh; overflow-y: auto; border: 1px solid rgba(var(--accent-rgb), .18); border-radius: 8px; background: #08121b80; line-height: 1.6; }
+.solo-update-notes h3 { color: var(--highlight-strong); font-size: 1rem; }
+.solo-update-notes ul { padding-left: 20px; }
+.solo-update-notes li { margin-bottom: 8px; }
+.solo-update-notes p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.solo-update-dialog > a { display: inline-block; margin-top: 12px; }
+#soloUpdateProgress { width: 100%; height: 9px; accent-color: var(--highlight); }
+#soloUpdateProgressText { font: .85rem Consolas, monospace; color: var(--muted); }
+.solo-update-dialog .app-dialog-actions { flex-wrap: wrap; }
+.solo-updates-panel p:empty, .solo-update-dialog p:empty { display: none; }

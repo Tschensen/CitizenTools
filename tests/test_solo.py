@@ -7,6 +7,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch, Mock
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,21 @@ class SoloIntegrationTests(unittest.TestCase):
         for path in ['/api/organization/missions', '/api/auth/dispatcher/status', '/scripts/organization.js', '/scripts/pilot-groups.js', '/data/cargo_planner.sqlite3', '/../runtime.py']:
             self.assertEqual(self.api(path, raw=True)[0], 404, path)
         self.assertEqual(self.api('/api/state?scope=dispatcher')[0], 400)
+
+    def test_update_status_is_local_no_network_and_install_is_not_an_http_endpoint(self):
+        code, result = self.api('/api/solo/updates')
+        self.assertEqual(code, 200)
+        self.assertEqual(result['currentVersion'], VERSION)
+        self.assertEqual(result['state'], 'idle')
+        self.assertFalse(result['canInstall'])
+        self.assertEqual(self.api('/api/solo/updates/install', {'version': '99.0.0'})[0], 404)
+        self.assertEqual(self.api('/api/solo/updates/preferences', {'automatic': False})[0], 200)
+        self.assertFalse(self.runtime.updates.automatic)
+        with patch('runtime.ipaddress.ip_address', return_value=Mock(is_loopback=False)):
+            for action in ['check', 'download', 'cancel', 'preferences', 'install']:
+                self.assertEqual(self.api('/api/solo/updates/' + action, {})[0], 403)
+            self.assertEqual(self.api('/api/solo/updates')[0], 200)
+        self.assertEqual(self.runtime.updates.state, 'idle')
 
     def test_setup_completion_is_local_config_and_survives_restart(self):
         self.assertFalse(self.api('/api/solo/status')[1]['settings']['setupCompleted'])

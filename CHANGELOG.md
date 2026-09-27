@@ -1,5 +1,25 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.3.0 — Updates direkt in Citizen Tools
+
+### Deutsch
+
+- Citizen Tools prüft beim Start und alle sechs Stunden, ob ein neues öffentliches GitHub-Release verfügbar ist. Die Prüfung lässt sich unter Einstellungen → Über Citizen Tools abschalten oder manuell starten.
+- Ein dezenter Hinweis öffnet „Was ist neu?“ mit den Änderungen auf Deutsch oder Englisch. Download und Installation erfolgen erst nach deiner Auswahl.
+- Installierte und portable Windows-Ausgaben können sich selbst aktualisieren. Downloads werden anhand der veröffentlichten Größe und SHA-256-Prüfsumme geprüft; abgebrochene oder beschädigte Dateien werden nicht installiert.
+- Vor dem Austausch werden der bisherige Programmstand, die Datenbank und lokale Einstellungen gesichert. Die portable Ausgabe behält ihren Ordner; persönliche Daten und Sounds bleiben erhalten.
+- Die Installation startet ausschließlich in der Windows-App. Weitere Geräte können die Versionshinweise sehen und verbinden sich nach dem Neustart wieder.
+- 0.3.0 einmal wie bisher installieren oder entpacken. Die integrierte Aktualisierung steht anschließend für künftige Releases zur Verfügung.
+
+### English
+
+- Citizen Tools checks for a new public GitHub release at startup and every six hours. Disable automatic checks or check manually under Settings → About Citizen Tools.
+- A discreet notice opens “What’s new?” with changes in English or German. Downloads and installation only start after you choose them.
+- Installed and portable Windows editions can update themselves. Downloads are verified against the published file size and SHA-256 checksum; cancelled or damaged files are never installed.
+- The previous program version, database and local settings are backed up before replacement. The portable edition keeps its folder; personal data and sounds are preserved.
+- Installation starts exclusively in the Windows app. Additional devices can view release notes and reconnect after the restart.
+- Install or extract 0.3.0 once using the usual method. Built-in updating will then be available for future releases.
+
 ## 0.2.3 — Webansichten automatisch aktualisieren
 
 ### Deutsch
