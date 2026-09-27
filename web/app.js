@@ -2575,6 +2575,7 @@ function createShipBuilderState({
   activeLevel = 1,
   heights = {},
   overloadHeights = {},
+  cargoAreas = [],
   mode = "base",
 } = {}) {
   const normalizedRows = clamp(Number(rows) || 8, 2, MAX_GRID_ROWS);
@@ -2595,6 +2596,7 @@ function createShipBuilderState({
     activeLevel: clamp(Number(activeLevel) || 1, 1, Math.max(normalizedLevels, maxHeight || 1)),
     heights: normalizedHeights,
     overloadHeights: normalizedOverloadHeights,
+    cargoAreas: CargoAreas.normalize(cargoAreas, mergedHeights),
     mode: mode === "overload" ? "overload" : "base",
   };
 }
@@ -2618,6 +2620,7 @@ function createShipLibraryEntry({
   gridLevels = null,
   gridHeights = undefined,
   overloadGridHeights = undefined,
+  cargoAreas = undefined,
   gridBlockedSlots = undefined,
   gridHeightOverrides = undefined,
   cargoScu = null,
@@ -2694,6 +2697,9 @@ function createShipLibraryEntry({
     gridLevels: levels,
     gridHeights: derivedHeights,
     overloadGridHeights: derivedOverloadHeights,
+    cargoAreas: CargoAreas.normalize(cargoAreas === undefined
+      ? CargoAreas.defaults(mergeShipGridHeights(derivedHeights, derivedOverloadHeights), presetId) : cargoAreas,
+    mergeShipGridHeights(derivedHeights, derivedOverloadHeights)),
     gridDefaultHeight: 1,
     gridBlockedSlots: blockedSlots,
     gridHeightOverrides: heightOverrides,
@@ -2887,6 +2893,7 @@ function renderShipGridBuilder() {
   }
 
   renderShipBuilderIsoPreview();
+  renderCargoAreaEditor();
 }
 
 function renderShipBuilderIsoPreview() {
@@ -3216,6 +3223,7 @@ function buildShipBuilderStateFromPreset(presetId) {
     activeLevel: 1,
     heights,
     overloadHeights: {},
+    cargoAreas: CargoAreas.defaults(heights, presetId),
     mode: "base",
   });
 }

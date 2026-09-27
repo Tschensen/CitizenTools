@@ -36,7 +36,7 @@ async function soloRequestJson(url, options = {}, timeoutMs = 10000) {
 
 function soloEditing() {
   return Boolean(document.activeElement?.matches("input,select,textarea")
-    || document.querySelector('.app-dialog-backdrop:not([hidden]), .run-route-row.is-dragging'));
+    || document.querySelector('.app-dialog-backdrop:not([hidden]), .run-route-row.is-dragging, #cargoAreaEditor:focus-within, #cargoAreaGrid.is-painting'));
 }
 
 function soloCleanState(snapshot) {

@@ -331,6 +331,7 @@ function readShipDbDraft() {
     gridLevels: shipBuilderState.levels,
     gridHeights: { ...shipBuilderState.heights },
     overloadGridHeights: { ...shipBuilderState.overloadHeights },
+    cargoAreas: cloneData(shipBuilderState.cargoAreas),
     notes: String(formData.get("notes") || "").trim(),
   };
 }
@@ -368,6 +369,7 @@ function populateShipDbForm(entry) {
       levels: entry.gridLevels || getShipGridSummary(entry).total.maxHeight,
       heights: entry.gridHeights,
       overloadHeights: entry.overloadGridHeights,
+      cargoAreas: entry.cargoAreas,
       mode: "base",
     }),
   );
@@ -402,6 +404,7 @@ function resetShipDbForm() {
 }
 
 function registerShipDbEvents() {
+  registerCargoAreaEditor();
   shipDbForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const draft = readShipDbDraft();

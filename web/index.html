@@ -14,7 +14,7 @@
     </script>
     <title>Citizen Tools · Flight Deck</title>
     <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=232&preview=route-cargo" />
+    <link rel="stylesheet" href="styles.css?v=232&preview=cargo-areas" />
     <link rel="stylesheet" href="solo.css?solo=0.1.25" />
     <link rel="stylesheet" href="personal-transfer.css?solo=0.1.25" />
     <link rel="stylesheet" href="solo-personalize.css?solo=0.1.25" />
@@ -265,16 +265,13 @@
                     </label>
                     <label class="autoload-strategy-field">
                       <span data-i18n="autoload.fill.label">Füllrichtung</span>
-                      <select data-autoload-fill aria-label="Füllrichtung" data-i18n-aria-label="autoload.fill.label">
-                        <option value="rows" data-i18n="autoload.fill.rows">Reihenweise</option>
-                        <option value="left" data-i18n="autoload.fill.left">Links zuerst</option>
-                        <option value="right" data-i18n="autoload.fill.right">Rechts zuerst</option>
-                      </select>
+                      <select data-autoload-fill aria-label="Füllrichtung" data-i18n-aria-label="autoload.fill.label"><option value="areas" data-i18n="autoload.fill.areas">Bereiche des Schiffs</option><option value="rows" data-i18n="autoload.fill.rows">Reihenweise</option></select>
                     </label>
                     <label class="autoload-overload-toggle" data-tooltip="Überladungsbereich bei Bedarf mitbenutzen" data-i18n-tooltip="autoload.overload.tooltip">
                       <input type="checkbox" data-autoload-overload />
                       <span data-i18n="autoload.overload.label">Überladung erlauben</span>
                     </label>
+                    <p class="autoload-area-order" data-autoload-area-order></p>
                     <div id="runAutoloadAreas" class="autoload-mission-areas"></div>
                   </div>
 
@@ -1141,16 +1138,13 @@
                 </label>
                 <label class="autoload-strategy-field">
                   <span data-i18n="autoload.fill.label">Füllrichtung</span>
-                  <select data-autoload-fill aria-label="Füllrichtung" data-i18n-aria-label="autoload.fill.label">
-                    <option value="rows" data-i18n="autoload.fill.rows">Reihenweise</option>
-                    <option value="left" data-i18n="autoload.fill.left">Links zuerst</option>
-                    <option value="right" data-i18n="autoload.fill.right">Rechts zuerst</option>
-                  </select>
+                  <select data-autoload-fill aria-label="Füllrichtung" data-i18n-aria-label="autoload.fill.label"><option value="areas" data-i18n="autoload.fill.areas">Bereiche des Schiffs</option><option value="rows" data-i18n="autoload.fill.rows">Reihenweise</option></select>
                 </label>
                 <label class="autoload-overload-toggle" data-tooltip="Überladungsbereich bei Bedarf mitbenutzen" data-i18n-tooltip="autoload.overload.tooltip">
                   <input type="checkbox" data-autoload-overload />
                   <span data-i18n="autoload.overload.label">Überladung erlauben</span>
                 </label>
+                <p class="autoload-area-order" data-autoload-area-order></p>
               </div>
               <div id="homeLoadList" class="home-load-list"></div>
             </section>
@@ -1220,6 +1214,7 @@
                     </div>
                     <div class="ship-frame">
                       <div id="shipGrid" class="ship-grid" aria-live="polite"></div>
+                      <div id="cargoAreaLegend" class="cargo-area-legend"></div>
                     </div>
                     <div class="ship-axis">
                       <span data-i18n="contracts.load.rear">Heck</span>
@@ -2170,6 +2165,13 @@
                   </div>
                 </section>
 
+                <section class="shipdb-section" id="cargoAreaEditor">
+                  <div class="shipdb-section-head"><div><h3 data-i18n="cargoAreas.title">Ladebereiche &amp; Füllreihenfolge</h3><p data-i18n="cargoAreas.hint">Bereich auswählen und Zellen markieren. Die Zuordnung gilt für alle Ebenen; die Reihenfolge bestimmt das Autoload.</p></div></div>
+                  <div class="cargo-area-toolbar"><button id="cargoAreaAdd" class="secondary-button" type="button" data-i18n="cargoAreas.add">Bereich hinzufügen</button><label><input type="checkbox" id="cargoAreaErase"><span data-i18n="cargoAreas.erase">Zuordnung entfernen</span></label></div>
+                  <p id="cargoAreaEmpty" class="form-hint" data-i18n="cargoAreas.empty">Lege einen Bereich an und markiere seine Zellen im Grid.</p>
+                  <div class="cargo-area-layout"><div id="cargoAreaList"></div><div><div id="cargoAreaGrid" tabindex="-1" data-i18n-aria-label="cargoAreas.grid" aria-label="Ladebereiche zuordnen"></div><p id="cargoAreaRemainder" class="form-hint"></p></div></div>
+                </section>
+
                 <section class="shipdb-section">
                   <label data-i18n-label="shipdb.form.note">
                     Notiz
@@ -2856,29 +2858,31 @@
     <datalist id="financeReferenceSuggestions"></datalist>
 
     <script data-solo-src="scripts/config.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.1.25&preview=cargo-areas"></script>
     
     
     
     
-    <script data-solo-src="scripts/state-persistence.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/state-persistence.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/presets.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/mission-duplicates.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/mission-domain.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/mission-import-ui.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/autoload.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/cargo-areas.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/unload-guidance.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/route-optimizer.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/route-run-ui.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/run-view-ui.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.1.25&preview=route-cargo"></script>
-    <script data-solo-src="scripts/cargo-ui.js?solo=0.1.25&preview=route-cargo"></script>
-    <script data-solo-src="scripts/route-order-ui.js?solo=0.1.25&preview=route-cargo"></script>
-    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/route-order-ui.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/fleet.js?solo=0.1.25"></script>
     
-    <script data-solo-src="scripts/shipdb.js?solo=0.1.25"></script>
+    <script data-solo-src="scripts/shipdb.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/finance.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/statistics-period.js?solo=0.1.25&preview=statisticscompare"></script>
     <script data-solo-src="scripts/statistics-trend.js?solo=0.1.25&preview=statisticscompare"></script>
@@ -2888,12 +2892,12 @@
     <script data-solo-src="scripts/location-alias-learning.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/backup-ui.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/ledger-automation.js?solo=0.1.25"></script>
-    <script data-solo-src="scripts/solo-merge.js?solo=0.1.25&preview=route-cargo"></script>
-    <script data-solo-src="scripts/solo-sync.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.1.25&preview=cargo-areas"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/solo-connection.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/solo-theme.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/solo-effects.js?solo=0.1.25"></script>
-    <script data-solo-src="app.js?solo=0.1.25&preview=route-cargo"></script>
+    <script data-solo-src="app.js?solo=0.1.25&preview=cargo-areas"></script>
     <script data-solo-src="scripts/sound-presets.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/solo-sounds.js?solo=0.1.25"></script>
     <script data-solo-src="scripts/solo-sound-settings.js?solo=0.1.25"></script>

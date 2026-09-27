@@ -32,8 +32,8 @@ test('dependencies within a combined stop remain valid', () => {
   const combined=[{routeTaskIds:['pa','da'],routeDependencies:['pa']},stops[2]];
   assert.ok(route.moveRouteStop(combined,0,1));
 });
-test('old autoload settings retain row-by-row defaults', () => {
-  assert.deepEqual(cargo.normalizeAutoloadSettings({strategy:'route'}),{strategy:'route',fillOrder:'rows',allowOverload:false});
+test('autoload defaults to ship areas and preserves legacy side choices', () => {
+  assert.deepEqual(cargo.normalizeAutoloadSettings({strategy:'route'}),{strategy:'route',fillOrder:'areas',allowOverload:false});
   assert.equal(cargo.normalizeCargoArea('unexpected'),'all');
 });
 test('Hermes sides exclude the middle aisle and crossing footprints', () => {
