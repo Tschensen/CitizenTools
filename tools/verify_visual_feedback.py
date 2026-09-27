@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import webview
-from runtime import SoloRuntime
+from runtime import SoloRuntime, VERSION
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
     runtime.start(capture_enabled=False)
     if args.state_fixture:
         fixture = json.loads(args.state_fixture.read_text(encoding='utf-8'))
-        with urlopen(Request(runtime.url+'/api/state', data=json.dumps({'state':fixture, 'baseUpdatedAt':None}).encode(), headers={'Content-Type':'application/json'})) as response:
+        with urlopen(Request(runtime.url+'/api/state', data=json.dumps({'state':fixture, 'baseUpdatedAt':None, 'clientVersion':VERSION}).encode(), headers={'Content-Type':'application/json'})) as response:
             assert response.status == 200
     window = webview.create_window('Visual feedback verification', runtime.url+'/?desktop=1', width=1280, height=720)
     result = {'ok': False, 'checks': []}

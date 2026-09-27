@@ -1741,7 +1741,6 @@ function ensureActiveFleetSelection() {
   if (isDispatcherMode()) {
     if (state.activeFleetEntryId) {
       state.activeFleetEntryId = "";
-      persist();
     }
     return;
   }
@@ -1749,7 +1748,6 @@ function ensureActiveFleetSelection() {
   const hasActiveEntry = getActiveFleetEntries().some((entry) => entry.id === state.activeFleetEntryId);
   if (hasActiveEntry) return;
   state.activeFleetEntryId = "";
-  persist();
 }
 
 function getSelectedMissionType() {

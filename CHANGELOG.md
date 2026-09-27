@@ -1,5 +1,49 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.2.3 — Webansichten automatisch aktualisieren
+
+### Deutsch
+
+- Eine externe Webansicht lädt bei einem Versionswechsel der Windows-Suite automatisch neu, sobald sie nur als Anzeige genutzt wird. Die zuletzt angezeigte Seite, etwa der Flugplan, bleibt geöffnet.
+- Ungespeicherte Änderungen, Formulareingaben, geöffnete Dialoge und laufende Vorgänge verhindern den automatischen Reload. In diesem Fall bleibt die Schaltfläche „Ansicht neu laden“ verfügbar.
+- Der Versionsvergleich läuft mit der Verbindungsprüfung alle fünf Sekunden und beim Zurückkehren zur Ansicht. Eine Sicherung verhindert endlose Reloads bei veralteten Browserinhalten.
+- Für dieses Update bereits geöffnete ältere Webansichten einmal manuell neu laden. Danach ist die automatische Aktualisierung für künftige Versionswechsel aktiv.
+
+### English
+
+- An external web view automatically reloads when the Windows suite version changes and the view is only being used as a display. The last displayed page, such as the flight plan, stays open.
+- Unsaved changes, form drafts, open dialogs and ongoing operations prevent the automatic reload. The “Reload view” button remains available in these cases.
+- The version check runs with the connection check every five seconds and when returning to the view. A safeguard prevents endless reloads when stale browser content is returned.
+- For this update, manually reload existing older web views once. Automatic updates will then apply to future version changes.
+
+## 0.2.2 — Geöffnete Webansichten nach Updates absichern
+
+### Deutsch
+
+- Der Server nimmt Spielstandänderungen nur noch von der passenden Oberfläche an. Eine ältere, offen gebliebene Webansicht kann dadurch neue Felder wie die manuelle Stoppreihenfolge nicht mehr entfernen.
+- Die Verbindungsprüfung erkennt künftige Versionswechsel und zeigt „Ansicht neu laden“. Zurückgewiesene lokale Änderungen bleiben als Wiederherstellungskopie erhalten.
+- Nach diesem Update die Windows-App neu starten und bereits geöffnete Webansichten auf allen weiteren Geräten einmal neu laden. Ältere Ansichten kennen den neuen Update-Hinweis noch nicht.
+
+### English
+
+- The server only accepts state changes from the matching interface version. An older web view left open during an update can no longer remove new fields such as the manual stop order.
+- The connection check detects future version changes and displays “Reload view”. Rejected local edits remain available as a recovery copy.
+- After this update, restart the Windows app and reload existing web views on every additional device once. Older views do not yet know the new update notice.
+
+## 0.2.1 — Routen zuverlässig speichern
+
+### Deutsch
+
+- Das reine Aktualisieren einer Ansicht erzeugt keine Speicheranfragen mehr durch die automatische Fracht- oder Schiffsauswahl. Ein weiteres Gerät kann den gemeinsamen Stand anzeigen, ohne dadurch eine eigene Änderung auszulösen.
+- Verspätete Antworten der Auftragsprüfung im Hintergrund werden verworfen, wenn inzwischen ein neuerer Stand übernommen oder gespeichert wurde. Bereits gespeicherte Stoppreihenfolgen werden dadurch nicht mehr zurückgesetzt; Folgekonflikte beim weiteren Umsortieren werden vermieden.
+- Tatsächliche Änderungen von weiteren Geräten bleiben möglich. Nach dem Update die Windows-App und die Webansichten auf allen Geräten neu laden.
+
+### English
+
+- Refreshing a view no longer submits state changes caused by automatic cargo or ship selection. An additional device can display the shared state without creating an edit of its own.
+- Delayed background import-poll responses are discarded when a newer state has already been applied or saved. Saved stop orders are no longer rolled back, avoiding subsequent conflicts when reordering again.
+- Intentional edits from additional devices remain supported. After updating, restart the Windows app and reload the web views on every device.
+
 ## 0.2.0 — Zeitraumvergleich, Flugplan und Beladung
 
 ### Deutsch

@@ -13,7 +13,7 @@ function fixture() {
     sanitizeState:value=>value, pruneInvalidPlacements:value=>value,
     getStateStorageKey:()=> 'state', render:()=>{}, renderRemoteStatus:()=>{},
     applyRemoteMeta:()=>{}, currentUiLanguage:()=> 'de',
-    window:{addEventListener:()=>{}},
+    window:{addEventListener:()=>{},soloClientVersion:'test-current'},
     document:{activeElement:null, querySelector:()=>null},
     localStorage:{getItem:key=>storage.get(key), setItem:(key,value)=>storage.set(key,value)},
   });
@@ -165,5 +165,58 @@ const response = (status, payload) => ({status,ok:status>=200&&status<300,json:a
     c.document.activeElement=null;c.fetch=async()=>response(200,{state:c.state,updatedAt:'r2'});
     await c.pollSoloState();assert.equal(renders,1,'The deferred redraw must happen when editing ends');
   }
-  console.log('15 Solo synchronization tests passed.');
+  {
+    const {c}=fixture();
+    vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/scripts/mission-import-ui.js'),'utf8'),c);
+    Object.assign(c, {activeAppMode:'solo', normalizeAppMode:()=> 'solo', canUseRemotePersistence:()=>true,
+      isRemoteScopeCompatible:()=>true, syncImportedMissionMetadata:async()=>{},
+      getMissionImportsUrl:()=>'/api/imports', getMissionImportHeaders:()=>({})});
+    let release;
+    const before=structuredClone(c.state);
+    c.fetch=async(url,options={})=> {
+      if(options.method==='POST') return response(200,{updatedAt:'r2'});
+      if(url.includes('/api/state')) return new Promise(resolve=>release=()=>resolve(response(200,{state:before,updatedAt:'r1'})));
+      return response(200,{ok:true,scope:'solo',imports:[]});
+    };
+    const reading=c.autoImportPendingMissions();
+    c.state={...before,runRouteOrder:{ship:['stop-b','stop-a']}};
+    await c.saveRemoteState(c.state);
+    release();await reading;
+    assert.deepEqual(c.state.runRouteOrder,{ship:['stop-b','stop-a']},'A delayed import-poll response must not undo a route saved while it was in flight');
+    assert.equal(vm.runInContext('soloRevision',c),'r2','An older response must not roll back the acknowledged revision');
+    assert.equal(c.conflictShown,undefined);
+  }
+  {
+    const {c}=fixture();
+    vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/scripts/mission-import-ui.js'),'utf8'),c);
+    Object.assign(c, {activeAppMode:'solo', normalizeAppMode:()=> 'solo', canUseRemotePersistence:()=>true,
+      isRemoteScopeCompatible:()=>true, syncImportedMissionMetadata:async()=>{},
+      getMissionImportsUrl:()=>'/api/imports', getMissionImportHeaders:()=>({})});
+    c.fetch=async url=>url.includes('/api/state')
+      ?response(200,{state:{missions:[],runRouteOrder:{ship:['b','a']}},updatedAt:'r2'})
+      :response(200,{ok:true,scope:'solo',imports:[]});
+    await c.autoImportPendingMissions();
+    assert.deepEqual(c.state.runRouteOrder,{ship:['b','a']},'A current background read must still apply another device\'s route edit');
+    assert.equal(vm.runInContext('soloRevision',c),'r2');
+  }
+  {
+    const {c,storage}=fixture();
+    let writes=0,notices=0;
+    c.window.soloConnection={requireReload:()=>notices++};
+    c.fetch=async(url,options)=>{
+      writes++;
+      assert.equal(JSON.parse(options.body).clientVersion,'test-current');
+      return response(428,{error:'client_version_mismatch',version:'test-new'});
+    };
+    const local={missions:[],runRouteOrder:{ship:['b','a']}};
+    assert.equal(await c.saveRemoteState(local),false);
+    assert.equal(c.window.soloUpdateRequired,true);
+    assert.deepEqual(JSON.parse(storage.get('solo-test:conflict-recovery')),local,'A rejected edit must remain recoverable');
+    assert.equal(vm.runInContext('soloRevision',c),'r1');
+    await c.pollSoloState();await c.flushSoloState();
+    assert.equal(writes,1,'An outdated view must stop retrying state writes and reads');
+    assert.ok(notices>0);
+    assert.equal(c.conflictShown,undefined,'An app update is not a two-device edit conflict');
+  }
+  console.log('18 Solo synchronization tests passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

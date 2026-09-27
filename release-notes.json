@@ -1,5 +1,64 @@
 [
   {
+    "version": "0.2.3",
+    "de": {
+      "title": "Webansichten automatisch aktualisieren",
+      "changes": [
+        "Eine externe Webansicht lädt bei einem Versionswechsel der Windows-Suite automatisch neu, sobald sie nur als Anzeige genutzt wird. Die zuletzt angezeigte Seite, etwa der Flugplan, bleibt geöffnet.",
+        "Ungespeicherte Änderungen, Formulareingaben, geöffnete Dialoge und laufende Vorgänge verhindern den automatischen Reload. In diesem Fall bleibt die Schaltfläche „Ansicht neu laden“ verfügbar.",
+        "Der Versionsvergleich läuft mit der Verbindungsprüfung alle fünf Sekunden und beim Zurückkehren zur Ansicht. Eine Sicherung verhindert endlose Reloads bei veralteten Browserinhalten.",
+        "Für dieses Update bereits geöffnete ältere Webansichten einmal manuell neu laden. Danach ist die automatische Aktualisierung für künftige Versionswechsel aktiv."
+      ]
+    },
+    "en": {
+      "title": "Automatically refresh external web views",
+      "changes": [
+        "An external web view automatically reloads when the Windows suite version changes and the view is only being used as a display. The last displayed page, such as the flight plan, stays open.",
+        "Unsaved changes, form drafts, open dialogs and ongoing operations prevent the automatic reload. The “Reload view” button remains available in these cases.",
+        "The version check runs with the connection check every five seconds and when returning to the view. A safeguard prevents endless reloads when stale browser content is returned.",
+        "For this update, manually reload existing older web views once. Automatic updates will then apply to future version changes."
+      ]
+    }
+  },
+  {
+    "version": "0.2.2",
+    "de": {
+      "title": "Geöffnete Webansichten nach Updates absichern",
+      "changes": [
+        "Der Server nimmt Spielstandänderungen nur noch von der passenden Oberfläche an. Eine ältere, offen gebliebene Webansicht kann dadurch neue Felder wie die manuelle Stoppreihenfolge nicht mehr entfernen.",
+        "Die Verbindungsprüfung erkennt künftige Versionswechsel und zeigt „Ansicht neu laden“. Zurückgewiesene lokale Änderungen bleiben als Wiederherstellungskopie erhalten.",
+        "Nach diesem Update die Windows-App neu starten und bereits geöffnete Webansichten auf allen weiteren Geräten einmal neu laden. Ältere Ansichten kennen den neuen Update-Hinweis noch nicht."
+      ]
+    },
+    "en": {
+      "title": "Protect open web views after updates",
+      "changes": [
+        "The server only accepts state changes from the matching interface version. An older web view left open during an update can no longer remove new fields such as the manual stop order.",
+        "The connection check detects future version changes and displays “Reload view”. Rejected local edits remain available as a recovery copy.",
+        "After this update, restart the Windows app and reload existing web views on every additional device once. Older views do not yet know the new update notice."
+      ]
+    }
+  },
+  {
+    "version": "0.2.1",
+    "de": {
+      "title": "Routen zuverlässig speichern",
+      "changes": [
+        "Das reine Aktualisieren einer Ansicht erzeugt keine Speicheranfragen mehr durch die automatische Fracht- oder Schiffsauswahl. Ein weiteres Gerät kann den gemeinsamen Stand anzeigen, ohne eine eigene Änderung auszulösen.",
+        "Verspätete Antworten der Auftragsprüfung im Hintergrund überschreiben keine zwischenzeitlich gespeicherte Stoppreihenfolge mehr. Dadurch werden auch Folgekonflikte beim weiteren Umsortieren vermieden.",
+        "Tatsächliche Änderungen von weiteren Geräten bleiben möglich. Nach dem Update die Windows-App neu starten und die Webansichten auf allen Geräten neu laden."
+      ]
+    },
+    "en": {
+      "title": "Reliable route saving",
+      "changes": [
+        "Refreshing a view no longer submits state changes caused by automatic cargo or ship selection. An additional device can display the shared state without creating an edit of its own.",
+        "Delayed background import-poll responses no longer overwrite a stop order saved while the request was in flight, preventing subsequent conflicts when reordering again.",
+        "Intentional edits from additional devices remain supported. After updating, restart the Windows app and reload the web views on every device."
+      ]
+    }
+  },
+  {
     "version": "0.2.0",
     "de": {
       "title": "Zeitraumvergleich, Flugplan und Beladung",
