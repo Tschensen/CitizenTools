@@ -83,6 +83,10 @@ def main():
         command += ['--add-data', f'{source}{os.pathsep}{destination}']
     command.append(str(ROOT/'app.py'))
     subprocess.run(command, cwd=ROOT, check=True)
+    subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onefile', '--windowed',
+                    '--name', 'CitizenTools-Updater', '--distpath', str(package),
+                    '--workpath', str(stage/'helper-build'), '--specpath', str(stage/'spec'),
+                    '--icon', str(ROOT/'companion/assets/citizen-tools.ico'), str(ROOT/'update_helper.py')], cwd=ROOT, check=True)
     shutil.copytree(legal, package/'licenses')
     shutil.copy2(ROOT/'LICENSE', package/'LICENSE')
     shutil.copy2(ROOT/'NOTICE.md', package/'NOTICE.md')
@@ -96,6 +100,8 @@ def main():
         prereq.mkdir()
         shutil.copy2(args.webview_installer, prereq/'MicrosoftEdgeWebView2RuntimeInstallerX64.exe')
     archive = stage/'CitizenTools-Solo-Portable.zip'
+    (package/'installation.json').write_text(json.dumps({'product': 'CitizenTools', 'version': VERSION,
+        'files': sorted(file.relative_to(package).as_posix() for file in package.rglob('*') if file.is_file())}, indent=2)+'\n', encoding='utf-8')
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as target:
         for file in package.rglob('*'):
             if file.is_file(): target.write(file, Path(package.name)/file.relative_to(package))
@@ -111,7 +117,7 @@ def main():
         with file.open('rb') as stream:
             checksum = hashlib.file_digest(stream, 'sha256').hexdigest()
         files.append({'name': file.name, 'bytes': file.stat().st_size, 'sha256': checksum})
-    (stage/'release.json').write_text(json.dumps({'version':VERSION, 'files':files}, indent=2)+'\n', encoding='utf-8')
+    (stage/'release.json').write_text(json.dumps({'version':VERSION, 'files':files, 'releases':solo_about.releases()}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     (stage/'SHA256SUMS.txt').write_text(''.join(f"{item['sha256']}  {item['name']}\n" for item in files), encoding='utf-8')
     (stage/'RELEASE-NOTES.md').write_text(solo_about.release_markdown(), encoding='utf-8')
     publish_release(stage, output, ['CitizenTools-Solo', *[file.name for file in artifacts], 'release.json', 'SHA256SUMS.txt', 'RELEASE-NOTES.md'])

@@ -20,6 +20,7 @@
   // Blur does not mean that a form was saved. Keep drafts protected until
   // their form is reset (the normal save/cancel path) or removed.
   function rememberDraft(event) {
+    if (event.target.closest?.('#soloUpdatesPanel,#soloUpdateBackdrop')) return;
     if (event.target.matches('input,select,textarea,[contenteditable="true"]')) {
       drafts.add(event.target.form || event.target);
     }
@@ -159,6 +160,7 @@
   window.addEventListener('online', resume);
   window.addEventListener('offline', () => { if (started) { generation++; pending = null; show('offline'); } });
   window.soloConnection = {
+    get hasDrafts() { return [...drafts].some(form => form.isConnected); },
     get phase() { return started ? phase : 'checking'; },
     render,
     probe,

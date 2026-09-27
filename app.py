@@ -14,6 +14,33 @@ from pathlib import Path
 from urllib import request
 
 from runtime import SoloRuntime, VERSION, default_data_root
+from solo_updates import UpdateError
+
+
+class NativeUpdates:
+    """Installation is deliberately absent from the HTTP/LAN API."""
+    def __init__(self, runtime, restart_args, on_ready):
+        self._runtime, self._restart_args, self._on_ready = runtime, restart_args, on_ready
+        self._lock = threading.Lock()
+
+    def install_update(self, version):
+        if not self._lock.acquire(blocking=False):
+            return {'ok': False, 'error': 'update_busy'}
+        try:
+            window = self._runtime.window
+            if not window or window.get_current_url() != self._runtime.desktop_url:
+                raise UpdateError('update_native_only')
+            if not window.evaluate_js('Boolean(window.soloUpdates?.canRestart && !soloPending && !soloSaving && !remoteSaveTimer && !missionAutoImportBusy && !window.personalTransferBusy)'):
+                raise UpdateError('update_unsaved')
+            self._runtime.updates.launch_installer(version, self._restart_args)
+            # Allow the bridge promise to resolve before destroying its window.
+            threading.Timer(.5, self._on_ready).start()
+            return {'ok': True}
+        except Exception as exc:
+            logging.exception('Could not start update')
+            return {'ok': False, 'error': str(exc) if isinstance(exc, UpdateError) else 'update_helper_failed'}
+        finally:
+            self._lock.release()
 
 
 def main():
@@ -66,9 +93,17 @@ def main():
         webview.settings["ALLOW_DOWNLOADS"] = True
         # Only the native window gets this presentation hint. Browser clients,
         # including browsers on the same PC, retain their fullscreen controls.
-        window = webview.create_window(f"Citizen Tools · Flight Deck · {VERSION}", runtime.desktop_url, width=1440, height=960, min_size=(800, 600), background_color="#08111b")
-        runtime.window = window
         close_state = {"checking": False, "confirmed": False}
+        def exit_for_update():
+            close_state['confirmed'] = True
+            window.destroy()
+        restart_args = ['--data-dir', str(runtime.root)]
+        if args.port is not None: restart_args += ['--port', str(args.port)]
+        if args.localhost: restart_args.append('--localhost')
+        if args.no_capture: restart_args.append('--no-capture')
+        native_updates = NativeUpdates(runtime, restart_args, exit_for_update)
+        window = webview.create_window(f"Citizen Tools · Flight Deck · {VERSION}", runtime.desktop_url, width=1440, height=960, min_size=(800, 600), background_color="#08111b", js_api=native_updates)
+        runtime.window = window
         def can_close():
             if close_state["confirmed"]: return True
             if close_state["checking"]: return False
@@ -171,6 +206,7 @@ def main():
             report = json.loads((root / "window-result.json").read_text(encoding="utf-8"))
             return 0 if not report.get("errors") and report.get("saved") else 1
         else:
+            runtime.updates.start_automatic()
             webview.start(gui="edgechromium", private_mode=False, storage_path=str(root / "WebView"))
         return 0
     except KeyboardInterrupt:

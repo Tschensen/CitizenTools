@@ -1,8 +1,20 @@
-# Citizen Tools · Flight Deck · 0.2.3
+# Citizen Tools · Flight Deck · 0.3.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Updates
+
+**Einstellungen → Über Citizen Tools → Updates** zeigt die installierte Version und die letzte erfolgreiche Prüfung. Die automatische Suche fragt GitHub beim Start und alle sechs Stunden nach einem neuen stabilen Release. Sie lässt sich abschalten; **Jetzt nach Updates suchen** bleibt verfügbar. Nur diese Funktion benötigt Internetzugriff. Ohne Verbindung funktionieren Aufträge und alle anderen lokalen Werkzeuge weiter.
+
+Bei einer neuen Version öffnet **Was ist neu?** zuerst die Änderungen. Danach **Update herunterladen** und schließlich **Installieren und neu starten** wählen. Der Download kann abgebrochen werden. Größe und SHA-256-Prüfsumme werden vor der Installation geprüft. Auf weiteren Geräten sind die Hinweise sichtbar; aktualisiert wird direkt in der Windows-App.
+
+Offene Formulare vorher speichern. Der Updater wartet auf das vollständige Ende der App und erstellt eine Datenbanksicherung. Er startet anschließend die neue Ausgabe mit demselben Datenordner. Einstellungen, Aufträge und eigene Sounds werden nicht ersetzt. Portable Ausgaben behalten ihren bisherigen Programmordner; dieser muss beschreibbar sein. Programm- und Datenordner müssen getrennt sein.
+
+Die Sicherung der letzten Programmversion liegt neben dem Programmordner als `.CitizenTools-Solo.previous-…`. Datenbanksicherung und Protokolle liegen unter `%LOCALAPPDATA%\CitizenToolsSolo\Updates\<Vorgang>\` (bei eigenem `--data-dir` entsprechend dort). Bei einem fehlgeschlagenen Dateiaustausch versucht der Updater, den vorherigen Programmstand wiederherzustellen. Bei Problemen lässt sich das vollständige Release weiterhin manuell installieren oder entpacken.
+
+**English:** Open **Settings → About Citizen Tools → Updates** to check manually or disable automatic GitHub checks. Read **What’s new?**, then choose **Download update** and **Install and restart**. Save open forms first. Both installed and portable editions are supported. Personal data stays in its existing location, and the updater backs up the database and previous program version before replacement. Additional devices show release information; installation is controlled from the Windows app. Install or extract version 0.3.0 once using the usual method to enable built-in updates for future releases.
 
 ## Flugplan und Ladebereiche
 
@@ -146,7 +158,7 @@ Fehlende oder unlesbare Dateien verwenden den eingebauten Syntheseklang. Der Sou
 
 Unter **Einstellungen → Companion** steht die lokale Adresse, beispielsweise `http://192.168.1.20:4174`. Diese im Browser des weiteren Geräts öffnen. Beide Geräte müssen im selben Netz sein, und Citizen Tools Solo muss auf dem PC laufen. Bei der Windows-Firewall-Abfrage den Zugriff im privaten Netzwerk erlauben. Gast-WLAN oder Client-Isolation können die Verbindung verhindern. Es wird keine Portweiterleitung am Router benötigt.
 
-Ab 0.2.3 prüft die externe Ansicht alle fünf Sekunden und beim erneuten Öffnen, ob die Version zur Windows-App passt. Bei einem Versionswechsel lädt eine reine Anzeige automatisch neu und öffnet wieder dieselbe Seite. Formulareingaben, ungespeicherte Änderungen, Dialoge oder laufende Vorgänge halten den Reload zurück; dann bleibt **Ansicht neu laden** verfügbar. Bereits geöffnete Ansichten aus älteren Versionen müssen für die Aktivierung dieser Funktion einmal manuell neu geladen werden.
+Ab 0.3.0 prüft die externe Ansicht alle fünf Sekunden und beim erneuten Öffnen, ob die Version zur Windows-App passt. Bei einem Versionswechsel lädt eine reine Anzeige automatisch neu und öffnet wieder dieselbe Seite. Formulareingaben, ungespeicherte Änderungen, Dialoge oder laufende Vorgänge halten den Reload zurück; dann bleibt **Ansicht neu laden** verfügbar. Bereits geöffnete Ansichten aus älteren Versionen müssen für die Aktivierung dieser Funktion einmal manuell neu geladen werden.
 
 Den **Server-Port** direkt am PC unter **Einstellungen → Companion** ändern (1024–65535, Standard 4174). Einstellungen speichern, das Programm schließen und neu öffnen. Anschließend am Tablet die neue Adresse verwenden. Bis zum Neustart bleiben der bisherige Port und die angezeigten aktuellen Adressen aktiv. Ein bereits belegter Port wird beim Speichern abgewiesen. Der vorhandene Spielstand bleibt beim Portwechsel erhalten.
 

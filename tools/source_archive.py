@@ -3,7 +3,7 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-ROOT_FILES = ('app.py', 'runtime.py', 'solo_about.py', 'solo_sounds.py', 'transfer.py',
+ROOT_FILES = ('app.py', 'runtime.py', 'solo_about.py', 'solo_sounds.py', 'solo_updates.py', 'update_helper.py', 'transfer.py',
               'project.json', 'LICENSE', 'NOTICE.md', 'README.md', 'requirements.txt', 'release-notes.json')
 EXTRA_ROOT_FILES = ('.gitignore', '.gitattributes', 'CHANGELOG.md', 'requirements-build.txt')
 CODE_TREES = ('companion', 'server', 'shared', 'web', 'tools', 'tests', 'packaging', 'docs')
