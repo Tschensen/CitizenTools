@@ -13,6 +13,54 @@
   let lastSuccess = 0;
   let offset = 0;
   let clockSynced = false;
+  let reloadRequested = false;
+  const reloadKey = 'citizen-tools:version-reload';
+  const drafts = new Set();
+
+  // Blur does not mean that a form was saved. Keep drafts protected until
+  // their form is reset (the normal save/cancel path) or removed.
+  function rememberDraft(event) {
+    if (event.target.matches('input,select,textarea,[contenteditable="true"]')) {
+      drafts.add(event.target.form || event.target);
+    }
+  }
+  document.addEventListener('input', rememberDraft, true);
+  document.addEventListener('change', rememberDraft, true);
+  // Grid painting and buttons which add/remove form rows can change drafts
+  // without dispatching an input event.
+  document.addEventListener('pointerdown', event => {
+    const editor = event.target.closest('#cargoAreaGrid,#shipDbGrid');
+    const form = editor?.closest('form');
+    if (form) drafts.add(form);
+  }, true);
+  document.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (button?.form) drafts.add(button.form);
+  }, true);
+  document.addEventListener('reset', event => {
+    queueMicrotask(() => { if (!event.defaultPrevented) drafts.delete(event.target); });
+  }, true);
+
+  function reloadRecord() {
+    try { return JSON.parse(sessionStorage.getItem(reloadKey) || 'null'); }
+    catch { return null; }
+  }
+
+  function reloadPassiveView(version) {
+    if (reloadRequested || document.hidden || new URLSearchParams(window.location.search).get('desktop') === '1'
+      || !soloHydrated || soloPending || soloSaving || remoteSaveTimer || soloPolling || missionAutoImportBusy
+      || window.personalTransferBusy || soloEditing()
+      || [...drafts].some(form => form.isConnected)) return;
+    const previous = reloadRecord();
+    // Persist across navigation so even a stale proxy response cannot cause
+    // an endless reload loop. A new target version gets one new attempt.
+    if (previous?.from === window.soloClientVersion && previous?.to === version) return;
+    try {
+      sessionStorage.setItem(reloadKey, JSON.stringify({from: window.soloClientVersion, to: version, page: activePage}));
+    } catch { return; }
+    reloadRequested = true;
+    window.location.reload();
+  }
 
   function updateClock() {
     const now = new Date(Date.now() + offset);
@@ -70,7 +118,12 @@
         offset = serverTime + elapsed / 2 - Date.now();
         clockSynced = true;
         lastSuccess = performance.now();
-        if (payload.version && payload.version !== window.soloClientVersion) requireSoloReload();
+        if (payload.version && payload.version !== window.soloClientVersion) {
+          requireSoloReload();
+          reloadPassiveView(payload.version);
+        } else if (payload.version === window.soloClientVersion) {
+          try { sessionStorage.removeItem(reloadKey); } catch { /* Storage may be unavailable. */ }
+        }
         const reconnecting = phase !== 'online';
         show('online');
         if (!window.soloUpdateRequired && (reconnecting || !soloHydrated)) void pollSoloState();
@@ -113,6 +166,10 @@
     start() {
       if (started) return;
       started = true;
+      const previous = reloadRecord();
+      if (previous?.to === window.soloClientVersion && [...document.querySelectorAll('[data-page]')].some(node => node.dataset.page === previous.page)) {
+        setActivePage(previous.page);
+      }
       updateClock();
       void probe();
       setInterval(updateClock, 1000);

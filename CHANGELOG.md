@@ -1,5 +1,21 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.2.3 — Webansichten automatisch aktualisieren
+
+### Deutsch
+
+- Eine externe Webansicht lädt bei einem Versionswechsel der Windows-Suite automatisch neu, sobald sie nur als Anzeige genutzt wird. Die zuletzt angezeigte Seite, etwa der Flugplan, bleibt geöffnet.
+- Ungespeicherte Änderungen, Formulareingaben, geöffnete Dialoge und laufende Vorgänge verhindern den automatischen Reload. In diesem Fall bleibt die Schaltfläche „Ansicht neu laden“ verfügbar.
+- Der Versionsvergleich läuft mit der Verbindungsprüfung alle fünf Sekunden und beim Zurückkehren zur Ansicht. Eine Sicherung verhindert endlose Reloads bei veralteten Browserinhalten.
+- Für dieses Update bereits geöffnete ältere Webansichten einmal manuell neu laden. Danach ist die automatische Aktualisierung für künftige Versionswechsel aktiv.
+
+### English
+
+- An external web view automatically reloads when the Windows suite version changes and the view is only being used as a display. The last displayed page, such as the flight plan, stays open.
+- Unsaved changes, form drafts, open dialogs and ongoing operations prevent the automatic reload. The “Reload view” button remains available in these cases.
+- The version check runs with the connection check every five seconds and when returning to the view. A safeguard prevents endless reloads when stale browser content is returned.
+- For this update, manually reload existing older web views once. Automatic updates will then apply to future version changes.
+
 ## 0.2.2 — Geöffnete Webansichten nach Updates absichern
 
 ### Deutsch

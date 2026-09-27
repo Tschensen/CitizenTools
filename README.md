@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.2.2 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.2.3 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 

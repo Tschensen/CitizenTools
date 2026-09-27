@@ -5,23 +5,33 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../web/scripts/solo-connection.js'), 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-function fixture(instant = '2026-09-23T12:00:00Z') {
+function fixture(instant = '2026-09-23T12:00:00Z', storage = new Map()) {
   let wall = Date.parse(instant), mono = 100;
+  let reloads = 0;
   const elements = Object.fromEntries(['flightClock', 'flightLocalClock', 'soloConnectionBanner', 'soloConnectionMessage', 'soloConnectionRetry']
     .map(id => [id, {hidden:true, textContent:'', dataset:{}, addEventListener(name,fn){this[name]=fn;}}]));
   const events = {}, intervals = new Map();
   const c = vm.createContext({
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [wall - 240000])); } static now() { return wall - 240000; } },
     performance:{now:()=>mono},
-    document:{hidden:false, documentElement:{lang:'de'}, getElementById:id=>elements[id], addEventListener:(name,fn)=>events[name]=fn},
-    window:{addEventListener:(name,fn)=>events[name]=fn,soloClientVersion:'test-current'},
+    document:{hidden:false, documentElement:{lang:'de'}, getElementById:id=>elements[id], addEventListener:(name,fn)=>events[name]=fn,
+      querySelectorAll:()=>[{dataset:{page:'hub'}},{dataset:{page:'run'}}]},
+    window:{addEventListener:(name,fn)=>events[name]=fn,soloClientVersion:'test-current',location:{search:'',reload:()=>reloads++}},
+    sessionStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
+    URLSearchParams, queueMicrotask,
+    activePage:'run', soloPending:null,soloSaving:null,remoteSaveTimer:null,soloPolling:false,missionAutoImportBusy:false,soloEditing:()=>false,
     setInterval:(fn,ms)=>intervals.set(ms,fn),
     renderRemoteStatus(){}, soloHydrated:true, pollSoloState:async()=>{},
     soloRequestJson:async()=>({response:{ok:true},payload:{ok:true,edition:'solo',serverTime:new Date(wall).toISOString()}}),
   });
   vm.runInContext(source,c);
+  c.setActivePage=page=>{c.activePage=page;};
   c.requireSoloReload=()=>{c.window.soloUpdateRequired=true;c.window.soloConnection.requireReload();};
-  return {c,api:c.window.soloConnection,elements,events,intervals,advance(ms){wall+=ms;mono+=ms;},serverNow:()=>wall};
+  return {c,api:c.window.soloConnection,elements,events,intervals,storage,get reloads(){return reloads;},advance(ms){wall+=ms;mono+=ms;},serverNow:()=>wall};
+}
+
+function updatedServer(f) {
+  f.c.soloRequestJson=async()=>({response:{ok:true},payload:{ok:true,edition:'solo',version:'test-new',serverTime:new Date(f.serverNow()).toISOString()}});
 }
 
 (async()=>{
@@ -98,6 +108,7 @@ function fixture(instant = '2026-09-23T12:00:00Z') {
   }
   {
     const f=fixture();let reloads=0,polls=0;
+    f.c.soloEditing=()=>true;
     f.c.window.location={reload:()=>reloads++};
     f.c.pollSoloState=async()=>polls++;
     f.c.soloRequestJson=async()=>({response:{ok:true},payload:{ok:true,edition:'solo',version:'test-new',serverTime:new Date(f.serverNow()).toISOString()}});
@@ -115,5 +126,50 @@ function fixture(instant = '2026-09-23T12:00:00Z') {
     f.elements.soloConnectionRetry.click();
     assert.equal(reloads,1);
   }
-  console.log('9 connection and clock tests passed.');
+  {
+    const f=fixture();updatedServer(f);f.api.start();await f.api.probe();
+    assert.equal(f.reloads,1,'A passive external view reloads on an app version change');
+    await f.api.probe();assert.equal(f.reloads,1,'Only one navigation is requested');
+    const cached=fixture(undefined,f.storage);updatedServer(cached);cached.api.start();await cached.api.probe();
+    assert.equal(cached.reloads,0,'A stale page returned by a cache cannot cause a reload loop');
+    assert.equal(cached.api.phase,'update-required');
+    const refreshed=fixture(undefined,f.storage);refreshed.c.window.soloClientVersion='test-new';refreshed.c.activePage='hub';
+    updatedServer(refreshed);refreshed.api.start();await refreshed.api.probe();
+    assert.equal(refreshed.c.activePage,'run','The flight plan is restored after the automatic reload');
+    assert.equal(refreshed.api.phase,'online');assert.equal(refreshed.reloads,0);
+    assert.equal(f.storage.size,0,'A successful update clears the retry marker');
+  }
+  {
+    for(const lock of ['soloPending','soloSaving','remoteSaveTimer','soloPolling','missionAutoImportBusy']) {
+      const f=fixture();f.c[lock]=true;updatedServer(f);f.api.start();await f.api.probe();
+      assert.equal(f.reloads,0,`${lock} prevents an automatic reload`);
+      f.c[lock]=false;await f.api.probe();assert.equal(f.reloads,1,'A later check can reload when the operation has finished');
+    }
+    for(const hold of [f=>f.c.window.location.search='?desktop=1',f=>f.c.window.personalTransferBusy=true,f=>f.c.document.hidden=true,f=>f.c.soloEditing=()=>true]) {
+      const f=fixture();hold(f);updatedServer(f);f.api.start();await f.api.probe();assert.equal(f.reloads,0);
+    }
+  }
+  {
+    for(const event of ['input','change']) {
+      const f=fixture(),form={isConnected:true};
+      f.events[event]({target:{form,matches:()=>true}});updatedServer(f);f.api.start();await f.api.probe();
+      assert.equal(f.reloads,0,'A draft stays protected after its field loses focus');
+      f.events.reset({target:form,defaultPrevented:true});await tick();await f.api.probe();assert.equal(f.reloads,0);
+      f.events.reset({target:form,defaultPrevented:false});await tick();await f.api.probe();assert.equal(f.reloads,1,'A discarded/reset form releases the draft protection');
+    }
+  }
+  {
+    const f=fixture();f.c.sessionStorage.setItem=()=>{throw new Error('disabled');};
+    updatedServer(f);f.api.start();await f.api.probe();assert.equal(f.reloads,0);
+    assert.equal(f.api.phase,'update-required','Unavailable session storage falls back to the reload button');
+  }
+  {
+    for(const event of ['click','pointerdown']) {
+      const f=fixture(),form={isConnected:true};
+      f.events[event]({target:{closest:()=>event==='click'?{form}:{closest:()=>form}}});
+      updatedServer(f);f.api.start();await f.api.probe();
+      assert.equal(f.reloads,0,'Form buttons and grid painting also protect unsaved drafts');
+    }
+  }
+  console.log('Connection, clock and automatic update tests passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

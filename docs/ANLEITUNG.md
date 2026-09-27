@@ -1,4 +1,4 @@
-# Citizen Tools · Flight Deck · 0.2.2
+# Citizen Tools · Flight Deck · 0.2.3
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
@@ -142,9 +142,11 @@ Die Dateien werden auf dem PC unter `%LOCALAPPDATA%\CitizenToolsSolo\Sounds` ges
 
 Fehlende oder unlesbare Dateien verwenden den eingebauten Syntheseklang. Der Soundordner gehört nicht zum Datenbank-Backup oder persönlichen Datentransfer; für eine Sicherung eigener Sounds den gesamten Ordner `Sounds` separat kopieren.
 
-## Tablet im Heimnetz
+## Weitere Geräte im Heimnetz
 
-Unter **Einstellungen → Companion** steht die lokale Adresse, beispielsweise `http://192.168.1.20:4174`. Diese im Tablet-Browser öffnen. Beide Geräte müssen im selben Netz sein, und Citizen Tools Solo muss auf dem PC laufen. Bei der Windows-Firewall-Abfrage den Zugriff im privaten Netzwerk erlauben. Gast-WLAN oder Client-Isolation können die Verbindung verhindern. Es wird keine Portweiterleitung am Router benötigt.
+Unter **Einstellungen → Companion** steht die lokale Adresse, beispielsweise `http://192.168.1.20:4174`. Diese im Browser des weiteren Geräts öffnen. Beide Geräte müssen im selben Netz sein, und Citizen Tools Solo muss auf dem PC laufen. Bei der Windows-Firewall-Abfrage den Zugriff im privaten Netzwerk erlauben. Gast-WLAN oder Client-Isolation können die Verbindung verhindern. Es wird keine Portweiterleitung am Router benötigt.
+
+Ab 0.2.3 prüft die externe Ansicht alle fünf Sekunden und beim erneuten Öffnen, ob die Version zur Windows-App passt. Bei einem Versionswechsel lädt eine reine Anzeige automatisch neu und öffnet wieder dieselbe Seite. Formulareingaben, ungespeicherte Änderungen, Dialoge oder laufende Vorgänge halten den Reload zurück; dann bleibt **Ansicht neu laden** verfügbar. Bereits geöffnete Ansichten aus älteren Versionen müssen für die Aktivierung dieser Funktion einmal manuell neu geladen werden.
 
 Den **Server-Port** direkt am PC unter **Einstellungen → Companion** ändern (1024–65535, Standard 4174). Einstellungen speichern, das Programm schließen und neu öffnen. Anschließend am Tablet die neue Adresse verwenden. Bis zum Neustart bleiben der bisherige Port und die angezeigten aktuellen Adressen aktiv. Ein bereits belegter Port wird beim Speichern abgewiesen. Der vorhandene Spielstand bleibt beim Portwechsel erhalten.
 
