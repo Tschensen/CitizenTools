@@ -1,5 +1,19 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.2.1 — Routen zuverlässig speichern
+
+### Deutsch
+
+- Das reine Aktualisieren einer Ansicht erzeugt keine Speicheranfragen mehr durch die automatische Fracht- oder Schiffsauswahl. Ein weiteres Gerät kann den gemeinsamen Stand anzeigen, ohne dadurch eine eigene Änderung auszulösen.
+- Verspätete Antworten der Auftragsprüfung im Hintergrund werden verworfen, wenn inzwischen ein neuerer Stand übernommen oder gespeichert wurde. Bereits gespeicherte Stoppreihenfolgen werden dadurch nicht mehr zurückgesetzt; Folgekonflikte beim weiteren Umsortieren werden vermieden.
+- Tatsächliche Änderungen von weiteren Geräten bleiben möglich. Nach dem Update die Windows-App und die Webansichten auf allen Geräten neu laden.
+
+### English
+
+- Refreshing a view no longer submits state changes caused by automatic cargo or ship selection. An additional device can display the shared state without creating an edit of its own.
+- Delayed background import-poll responses are discarded when a newer state has already been applied or saved. Saved stop orders are no longer rolled back, avoiding subsequent conflicts when reordering again.
+- Intentional edits from additional devices remain supported. After updating, restart the Windows app and reload the web views on every device.
+
 ## 0.2.0 — Zeitraumvergleich, Flugplan und Beladung
 
 ### Deutsch

@@ -1335,7 +1335,7 @@ function renderHub() {
   });
 }
 
-async function syncLayoutToActiveFleetShip({ confirmChange = false } = {}) {
+async function syncLayoutToActiveFleetShip({ confirmChange = false, persistChanges = true } = {}) {
   const activeEntry = currentActiveFleetEntry();
   const shipProfile = currentActiveShipProfile();
 
@@ -1364,12 +1364,13 @@ async function syncLayoutToActiveFleetShip({ confirmChange = false } = {}) {
 
   applyLayoutDefinition(shipDefinition, activeEntry.id, activeEntry.shipId, state.layout.overloadMode);
   state = pruneInvalidPlacements(state);
-  persist();
+  if (persistChanges) persist();
   return true;
 }
 
 function ensureFleetPlannerSelection() {
-  syncLayoutToActiveFleetShip();
+  // Rendering a remote snapshot is not a user edit on this device.
+  syncLayoutToActiveFleetShip({ persistChanges: false });
 }
 
 function collectLocationSuggestions() {
@@ -4527,7 +4528,6 @@ function ensureSelectedLoad() {
     if (state.selectedLoadId !== null) {
       state.selectedLoadId = null;
       state.selectionCleared = false;
-      persist();
     }
     return null;
   }
@@ -4547,7 +4547,6 @@ function ensureSelectedLoad() {
   }
   state.selectedLoadId = preferredEntry.load.id;
   state.selectionCleared = false;
-  persist();
   return preferredEntry;
 }
 

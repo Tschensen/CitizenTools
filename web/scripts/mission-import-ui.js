@@ -639,8 +639,11 @@ async function autoImportPendingMissions(mode = activeAppMode) {
   missionAutoImportBusy = true;
   try {
     if (remoteSaveTimer) return;
+    const readRevision = soloRevision;
     const remotePayload = await fetchRemoteState(importMode);
-    if (soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
+    // A local save or another accepted read can finish while this request is
+    // in flight. Its older response must not replace that newer shared state.
+    if (soloRevision !== readRevision || soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
     if (
       remotePayload?.state
       && isRemoteScopeCompatible(remotePayload, importMode)

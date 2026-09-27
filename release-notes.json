@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.2.1",
+    "de": {
+      "title": "Routen zuverlässig speichern",
+      "changes": [
+        "Das reine Aktualisieren einer Ansicht erzeugt keine Speicheranfragen mehr durch die automatische Fracht- oder Schiffsauswahl. Ein weiteres Gerät kann den gemeinsamen Stand anzeigen, ohne eine eigene Änderung auszulösen.",
+        "Verspätete Antworten der Auftragsprüfung im Hintergrund überschreiben keine zwischenzeitlich gespeicherte Stoppreihenfolge mehr. Dadurch werden auch Folgekonflikte beim weiteren Umsortieren vermieden.",
+        "Tatsächliche Änderungen von weiteren Geräten bleiben möglich. Nach dem Update die Windows-App neu starten und die Webansichten auf allen Geräten neu laden."
+      ]
+    },
+    "en": {
+      "title": "Reliable route saving",
+      "changes": [
+        "Refreshing a view no longer submits state changes caused by automatic cargo or ship selection. An additional device can display the shared state without creating an edit of its own.",
+        "Delayed background import-poll responses no longer overwrite a stop order saved while the request was in flight, preventing subsequent conflicts when reordering again.",
+        "Intentional edits from additional devices remain supported. After updating, restart the Windows app and reload the web views on every device."
+      ]
+    }
+  },
+  {
     "version": "0.2.0",
     "de": {
       "title": "Zeitraumvergleich, Flugplan und Beladung",
