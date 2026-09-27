@@ -1,10 +1,10 @@
-# Citizen Tools · Flight Deck · 0.1.25
+# Citizen Tools · Flight Deck · 0.2.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
 
-## Flugplan und Ladebereiche (in Entwicklung)
+## Flugplan und Ladebereiche
 
 Offene Stopps im **Flugplan** lassen sich mit den Chevron-Pfeilen verschieben oder am Griff ziehen; am fokussierten Griff funktionieren auch die Pfeiltasten. Die Nummern zeigen die Reihenfolge der noch offenen Stopps. Abholungen müssen vor ihren Lieferungen bleiben. Die Reihenfolge wird pro Schiff gespeichert und gilt auch auf weiteren Geräten. **Automatisch sortieren** stellt die automatische Planung wieder her. Neue Aufträge werden bei einer eigenen Reihenfolge angehängt; ein neuer Flug nach Abschluss aller bisherigen Aufträge beginnt automatisch.
 
@@ -41,9 +41,9 @@ Datumslose Buchungen fließen im gesamten Verlauf in die Summen ein, können abe
 Der Zeitfilter gilt ebenfalls für Auftraggeber, Orte, Schiffsauswertungen und Stop-Historie.
 Eine kompakte Erklärung lässt sich direkt am Filter unter **So wird gerechnet** aufklappen.
 
-### Zeitraumvergleich (in Entwicklung)
+### Zeitraumvergleich
 
-Der Branch `statisticscompare` ergänzt einen automatischen Vergleich direkt an den
+Ab Version 0.2.0 steht ein automatischer Vergleich direkt an den
 Kennzahlen für erledigte Aufträge, gebuchte Einnahmen, Ausgaben und Betriebsergebnis.
 **Heute** wird mit dem ganzen Vortag verglichen, **Letzte 7 Tage** mit den sieben Tagen davor.
 **Dieser Monat** verwendet den gleichen Abschnitt des Vormonats; bei einem kürzeren

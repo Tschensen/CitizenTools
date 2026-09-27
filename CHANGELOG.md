@@ -1,6 +1,6 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
-## Unveröffentlicht — Zeitraumvergleich, Flugplan und Beladung
+## 0.2.0 — Zeitraumvergleich, Flugplan und Beladung
 
 ### Deutsch
 

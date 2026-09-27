@@ -89,7 +89,10 @@ class SoloIntegrationTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(result['version'], VERSION)
         versions = [item['version'] for item in result['releases']]
-        self.assertEqual(versions, [f'0.1.{number}' for number in range(int(VERSION.rsplit('.', 1)[1]), -1, -1)])
+        self.assertEqual(versions[0], VERSION)
+        self.assertEqual(versions, sorted(set(versions), key=lambda value: tuple(map(int, value.split('.'))), reverse=True))
+        self.assertEqual([value for value in versions if value.startswith('0.1.')],
+                         [f'0.1.{number}' for number in range(25, -1, -1)])
         for item in result['releases']:
             for language in ['de', 'en']:
                 self.assertTrue(item[language]['title'])
