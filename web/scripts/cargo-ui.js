@@ -2841,6 +2841,7 @@ function renderHomeLoads() {
     const autoLoadActions = document.createElement("div");
     autoLoadActions.className = "mission-autoload-actions";
     autoLoadActions.innerHTML = `
+      ${renderAutoloadAreaControl(mission)}
       <button
         class="primary-button mission-autoload-button"
         type="button"
@@ -2871,6 +2872,7 @@ function renderHomeLoads() {
     autoLoadActions.querySelector(".mission-autoload-button")?.addEventListener("click", () => {
       autoLoadMission(mission);
     });
+    bindAutoloadAreaControls(autoLoadActions);
     missionBody.insertBefore(autoLoadActions, containerList);
 
     const sortedLoads = [...activeMissionLoads].sort((left, right) => {
@@ -3289,6 +3291,7 @@ function getRunRouteReasonLabels(point) {
     "same-area": cargoText("run.route.reason.sameArea", "Im gleichen Gebiet"),
     "same-system": cargoText("run.route.reason.sameSystem", "Im gleichen Sternensystem"),
     order: cargoText("run.route.reason.order", "Nach Auftragsreihenfolge"),
+    manual: t("run.route.reason.manual"),
   };
   return [...new Set((point?.routeReasonCodes || []).map((code) => labels[code]).filter(Boolean))].slice(0, 3);
 }
@@ -3638,6 +3641,7 @@ function buildOptimizedRunRoutePoints(missionStates, completedPickupKeys) {
   const optimized = RouteOptimizer.optimizeRouteTasks(tasks, {
     currentLocation: state.currentLocation,
     priorityLocation: state.runPriorityRouteLocation,
+    taskOrder: state.runRouteOrder?.[state.activeFleetEntryId] || [],
     locations: window.systemDatabaseController?.getActiveLocations?.() || [],
   });
   const plannedPoints = optimized.batches.map((batch) => {
@@ -3647,6 +3651,8 @@ function buildOptimizedRunRoutePoints(missionStates, completedPickupKeys) {
       ...point,
       routeReasonCodes: [...batch.reasonCodes],
       routeTaskCount: batch.tasks.length,
+      routeTaskIds: batch.tasks.map(task => task.id),
+      routeDependencies: [...new Set(batch.tasks.flatMap(task => task.dependencies))],
       routeScore: batch.score,
     };
   });
@@ -3672,6 +3678,7 @@ function syncRunRouteProgress() {
   ));
   const eligible = state.missions.filter((mission) => getRunMissionReadiness(mission).routeEligible);
   const newFlight = !previous.some(isMissionActive) && eligible.some((mission) => !previousIds.has(mission.id));
+  if (newFlight && state.runRouteOrder) delete state.runRouteOrder[fleetId];
   const ids = [...new Set([...(newFlight ? [] : previous.map((mission) => mission.id)), ...eligible.map((mission) => mission.id)])];
   state.runRouteProgress ||= {};
   state.runRouteProgress[fleetId] = ids;
@@ -4307,6 +4314,7 @@ function renderRunMode() {
   runAutoLoadButton.hidden = !point?.hasPickup || runState.pickupEntries.length === 0 || !canUseLoadPage();
   runAutoLoadButton.disabled = !runState.arrived || unplacedPickupCount <= 0;
   if (runAutoloadOptions) runAutoloadOptions.hidden = runAutoLoadButton.hidden;
+  renderRunAutoloadAreas(runState.pickupEntries);
   runCompletePickupButton.hidden = !point?.hasPickup;
   runCompletePickupButton.disabled = !runState.arrived || runState.pendingPickupSegments.length > 0;
   if (runState.pendingPickupSegments.length > 0) {
@@ -4336,7 +4344,7 @@ function renderRunMode() {
       : cargoText("run.actions.stopBlocked", "Halt noch offen");
   runActionBar.hidden = routeCompleted;
 
-  runRouteList.innerHTML = runState.points.map((routePoint, index) => {
+  runRouteList.innerHTML = runState.points.map((routePoint) => {
     const isCurrent = routePoint.key === point?.key;
     const status = routePoint.completed ? "completed" : isCurrent ? "current" : "upcoming";
     const typeLabel = getRunRoutePointTypeLabels(routePoint).join(" + ");
@@ -4345,13 +4353,10 @@ function renderRunMode() {
       runState.priorityLocation
       && normalizeRunRouteLocation(runState.priorityLocation) === normalizeRunRouteLocation(routePoint.dropoff),
     );
-    const priorityLabel = isPriority
-      ? cargoText("run.route.clearPriority", "Priorität aufheben")
-      : cargoText("run.route.prioritize", "Als nächsten Halt priorisieren");
     return `
-      <div class="run-route-row is-${status}${isPriority ? " is-priority" : ""}">
+      <div class="run-route-row is-${status}${isPriority ? " is-priority" : ""}" ${!routePoint.completed ? `data-route-order-index="${runState.openPoints.indexOf(routePoint)}"` : ""}>
         <button class="run-route-select" type="button" data-run-point-key="${escapeHtml(routePoint.key)}" ${routePoint.completed ? "disabled" : ""}>
-          <span class="run-route-index">${routePoint.completed ? "✓" : index + 1}</span>
+          <span class="run-route-index">${routePoint.completed ? "✓" : runState.openPoints.indexOf(routePoint) + 1}</span>
           <span class="run-route-copy">
             <strong>${escapeHtml(routePoint.dropoff)}</strong>
             <small>${escapeHtml(typeLabel)}</small>
@@ -4359,9 +4364,7 @@ function renderRunMode() {
           </span>
         </button>
         ${!routePoint.completed ? `
-          <button class="run-route-priority icon-only-button tooltip-button${isPriority ? " is-active" : ""}" type="button" data-run-priority-location="${escapeHtml(routePoint.dropoff)}" aria-label="${escapeHtml(priorityLabel)}" data-tooltip="${escapeHtml(priorityLabel)}" aria-pressed="${isPriority}">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M7 3h10l-1.5 6v3l2.5 4H6l2.5-4V9L7 3Zm5 13v5" /></svg>
-          </button>
+          ${renderRunRouteOrderControls(runState.openPoints, runState.openPoints.indexOf(routePoint))}
         ` : routePoint.hasPickup && routePoint.missionIds.some((id) => runState.eligibleMissionIds.has(id)) ? `
           <button class="run-route-reopen icon-only-button tooltip-button" type="button" data-run-reopen-key="${escapeHtml(routePoint.key)}" data-run-reopen-task-keys="${escapeHtml((routePoint.pickupTaskKeys || []).join(","))}" data-run-reopen-location="${escapeHtml(routePoint.dropoff)}" data-run-reopen-mission-ids="${escapeHtml((routePoint.missionIds || []).join(","))}" aria-label="${escapeHtml(cargoText("run.actions.reopenPickup", "Abholung wieder öffnen"))}" data-tooltip="${escapeHtml(cargoText("run.actions.reopenPickup", "Abholung wieder öffnen"))}">
             <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M5 5v5h5M5.6 9A7 7 0 1 1 6 16l1.7-1A5 5 0 1 0 7 10.4L10 13H3V6l2.6 3Z" /></svg>
@@ -4371,22 +4374,12 @@ function renderRunMode() {
     `;
   }).join("");
 
+  bindRunRouteOrdering(runState);
   runRouteList.querySelectorAll("[data-run-point-key]").forEach((button) => {
     button.addEventListener("click", () => {
       state.selectedRunRoutePointKey = button.dataset.runPointKey || "";
       const selected = buildRunRouteState().selectedPoint;
       if (selected && (selected.hasCargo || selected.hasService)) selectStopByDropoff(selected.dropoff);
-      persist();
-      render();
-    });
-  });
-  runRouteList.querySelectorAll("[data-run-priority-location]").forEach((button) => {
-    button.addEventListener("click", () => {
-      hideAppTooltip(true);
-      const location = String(button.dataset.runPriorityLocation || "").trim();
-      const alreadyPrioritized = normalizeRunRouteLocation(state.runPriorityRouteLocation) === normalizeRunRouteLocation(location);
-      state.runPriorityRouteLocation = alreadyPrioritized ? "" : location;
-      state.selectedRunRoutePointKey = "";
       persist();
       render();
     });

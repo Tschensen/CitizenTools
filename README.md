@@ -5,15 +5,15 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.1.25 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.2.0 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
 - Aufträge anlegen, bearbeiten und aus Screenshots per OCR übernehmen.
-- Fracht und Verladung mit Cargo-Grids planen.
-- Routen, nächste Ziele und Fortschritt verfolgen.
+- Fracht mit Cargo-Grids planen, eigene Ladebereiche festlegen und Aufträge gezielt automatisch verladen.
+- Routen, nächste Ziele und Fortschritt verfolgen; Stopps per Drag & Drop oder Pfeilen sortieren.
 - Flotte, Schiffsdaten, Finanzen und Statistiken verwalten.
-- Statistik nach Zeitraum filtern und gebuchte Einnahmen, Ausgaben und Betriebsergebnis im Diagramm verfolgen.
+- Statistik nach Zeitraum filtern, mit dem vorherigen Zeitraum vergleichen und gebuchte Einnahmen, Ausgaben und Betriebsergebnis im Diagramm verfolgen.
 - Interface-Sounds und Akzentfarbe individuell einstellen.
 - Auf PC, Tablet und anderen Geräten im Heimnetz denselben Stand bearbeiten.
 - Daten sichern sowie persönliche Daten als Datei exportieren und importieren.

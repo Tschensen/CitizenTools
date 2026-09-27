@@ -1,6 +1,9 @@
 // Cargo-grid rendering, placement, stacking, zoom, and autoload integration.
 function renderShipGrid() {
   const { rows, cols } = state.layout;
+  const cargoAreaContext = getAutoloadAreaContext();
+  const areaLegend = document.getElementById('cargoAreaLegend');
+  if (areaLegend) areaLegend.innerHTML = cargoAreaContext.areas.map(area => `<span><i style="background:${area.color}" aria-hidden="true"></i>${escapeHtml(cargoAreaName(area))}</span>`).join('');
   const selectedEntry = findLoadById(state.selectedLoadId);
   const selected = selectedEntry && canMissionUseCurrentCargoGrid(selectedEntry.mission) ? selectedEntry : null;
   const levelFilter = getEffectiveLevelFilter();
@@ -140,6 +143,13 @@ function renderShipGrid() {
         slotButton.classList.add("selected-load");
       }
 
+      const cargoArea = cargoAreaContext.areas.find(area => area.id === cargoAreaContext.owners.get(slotId));
+      if (cargoArea) {
+        const areaLabel = cargoAreaName(cargoArea);
+        slotButton.insertAdjacentHTML('beforeend', `<span class="cargo-area-dot" style="background:${cargoArea.color}" aria-hidden="true"></span>`);
+        slotButton.title = [slotButton.title, areaLabel].filter(Boolean).join(' · ');
+        slotButton.setAttribute('aria-label', [slotButton.getAttribute('aria-label') || slotId, areaLabel].join(' · '));
+      }
       slotButton.addEventListener("click", () => handleCellClick(row, col));
       rowElement.appendChild(slotButton);
     }
@@ -702,6 +712,16 @@ function syncAutoloadControls() {
   autoloadStrategySelects.forEach((select) => {
     select.value = settings.strategy;
   });
+  document.querySelectorAll('[data-autoload-fill]').forEach(select => {
+    const modes = ['areas', 'rows', ...(['left','right'].includes(settings.fillOrder) ? [settings.fillOrder] : [])];
+    select.innerHTML = modes.map(value=>`<option value="${value}">${escapeHtml(t(`autoload.fill.${value}`))}</option>`).join('');
+    select.value = settings.fillOrder;
+  });
+  const areas = getAutoloadAreaContext().areas;
+  document.querySelectorAll('[data-autoload-area-order]').forEach(label => {
+    label.textContent = t('cargoAreas.sequence',{names:areas.map(cargoAreaName).join(' → ') || t('cargoAreas.unassigned')});
+    label.hidden = settings.fillOrder !== 'areas';
+  });
   autoloadOverloadInputs.forEach((input) => {
     input.checked = settings.allowOverload;
     input.disabled = !overloadAvailable;
@@ -726,6 +746,9 @@ function updateAutoloadSettings(nextValue) {
 }
 
 function initializeAutoloadControls() {
+  document.querySelectorAll('[data-autoload-fill]').forEach(select => {
+    select.addEventListener('change', () => updateAutoloadSettings({ fillOrder: select.value }));
+  });
   autoloadStrategySelects.forEach((select) => {
     select.addEventListener("change", () => updateAutoloadSettings({ strategy: select.value }));
   });
@@ -745,7 +768,9 @@ function buildAutoloadRouteRanks() {
   return ranks;
 }
 
-function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
+function findAutoPlacementForLoad(load, settings = getAutoloadSettings(), cargoArea = 'all', selection = { id: '', unavailable: false }) {
+  if (selection.unavailable) return null;
+  const areaContext = getAutoloadAreaContext();
   const normalizedSettings = Autoload.normalizeAutoloadSettings(settings);
   const overloadSlotIds = new Set(state.layout.overloadSlotIds || []);
   const originalRotation = Boolean(load.rotated);
@@ -760,6 +785,11 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
       for (let col = 0; col < state.layout.cols; col += 1) {
         const result = canPlaceLoadAt(load, row, col, load.id);
         if (!result.valid) continue;
+        const area = Autoload.placementArea(result.footprint, state.layout.cols);
+        if (Autoload.normalizeCargoArea(cargoArea) !== 'all' && area !== cargoArea) continue;
+        const region = CargoAreas.containingArea(result.footprint, areaContext.owners);
+        if (region === null) continue;
+        if (selection.id && region !== (selection.id === '__remaining__' ? '' : selection.id)) continue;
         const overloadCellCount = result.footprint.reduce(
           (count, cell) => count + (overloadSlotIds.has(createSlotId(cell.row, cell.col)) ? 1 : 0),
           0,
@@ -768,6 +798,8 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
         candidates.push({
           row,
           col,
+          area,
+          areaRank: region ? areaContext.areas.findIndex(item => item.id === region) : areaContext.areas.length,
           baseZ: result.baseZ,
           rotated,
           rotationIndex,
@@ -782,7 +814,7 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
   });
 
   load.rotated = originalRotation;
-  return Autoload.sortPlacementCandidates(candidates)[0] || null;
+  return Autoload.sortPlacementCandidates(candidates, normalizedSettings.fillOrder)[0] || null;
 }
 
 function autoLoadEntries(entries, {
@@ -828,12 +860,16 @@ function autoLoadEntries(entries, {
     load,
     segmentOrder: segmentOrders.get(mission.id)?.get(load.segmentId) ?? 0,
     routeRank: routeRanks.get(normalizeRunRouteLocation(getLoadDropoff(load, mission))) ?? -1,
-  })), normalizedSettings.strategy);
+  })), normalizedSettings.strategy).sort((left, right) => {
+    const fixed = entry => Boolean(entry.mission.autoloadAreaId || Autoload.normalizeCargoArea(entry.mission.autoloadArea) !== 'all');
+    return Number(fixed(right)) - Number(fixed(left));
+  });
   let placedCount = 0;
   let overloadCount = 0;
   const skippedLoadIds = [];
-  sortedEntries.forEach(({ load }) => {
-    const placement = findAutoPlacementForLoad(load, normalizedSettings);
+  sortedEntries.forEach(({ mission, load }) => {
+    const placement = findAutoPlacementForLoad(load, normalizedSettings, mission.autoloadArea,
+      getMissionCargoAreaSelection(mission, getAutoloadAreaContext().profile));
     if (!placement) {
       skippedLoadIds.push(load.id);
       return;

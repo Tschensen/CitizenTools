@@ -1,25 +1,52 @@
 (function registerStatisticsTrend() {
+  function createComparisonRenderer({ t, escapeHtml, currentUiLanguage }) {
+    return function renderComparison(comparison, metric) {
+      if (!comparison) return '';
+      const { previous, delta, percentage } = comparison;
+      const locale = currentUiLanguage() === 'en' ? 'en-US' : 'de-DE';
+      const esc = value => escapeHtml(String(value));
+      const format = value => {
+        const number = Math.abs(value).toLocaleString(locale, { maximumFractionDigits: 0 });
+        const sign = value < 0 ? '−' : '';
+        return metric === 'completed'
+          ? t(Math.abs(value) === 1 ? 'statistics.comparison.contract' : 'statistics.comparison.contracts', { value: sign + number })
+          : `${sign}${number} aUEC`;
+      };
+      const better = metric === 'expense' ? delta < 0 : delta > 0;
+      const tone = delta === 0 ? 'neutral' : better ? 'better' : 'worse';
+      let percentText = '';
+      if (percentage !== null && delta !== 0) {
+        const magnitude = Math.abs(percentage);
+        const number = magnitude < .1 ? `<${(.1).toLocaleString(locale)}` : magnitude.toLocaleString(locale, { maximumFractionDigits: 1 });
+        percentText = ` · ${percentage > 0 ? '+' : '−'}${number} %`;
+      }
+      const change = delta === 0 ? t('statistics.comparison.unchanged') : `${delta > 0 ? '+' : ''}${format(delta)}${percentText}`;
+      return `<div class="statistics-comparison is-${tone}" data-statistics-comparison="${esc(metric)}"><span class="statistics-comparison-delta"><span aria-hidden="true">${delta === 0 ? '=' : delta > 0 ? '↑' : '↓'}</span> ${esc(change)}</span><small>${esc(t('statistics.comparison.previous', { value: format(previous) }))}</small></div>`;
+    };
+  }
   function createStatisticsChart({ t, escapeHtml, currentUiLanguage }) {
     const root = document.getElementById('statisticsTrend');
-    let selected = null, previousKey = '', latestTrend = null, lastWidth = 0;
+    const renderComparison = createComparisonRenderer({ t, escapeHtml, currentUiLanguage });
+    let selected = null, previousKey = '', latestTrend = null, latestComparison = null, lastWidth = 0;
     if (root && typeof ResizeObserver !== 'undefined') new ResizeObserver(() => {
-      if (root.clientWidth && root.clientWidth !== lastWidth && latestTrend) render(latestTrend);
+      if (root.clientWidth && root.clientWidth !== lastWidth && latestTrend) render(latestTrend, latestComparison);
     }).observe(root);
     const esc = value => escapeHtml(String(value));
     const locale = () => currentUiLanguage() === 'en' ? 'en-US' : 'de-DE';
     const money = value => `${Math.round(value).toLocaleString(locale())} aUEC`;
     const date = key => new Date(`${key}T12:00:00`).toLocaleDateString(locale());
     const label = bucket => bucket.start === bucket.end ? date(bucket.start) : `${date(bucket.start)} – ${date(bucket.end)}`;
-    function render(trend) {
+    function render(trend, comparison = null) {
       if (!root) return;
       latestTrend = trend;
+      latestComparison = comparison;
       lastWidth = root.clientWidth;
       const series = ['income', 'expense', 'result'];
       const buckets = trend.buckets;
       const rangeKey = buckets.map(b => b.start).join('|');
       if (rangeKey !== previousKey) selected = buckets.length - 1;
       previousKey = rangeKey;
-      root.innerHTML = `<div class="statistics-trend-totals">${series.map(name => `<div class="summary-card summary-card-compact"><span>${esc(t(`statistics.trend.${name}`))}</span><strong data-trend-total="${name}" class="trend-${name}">${esc(money(trend.totals[name]))}</strong></div>`).join('')}</div>
+      root.innerHTML = `<div class="statistics-trend-totals">${series.map(name => `<div class="summary-card summary-card-compact"><span>${esc(t(`statistics.trend.${name}`))}</span><strong data-trend-total="${name}" class="trend-${name}">${esc(money(trend.totals[name]))}</strong>${renderComparison(comparison?.[name], name)}</div>`).join('')}</div>
         ${trend.undated ? `<p class="form-hint">${esc(t('statistics.trend.undated', { count: trend.undated }))}</p>` : ''}`;
       if (!buckets.length) {
         root.insertAdjacentHTML('beforeend', `<div class="empty-state">${esc(t('statistics.trend.empty'))}</div>`);
@@ -72,5 +99,5 @@
     }
     return { render };
   }
-  window.StatisticsTrend = { createStatisticsChart };
+  window.StatisticsTrend = { createStatisticsChart, createComparisonRenderer };
 })();

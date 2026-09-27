@@ -1,5 +1,24 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.2.0 — Zeitraumvergleich, Flugplan und Beladung
+
+### Deutsch
+
+- Offene Stopps per Drag & Drop, Pfeiltasten oder Chevron-Schaltflächen umsortieren. Die Reihenfolge gilt pro Schiff und wird mit weiteren Geräten geteilt; Abholungen bleiben vor ihren Lieferungen. Automatische Sortierung jederzeit wiederherstellen.
+- Ladebereiche im Schiffsprofil frei benennen, einfärben, im Grid markieren und in die gewünschte Füllreihenfolge bringen. Standardbereiche für 315p, Hermes und Starlancer MAX; weitere Profile erhalten Vorschläge anhand getrennter Gridflächen.
+- Autoload folgt der Bereichsfolge des Schiffs oder lädt reihenweise. Pro Auftrag lässt sich ein benannter Bereich wählen – in der Beladungsansicht und im Cockpit. Container bleiben vollständig innerhalb eines Bereichs; bestehende Platzierungen bleiben unverändert. Alte Links-/Rechts-Einstellungen werden erhalten. Ein gelöschter oder auf einem anderen Schiff fehlender Bereich muss neu gewählt werden.
+
+- Automatischer Vergleich für Heute, letzte sieben Tage, diesen Monat und eigene Zeiträume; der Vergleichszeitraum ist direkt am Filter sichtbar.
+- Unterschiede bei gebuchten Einnahmen, Ausgaben, Betriebsergebnis und erledigten Aufträgen direkt an den vorhandenen Kennzahlen anzeigen, inklusive bisherigem Wert und Prozentänderung bei positivem Vergleichswert.
+- Niedrigere Ausgaben als Verbesserung kennzeichnen; bei null oder negativem Vergleichswert auf irreführende Prozentangaben verzichten. Deutsch und Englisch unterstützen.
+
+### English
+
+- Reorder pending stops by dragging, arrow keys or chevron buttons. Custom order is stored per ship and shared with other devices; pickups stay before their deliveries. Automatic sorting can be restored at any time.
+- Name, color, paint and reorder cargo areas in the ship profile. Preset areas for the 315p, Hermes and Starlancer MAX; other profiles receive suggestions based on disconnected grid sections.
+- Autoload follows the ship's area order or fills row by row. Each contract can target a named area in the loading view and cockpit. Containers stay entirely within one area; existing placements and legacy left/right preferences are preserved. Deleted areas or areas unavailable on another ship require a new selection.
+- Automatically compare today, the last seven days, this month and custom periods with the preceding period. Show previous values and changes for booked income, expenses, operating result and completed contracts. Lower expenses count as an improvement; percentages are omitted for zero or negative baselines.
+
 ## 0.1.25 — Deine Einsätze im Zeitverlauf
 
 - Zeitraum für die gesamte Statistik wählen: Heute, letzte sieben Tage, dieser Monat, eigener Zeitraum oder gesamter Verlauf. Die Auswahl bleibt pro App bzw. Browser gespeichert.

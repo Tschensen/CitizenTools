@@ -77,6 +77,7 @@ def main():
                 until(window, "window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
                 window.evaluate_js("document.querySelector('[data-module-target=statistics]').click()")
             expect("statisticsPeriod.value==='all' && statisticsTrend.textContent.includes('Keine datierten')", 'empty-first-start')
+            expect("statisticsComparisonCaption.hidden && !document.querySelector('[data-statistics-comparison]')", 'all-time-without-invented-comparison')
             # Supply deterministic records directly to the statistics controller;
             # never persist them or read the user's real database.
             pc.evaluate_js("""(() => {
@@ -97,15 +98,20 @@ def main():
             expect("statisticsCustomers.textContent.includes('Current customer') && !statisticsCustomers.textContent.includes('Old customer')", 'customer-ranking-filtered')
             expect("stopHistoryList.textContent.includes('New stop') && !stopHistoryList.textContent.includes('Old stop')", 'stop-history-filtered')
             expect("statisticsFleetPerformanceSummary.textContent.includes('1.120.000')", 'ship-attribution-resolved')
+            expect("document.querySelectorAll('[data-statistics-comparison]').length===4 && document.querySelector('[data-statistics-comparison=income]').textContent.includes('+880.000 aUEC') && document.querySelector('[data-statistics-comparison=income]').textContent.includes('+366,7 %')", 'week-financial-comparison')
+            expect("document.querySelector('[data-statistics-comparison=completed]').textContent.includes('+6 Aufträge') && document.querySelector('[data-statistics-comparison=completed]').textContent.includes('Vorher: 1 Auftrag')", 'completed-contract-comparison')
+            expect("!statisticsComparisonCaption.hidden && statisticsComparisonCaption.textContent.includes(new Date(StatisticsPeriod.shiftDay(statsToday,-13)+'T12:00:00').toLocaleDateString('de-DE'))", 'comparison-dates-visible')
             assert device.evaluate_js("statisticsPeriod.value==='all'")
             report['checks'].append('other-device-period-unchanged')
             screenshot('statistics-week-de')
             screenshot('statistics-chart-de', chart_only=True)
             preset('today')
             expect("document.querySelector('[data-trend-total=result]').textContent==='-25.000 aUEC' && statisticsTrendPosition.disabled", 'single-day-negative-result')
+            expect("document.querySelector('[data-statistics-comparison=income]').textContent.includes('−20.000 aUEC') && document.querySelector('[data-statistics-comparison=completed]').textContent.includes('Unverändert')", 'today-compares-with-yesterday')
             preset('custom')
             pc.evaluate_js("statisticsStart.value=StatisticsPeriod.shiftDay(statsToday,-7);statisticsEnd.value=statsToday;statisticsPeriodForm.requestSubmit()")
             expect("statisticsTrendPosition.max==='7'", 'custom-inclusive-endpoints')
+            expect("document.querySelector('[data-statistics-comparison=income]').textContent.includes('Vorher: 0 aUEC') && !document.querySelector('[data-statistics-comparison=income]').textContent.includes('%')", 'empty-baseline-without-percentage')
             pc.evaluate_js("statisticsTrendPosition.value=0;statisticsTrendPosition.dispatchEvent(new Event('input'))")
             expect("statisticsTrendReadout.textContent.includes('240.000 aUEC')", 'slider-selects-exact-values')
             pc.evaluate_js("const statsSvg=statisticsTrend.querySelector('svg');const statsBox=statsSvg.getBoundingClientRect();statsSvg.dispatchEvent(new PointerEvent('pointerdown',{clientX:statsBox.right-1,clientY:statsBox.top+40}));")
@@ -119,13 +125,16 @@ def main():
             preset('week')
             pc.evaluate_js("state.uiLanguage='en';translateStaticText();statisticsController.render()")
             expect("statisticsTrendTitle.textContent==='Results over time' && statisticsPeriod.options[2].textContent==='Last 7 days' && statisticsTrend.textContent.includes('Operating result')", 'english-labels-and-currency')
+            expect("statisticsComparisonCaption.textContent.startsWith('Compared with:') && document.querySelector('[data-statistics-comparison=income]').textContent.includes('+880,000 aUEC') && document.querySelector('[data-statistics-comparison=income]').textContent.includes('+366.7 %')", 'english-comparison-format')
             pc.resize(768, 1024)
             time.sleep(.4)
             expect("document.documentElement.scrollWidth<=innerWidth+1", 'portrait-no-horizontal-overflow')
+            expect("document.querySelectorAll('[data-statistics-comparison]').length===4 && document.querySelector('[data-statistics-comparison=income]').textContent.includes('Previously:')", 'comparisons-survive-chart-resize')
             screenshot('statistics-portrait-en')
             pc.resize(390, 844)
             time.sleep(.4)
             expect("document.querySelector('.statistics-trend-panel').getBoundingClientRect().right<=innerWidth+1 && statisticsPeriod.getBoundingClientRect().right<=innerWidth+1", 'phone-chart-and-filter-fit')
+            expect("document.documentElement.scrollWidth<=innerWidth+1 && document.querySelector('[data-statistics-comparison=income]').getBoundingClientRect().width>0", 'phone-comparisons-fit')
             screenshot('statistics-phone-en')
             screenshot('statistics-phone-chart-en', chart_only=True)
             preset('custom')
@@ -141,6 +150,26 @@ def main():
             preset('custom')
             pc.evaluate_js("statisticsStart.value='2099-01-01';statisticsEnd.value='2099-01-02';statisticsPeriodForm.requestSubmit()")
             expect("statisticsTrend.textContent.includes('No dated') && !statisticsTrend.querySelector('svg')", 'empty-custom-period')
+            expect("[...document.querySelectorAll('[data-statistics-comparison]')].every(e=>e.textContent.includes('Unchanged')) && !statisticsTrend.textContent.includes('NaN') && !statisticsTrend.textContent.includes('Infinity')", 'empty-periods-remain-neutral')
+            pc.evaluate_js("statisticsStart.value=StatisticsPeriod.shiftDay(statsToday,1);statisticsEnd.value=StatisticsPeriod.shiftDay(statsToday,2);statisticsPeriodForm.requestSubmit()")
+            expect("document.querySelector('[data-statistics-comparison=income]').textContent.includes('−100 %') && document.querySelector('[data-statistics-comparison=expense]').classList.contains('is-better')", 'empty-current-period-compares-with-prior-bookings')
+            pc.evaluate_js("""(() => {
+              const yesterday=StatisticsPeriod.shiftDay(statsToday,-1);
+              state.missions=[];state.stopHistory=[];
+              state.ledgerEntries=[
+                {id:'past1',bookedOn:yesterday,amountAuec:60,flow:'income',missionId:'deleted-contract',fleetEntryId:'test-ship'},
+                {id:'past2',bookedOn:yesterday,amountAuec:40,flow:'income',missionId:'deleted-contract',fleetEntryId:'test-ship'},
+                {id:'past-cost',bookedOn:yesterday,amountAuec:200,flow:'expense'},
+                {id:'now-income',bookedOn:statsToday,amountAuec:80,flow:'income'},
+                {id:'now-cost',bookedOn:statsToday,amountAuec:20,flow:'expense'}
+              ];
+            })()""")
+            preset('today')
+            expect("document.querySelector('[data-statistics-comparison=expense]').textContent.includes('−180 aUEC') && document.querySelector('[data-statistics-comparison=expense]').textContent.includes('−90 %') && document.querySelector('[data-statistics-comparison=expense]').classList.contains('is-better')", 'lower-expenses-marked-as-improvement')
+            expect("document.querySelector('[data-statistics-comparison=result]').textContent.includes('+160 aUEC') && document.querySelector('[data-statistics-comparison=result]').textContent.includes('Previously: −100 aUEC') && !document.querySelector('[data-statistics-comparison=result]').textContent.includes('%')", 'negative-baseline-uses-absolute-difference')
+            expect("document.querySelector('[data-statistics-comparison=completed]').textContent.includes('Previously: 1 contract')", 'legacy-contract-count-not-duplicated-by-payments')
+            preset('all')
+            expect("statisticsComparisonCaption.hidden && !document.querySelector('[data-statistics-comparison]')", 'all-time-removes-stale-comparisons')
             preset('week')
             pc.evaluate_js("window.oldStatsPage=true;setTimeout(()=>location.reload(),0)")
             until(pc, "!window.oldStatsPage && window.soloStartup?.phase==='ready'")

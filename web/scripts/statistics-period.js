@@ -37,6 +37,29 @@
   function contains(range, key) {
     return range.preset === 'all' || Boolean(key && key >= range.start && key <= range.end);
   }
+  function getComparisonRange(range) {
+    if (!range || range.preset === 'all') return null;
+    const start = dateKey(range.start), end = dateKey(range.end);
+    if (!start || !end || start > end) return null;
+    let previousStart, previousEnd;
+    if (range.preset === 'month') {
+      const lastDay = shiftDay(`${start.slice(0, 7)}-01`, -1);
+      previousStart = `${lastDay.slice(0, 7)}-01`;
+      previousEnd = `${lastDay.slice(0, 7)}-${String(Math.min(Number(end.slice(8)), Number(lastDay.slice(8)))).padStart(2, '0')}`;
+    } else {
+      const days = Math.round((new Date(`${end}T12:00:00Z`) - new Date(`${start}T12:00:00Z`)) / 86400000) + 1;
+      previousStart = shiftDay(start, -days);
+      previousEnd = shiftDay(start, -1);
+    }
+    if (!dateKey(previousStart) || !dateKey(previousEnd) || previousStart.startsWith('0000')) return null;
+    return { preset: 'custom', start: previousStart, end: previousEnd };
+  }
+  function compareValues(current, previous) {
+    if (!Number.isFinite(current) || !Number.isFinite(previous)) return null;
+    const delta = current - previous;
+    const percentage = previous > 0 ? delta / previous * 100 : null;
+    return { current, previous, delta, percentage: Number.isFinite(percentage) ? percentage : null };
+  }
   const completed = mission => ['completed', 'paid'].includes(String(mission?.status || '').trim().toLowerCase()) || Boolean(mission?.completedAt || mission?.paidAt);
   const missionDate = mission => (completed(mission) ? dateKey(mission.completedAt) || dateKey(mission.paidAt) : '') || dateKey(mission?.createdAt);
   const bookingDate = entry => dateKey(entry?.bookedOn) || dateKey(entry?.createdAt);
@@ -52,11 +75,18 @@
       undated: missions.filter(m => !missionDate(m)).length + ledger.filter(e => !bookingDate(e)).length + stops.filter(s => !dateKey(s.completedAt)).length,
     };
   }
-  function buildTrend(entries, range) {
-    const bookings = list(entries).filter(operating).filter(e => ['income', 'expense'].includes(e.flow) && Number.isFinite(Number(e.amountAuec)));
+  function operatingBookings(entries) {
+    return list(entries).filter(operating).filter(e => ['income', 'expense'].includes(e.flow) && Number.isFinite(Number(e.amountAuec)));
+  }
+  function operatingTotals(entries) {
     const totals = { income: 0, expense: 0, result: 0 };
-    bookings.forEach(e => totals[e.flow] += Number(e.amountAuec));
+    operatingBookings(entries).forEach(e => totals[e.flow] += Number(e.amountAuec));
     totals.result = totals.income - totals.expense;
+    return totals;
+  }
+  function buildTrend(entries, range) {
+    const bookings = operatingBookings(entries);
+    const totals = operatingTotals(bookings);
     const dated = bookings.filter(e => bookingDate(e));
     const result = { totals, buckets: [], unit: 'day', undated: bookings.length - dated.length };
     if (!dated.length) return result;
@@ -91,7 +121,7 @@
     result.buckets.forEach(b => b.result = b.income - b.expense);
     return result;
   }
-  const api = { dateKey, shiftDay, normalizeFilter, getRange, contains, missionDate, bookingDate, operating, selectState, buildTrend };
+  const api = { dateKey, shiftDay, normalizeFilter, getRange, getComparisonRange, compareValues, contains, missionDate, bookingDate, operating, operatingTotals, selectState, buildTrend };
   if (typeof window !== 'undefined') window.StatisticsPeriod = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

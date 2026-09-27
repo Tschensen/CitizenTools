@@ -313,6 +313,7 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
         gridLevels: entry.gridLevels,
         gridHeights: entry.gridHeights,
         overloadGridHeights: entry.overloadGridHeights,
+        cargoAreas: entry.cargoAreas,
         gridBlockedSlots: entry.gridBlockedSlots,
         gridHeightOverrides: entry.gridHeightOverrides,
         createdAt: entry.createdAt,
@@ -614,6 +615,9 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
           maxContainerScu: missionUsesCargoGrid ? normalizeMissionMaxContainerScu(mission.maxContainerScu) : null,
           color: normalizeMissionColor(mission.color) || MISSION_COLOR_PALETTE[0],
           assignedFleetEntryId,
+          autoloadArea: Autoload.normalizeCargoArea(mission.autoloadArea),
+          autoloadAreaId: String(mission.autoloadAreaId || '').trim().slice(0, 100),
+          autoloadAreaShipId: String(mission.autoloadAreaShipId || '').trim().slice(0, 100),
           assignedPilotId: primaryParticipant?.pilotId || assignedPilotId,
           assignedPilotName: primaryParticipant?.pilotName || assignedPilotName,
           participants,
@@ -786,6 +790,10 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
     currentLocation: String(input?.currentLocation || "").trim(),
     selectedRunRoutePointKey: String(input?.selectedRunRoutePointKey || "").trim(),
     runPriorityRouteLocation: String(input?.runPriorityRouteLocation || "").trim(),
+    runRouteOrder: Object.fromEntries(fleet.map(entry => [entry.id, [...new Set(
+      (Array.isArray(input?.runRouteOrder?.[entry.id]) ? input.runRouteOrder[entry.id] : [])
+        .filter(id => typeof id === 'string' && id.length < 1000),
+    )]])),
     runRouteProgress: Object.fromEntries(fleet.map((entry) => [entry.id, [...new Set(
       (Array.isArray(input?.runRouteProgress?.[entry.id]) ? input.runRouteProgress[entry.id] : [])
         .filter((id) => typeof id === "string" && missions.some((mission) => mission.id === id)),

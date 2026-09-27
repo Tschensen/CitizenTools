@@ -1,8 +1,20 @@
-# Citizen Tools · Flight Deck · 0.1.25
+# Citizen Tools · Flight Deck · 0.2.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Flugplan und Ladebereiche
+
+Offene Stopps im **Flugplan** lassen sich mit den Chevron-Pfeilen verschieben oder am Griff ziehen; am fokussierten Griff funktionieren auch die Pfeiltasten. Die Nummern zeigen die Reihenfolge der noch offenen Stopps. Abholungen müssen vor ihren Lieferungen bleiben. Die Reihenfolge wird pro Schiff gespeichert und gilt auch auf weiteren Geräten. **Automatisch sortieren** stellt die automatische Planung wieder her. Neue Aufträge werden bei einer eigenen Reihenfolge angehängt; ein neuer Flug nach Abschluss aller bisherigen Aufträge beginnt automatisch.
+
+Unter **Einstellungen → Schiffsdatenbank → Schiff bearbeiten → Ladebereiche & Füllreihenfolge** lassen sich Bereiche hinzufügen, benennen und einfärben. Die Nummer wählt den Bereich zum Markieren aus; Zellen werden per Antippen, Tastatur oder durch Ziehen im Grid zugeordnet. Jede Zelle gehört höchstens zu einem Bereich. **Zuordnung entfernen** gibt sie wieder frei. Die Markierung gilt für die gesamte Höhe einer Bodenzelle und verändert weder Grid noch vorhandene Ladung. Die Chevron-Pfeile bestimmen die Füllreihenfolge. Gespeichert wird mit **Änderungen speichern** am Ende des Schiffsformulars; Abbrechen verwirft den Entwurf.
+
+Vorbereitet sind **Vorne / Hinten** für die 315p, **Links / Rechts** für die Hermes und **Links / Rechts / Heck** für die Starlancer MAX, passend zu den enthaltenen Grids. Andere vorhandene Profile erhalten Bereiche anhand zusammenhängender Gridflächen. Eigene Anpassungen werden beim Laden nicht überschrieben. Nicht zugeordnete Zellen bilden den **Übrigen Laderaum**. Entfernte Gridzellen verschwinden automatisch aus ihren Bereichen. Die Bereiche gehören zum Schiffsprofil und stehen damit allen darauf basierenden Flottenschiffen und weiteren Geräten zur Verfügung.
+
+Autoload verwendet mit **Bereiche des Schiffs** die eingestellte Reihenfolge; nicht zugeordnete Flächen kommen zuletzt. Alternativ ist **Reihenweise** möglich. Offizielle Gridfelder bleiben gegenüber Überladungsfeldern bevorzugt. Bereits gespeicherte Füllrichtungen **Links zuerst / Rechts zuerst** bleiben als bisherige Einstellungen nutzbar.
+
+Pro Auftrag steht ein **Ladebereich** zur Verfügung, sowohl in der Beladungsansicht als auch im Cockpit: **Automatisch**, die benannten Bereiche des zugeordneten Schiffs und gegebenenfalls **Übriger Laderaum**. Container müssen vollständig innerhalb eines Bereichs liegen; wenn dort kein passender Platz frei ist, bleiben sie unverladen. Fest zugewiesene Aufträge werden vor Aufträgen ohne Bereichsbindung eingeplant. Gelöschte Bereiche oder der Wechsel zu einem anderen Schiffsprofil erfordern eine neue Auswahl; es erfolgt kein stiller Wechsel auf automatisch. Umbenennen und Umsortieren erhalten die Zuordnung. Vorhandene Containerpositionen bleiben unverändert. Alte Aufträge mit geometrischer Links-/Rechts-Zuweisung behalten diese, bis ein neuer Bereich gewählt wird.
 
 ## Statistik nach Zeitraum
 
@@ -28,6 +40,23 @@ Datumslose Buchungen fließen im gesamten Verlauf in die Summen ein, können abe
 
 Der Zeitfilter gilt ebenfalls für Auftraggeber, Orte, Schiffsauswertungen und Stop-Historie.
 Eine kompakte Erklärung lässt sich direkt am Filter unter **So wird gerechnet** aufklappen.
+
+### Zeitraumvergleich
+
+Ab Version 0.2.0 steht ein automatischer Vergleich direkt an den
+Kennzahlen für erledigte Aufträge, gebuchte Einnahmen, Ausgaben und Betriebsergebnis.
+**Heute** wird mit dem ganzen Vortag verglichen, **Letzte 7 Tage** mit den sieben Tagen davor.
+**Dieser Monat** verwendet den gleichen Abschnitt des Vormonats; bei einem kürzeren
+Vormonat endet der Vergleich an dessen letztem Tag. Eigene Zeiträume werden mit dem
+gleich langen Abschnitt unmittelbar davor verglichen. Beide Grenzen zählen mit.
+Unter dem ausgewählten Zeitraum stehen die genauen Vergleichsdaten. Für **Gesamter Verlauf** entfällt der Vergleich.
+
+An jeder Kennzahl stehen die absolute Änderung und der bisherige Wert.
+Prozentänderungen erscheinen nur bei positivem Vergleichswert; ausgehend von null
+oder einem Verlust bleibt die absolute Änderung aussagekräftig. Niedrigere Ausgaben
+werden als Verbesserung gekennzeichnet. Grundlage sind ausschließlich die vorhandenen
+Aufträge und Buchungen; leere Vergleichszeiträume ergeben einen bisherigen Wert von null.
+Die Auswahl wirkt automatisch und verändert keine gespeicherten Daten.
 
 Version 0.1.19 ergänzt die Aufnahme des Screenshot-Tastenkürzels per Tastendruck: unter Einstellungen → Companion & Heimnetz das Feld oder **Aufnehmen** anklicken, Kombination drücken und **Einstellungen speichern** wählen. **Esc**, Abbrechen oder Verlassen des Feldes behält den vorherigen Wert. Währenddessen bleibt laufende OCR aktiv; nur der bisherige Hotkey wird vorübergehend freigegeben. Bei einem geschlossenen oder getrennten Browser endet die Freigabe automatisch.
 

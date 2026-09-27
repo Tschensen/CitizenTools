@@ -1,5 +1,28 @@
 [
   {
+    "version": "0.2.0",
+    "de": {
+      "title": "Zeitraumvergleich, Flugplan und Beladung",
+      "changes": [
+        "Erledigte Aufträge, gebuchte Einnahmen, Ausgaben und Betriebsergebnis automatisch mit dem vorherigen Zeitraum vergleichen. Vergleichsdaten, bisherige Werte und Änderungen stehen direkt an den Filtern und Kennzahlen; Prozentänderungen erscheinen bei positivem Vergleichswert.",
+        "Offene Stopps per Drag & Drop, Pfeiltasten oder Chevron-Schaltflächen umsortieren. Die Reihenfolge wird pro Schiff gespeichert und mit weiteren Geräten geteilt. Abholungen bleiben vor ihren Lieferungen; die automatische Sortierung lässt sich jederzeit wiederherstellen.",
+        "Ladebereiche im Schiffsprofil frei benennen, einfärben, im Grid markieren und in die gewünschte Füllreihenfolge bringen. Vorbereitet sind Vorne/Hinten für die 315p, Links/Rechts für die Hermes und Links/Rechts/Heck für die Starlancer MAX. Weitere Profile erhalten Vorschläge anhand getrennter Gridflächen.",
+        "Autoload folgt der Bereichsfolge des Schiffs oder lädt reihenweise. Pro Auftrag lässt sich in der Beladungsansicht und im Cockpit ein Bereich wählen. Container bleiben vollständig innerhalb eines Bereichs; fest zugewiesene Aufträge werden zuerst eingeplant.",
+        "Bestehende Containerpositionen und bisherige Links-/Rechts-Einstellungen bleiben erhalten. Umbenennen und Umsortieren bewahren die Bereichszuordnung. Gelöschte oder auf einem anderen Schiffsprofil fehlende Bereiche müssen neu gewählt werden."
+      ]
+    },
+    "en": {
+      "title": "Period comparison, flight plan and cargo loading",
+      "changes": [
+        "Automatically compare completed contracts, booked income, expenses and operating result with the preceding period. Comparison dates, previous values and changes appear beside the filters and metrics; percentage changes are shown for positive baselines.",
+        "Reorder pending stops by dragging, arrow keys or chevron buttons. The order is saved per ship and shared with additional devices. Pickups stay before their deliveries; automatic sorting can be restored at any time.",
+        "Name, color, paint and reorder cargo areas in the ship profile. Preset areas include Front/Rear for the 315p, Left/Right for the Hermes and Left/Right/Rear for the Starlancer MAX. Other profiles receive suggestions based on disconnected grid sections.",
+        "Autoload follows the ship's area order or fills row by row. Each contract can target an area in the loading view and cockpit. Containers stay entirely within one area; contracts with assigned areas are loaded first.",
+        "Existing cargo placements and legacy left/right preferences are preserved. Renaming and reordering retain area assignments. Deleted areas or areas unavailable on another ship profile require a new selection."
+      ]
+    }
+  },
+  {
     "version": "0.1.25",
     "de": {
       "title": "Deine Einsätze im Zeitverlauf",
