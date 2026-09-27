@@ -51,7 +51,10 @@ function soloMergeStates(base, local, remote) {
       if (soloEqual(l, b) || soloEqual(r, b) || soloEqual(l, r)) item = choose(b, l, r);
       else if (collections.has(key) && [b, l, r].every(Array.isArray)) item = records(b, l, r);
       else if (key === "runCompletedRoutePoints" && [b, l, r].every(Array.isArray)) item = progress(b, l, r);
-      else if (key === "runRouteProgress" && b && l && r) {
+      else if (key === "runRouteOrder" && b && l && r) {
+        item = Object.fromEntries([...new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(r)])]
+          .map(id => [id, choose(b[id] || [], l[id] || [], r[id] || [])]));
+      } else if (key === "runRouteProgress" && b && l && r) {
         item = Object.fromEntries([...new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(r)])]
           .map(id => [id, progress(b[id] || [], l[id] || [], r[id] || [])]));
       } else item = choose(b, l, r);

@@ -13,6 +13,7 @@
   function normalizeAutoloadSettings(value) {
     return {
       strategy: normalizeAutoloadStrategy(value?.strategy),
+      fillOrder: ['left', 'right'].includes(value?.fillOrder) ? value.fillOrder : 'rows',
       allowOverload: Boolean(value?.allowOverload),
     };
   }
@@ -67,12 +68,25 @@
     return [...(Array.isArray(entries) ? entries : [])].sort(comparator);
   }
 
-  function sortPlacementCandidates(candidates) {
+  function normalizeCargoArea(value) {
+    return ['left', 'right'].includes(value) ? value : 'all';
+  }
+
+  function placementArea(footprint, cols) {
+    if (!footprint?.length) return 'center';
+    if (footprint.every(cell => cell.col < Math.floor(cols / 2))) return 'left';
+    if (footprint.every(cell => cell.col >= Math.ceil(cols / 2))) return 'right';
+    return 'center';
+  }
+
+  function sortPlacementCandidates(candidates, fillOrder = 'rows') {
+    const sideRank = candidate => fillOrder === 'rows' ? 0 : candidate.area === fillOrder ? 0 : candidate.area === 'center' ? 1 : 2;
     return [...(Array.isArray(candidates) ? candidates : [])].sort((left, right) =>
       (Number(left?.overloadCellCount) || 0) - (Number(right?.overloadCellCount) || 0)
+        || sideRank(left) - sideRank(right)
         || (Number(left?.newFloorCells) || 0) - (Number(right?.newFloorCells) || 0)
         || (Number(left?.row) || 0) - (Number(right?.row) || 0)
-        || (Number(left?.col) || 0) - (Number(right?.col) || 0)
+        || ((Number(left?.col) || 0) - (Number(right?.col) || 0)) * (fillOrder === 'right' ? -1 : 1)
         || (Number(right?.baseZ) || 0) - (Number(left?.baseZ) || 0)
         || (Number(left?.rotationIndex) || 0) - (Number(right?.rotationIndex) || 0),
     );
@@ -84,5 +98,7 @@
     normalizeAutoloadSettings,
     sortAutoloadEntries,
     sortPlacementCandidates,
+    normalizeCargoArea,
+    placementArea,
   };
 });

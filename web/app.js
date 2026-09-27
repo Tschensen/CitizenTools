@@ -279,6 +279,7 @@ const defaultState = {
   runPriorityRouteLocation: "",
   runCompletedRoutePoints: [],
   runRouteProgress: {},
+  runRouteOrder: {},
   stopHistory: [],
 };
 

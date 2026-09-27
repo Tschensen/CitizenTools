@@ -21,4 +21,7 @@ assert.deepEqual(merge({runCompletedRoutePoints:['a']}, {runCompletedRoutePoints
 assert.deepEqual(merge({currentLocation:'A',uiLanguage:'de'}, {currentLocation:'A',uiLanguage:'en'}, {currentLocation:'B',uiLanguage:'de'}).state,
   {currentLocation:'B',uiLanguage:'en'});
 assert.equal(context.soloEqual({b:2,a:1},{a:1,b:2}),true);
-console.log('9 shared-state merge tests passed.');
+assert.deepEqual(merge({runRouteOrder:{a:['x'],b:['y']}}, {runRouteOrder:{a:['z','x'],b:['y']}}, {runRouteOrder:{a:['x'],b:['k','y']}}).state.runRouteOrder,
+  {a:['z','x'],b:['k','y']});
+assert.equal(merge({runRouteOrder:{a:['x','y','z']}}, {runRouteOrder:{a:['y','x','z']}}, {runRouteOrder:{a:['z','y','x']}}).ok, false);
+console.log('11 shared-state merge tests passed.');

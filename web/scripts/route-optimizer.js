@@ -238,11 +238,48 @@
       plannerLocationKey = selected.locationKey;
     }
 
+    const finalBatches = Array.isArray(options.taskOrder) && options.taskOrder.length
+      ? applyManualOrder(batches, options.taskOrder) : batches;
     return {
-      batches,
-      orderedTaskIds: batches.flatMap((batch) => batch.tasks.map((task) => task.id)),
+      batches: finalBatches,
+      orderedTaskIds: finalBatches.flatMap((batch) => batch.tasks.map((task) => task.id)),
       priorityReachable,
     };
+  }
+
+  function applyManualOrder(batches, taskOrder) {
+    const tasks = batches.flatMap(batch => batch.tasks);
+    const byId = new Map(tasks.map(task => [task.id, task]));
+    const ordered = [], visited = new Set(), visiting = new Set();
+    function visit(id) {
+      const task = byId.get(id);
+      if (!task || visited.has(id) || visiting.has(id)) return;
+      visiting.add(id);
+      task.dependencies.forEach(visit);
+      visiting.delete(id);
+      visited.add(id);
+      ordered.push(task);
+    }
+    [...taskOrder, ...tasks.map(task => task.id)].forEach(visit);
+    const result = [];
+    ordered.forEach(task => {
+      let batch = result.at(-1);
+      if (!batch || batch.locationKey !== task.locationKey) {
+        batch = { location: task.location, locationKey: task.locationKey, tasks: [], reasonCodes: ['manual'], score: 0 };
+        result.push(batch);
+      }
+      batch.tasks.push(task);
+    });
+    return result;
+  }
+
+  function moveRouteStop(points, from, to) {
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= points.length || to >= points.length) return null;
+    const result = [...points];
+    result.splice(to, 0, result.splice(from, 1)[0]);
+    const positions = new Map(result.flatMap((point, index) => (point.routeTaskIds || []).map(id => [id, index])));
+    const valid = result.every((point, index) => (point.routeDependencies || []).every(id => !positions.has(id) || positions.get(id) <= index));
+    return valid ? result : null;
   }
 
   return {
@@ -250,5 +287,6 @@
     buildLocationIndex,
     getLocationAffinity,
     optimizeRouteTasks,
+    moveRouteStop,
   };
 });

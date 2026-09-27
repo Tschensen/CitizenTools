@@ -4,6 +4,14 @@ Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windo
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
 
+## Flugplan und Ladebereiche (in Entwicklung)
+
+Offene Stopps im **Flugplan** lassen sich mit den Chevron-Pfeilen verschieben oder am Griff ziehen; am fokussierten Griff funktionieren auch die Pfeiltasten. Die Nummern zeigen die Reihenfolge der noch offenen Stopps. Abholungen müssen vor ihren Lieferungen bleiben. Die Reihenfolge wird pro Schiff gespeichert und gilt auch auf weiteren Geräten. **Automatisch sortieren** stellt die automatische Planung wieder her. Neue Aufträge werden bei einer eigenen Reihenfolge angehängt; ein neuer Flug nach Abschluss aller bisherigen Aufträge beginnt automatisch.
+
+Autoload bietet eine **Füllrichtung**: **Reihenweise**, **Links zuerst** oder **Rechts zuerst**. Links/rechts beziehen sich auf die Cargo-Gridansicht. Die bevorzugte Hälfte wird zuerst gefüllt, danach der übrige Platz. Offizielle Gridfelder bleiben gegenüber Überladungsfeldern bevorzugt.
+
+Pro Auftrag steht außerdem ein **Ladebereich** zur Verfügung, sowohl in der Beladungsansicht als auch beim Autoload im Cockpit: **Automatisch**, **Nur links**, **Nur rechts**. Eine feste Hälfte gilt für den gesamten Container. Wenn dort kein passender Platz mehr frei ist, bleibt er unverladen. Die Auswahl wird gespeichert; bereits platzierte Container werden durch eine Änderung nicht verschoben. Für die Hermes lässt sich so beispielsweise Auftrag 1 links und Auftrag 2 rechts unterbringen.
+
 ## Statistik nach Zeitraum
 
 Ab Version 0.1.25 steht über allen Statistikbereichen eine gemeinsame Zeitraumwahl:

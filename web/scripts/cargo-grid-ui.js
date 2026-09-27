@@ -702,6 +702,7 @@ function syncAutoloadControls() {
   autoloadStrategySelects.forEach((select) => {
     select.value = settings.strategy;
   });
+  document.querySelectorAll('[data-autoload-fill]').forEach(select => { select.value = settings.fillOrder; });
   autoloadOverloadInputs.forEach((input) => {
     input.checked = settings.allowOverload;
     input.disabled = !overloadAvailable;
@@ -726,6 +727,9 @@ function updateAutoloadSettings(nextValue) {
 }
 
 function initializeAutoloadControls() {
+  document.querySelectorAll('[data-autoload-fill]').forEach(select => {
+    select.addEventListener('change', () => updateAutoloadSettings({ fillOrder: select.value }));
+  });
   autoloadStrategySelects.forEach((select) => {
     select.addEventListener("change", () => updateAutoloadSettings({ strategy: select.value }));
   });
@@ -745,7 +749,7 @@ function buildAutoloadRouteRanks() {
   return ranks;
 }
 
-function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
+function findAutoPlacementForLoad(load, settings = getAutoloadSettings(), cargoArea = 'all') {
   const normalizedSettings = Autoload.normalizeAutoloadSettings(settings);
   const overloadSlotIds = new Set(state.layout.overloadSlotIds || []);
   const originalRotation = Boolean(load.rotated);
@@ -760,6 +764,8 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
       for (let col = 0; col < state.layout.cols; col += 1) {
         const result = canPlaceLoadAt(load, row, col, load.id);
         if (!result.valid) continue;
+        const area = Autoload.placementArea(result.footprint, state.layout.cols);
+        if (Autoload.normalizeCargoArea(cargoArea) !== 'all' && area !== cargoArea) continue;
         const overloadCellCount = result.footprint.reduce(
           (count, cell) => count + (overloadSlotIds.has(createSlotId(cell.row, cell.col)) ? 1 : 0),
           0,
@@ -768,6 +774,7 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
         candidates.push({
           row,
           col,
+          area,
           baseZ: result.baseZ,
           rotated,
           rotationIndex,
@@ -782,7 +789,7 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings()) {
   });
 
   load.rotated = originalRotation;
-  return Autoload.sortPlacementCandidates(candidates)[0] || null;
+  return Autoload.sortPlacementCandidates(candidates, normalizedSettings.fillOrder)[0] || null;
 }
 
 function autoLoadEntries(entries, {
@@ -832,8 +839,8 @@ function autoLoadEntries(entries, {
   let placedCount = 0;
   let overloadCount = 0;
   const skippedLoadIds = [];
-  sortedEntries.forEach(({ load }) => {
-    const placement = findAutoPlacementForLoad(load, normalizedSettings);
+  sortedEntries.forEach(({ mission, load }) => {
+    const placement = findAutoPlacementForLoad(load, normalizedSettings, mission.autoloadArea);
     if (!placement) {
       skippedLoadIds.push(load.id);
       return;
