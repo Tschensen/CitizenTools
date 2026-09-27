@@ -23,7 +23,7 @@ import transfer
 import solo_sounds
 import solo_about
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -468,6 +468,10 @@ class SoloHandler(backend.CargoPlannerHandler):
             if not isinstance(import_ids, list) or len(import_ids) > 500 or any(not isinstance(item, str) or not item or len(item) > 200 for item in import_ids):
                 raise ValueError("Ungültige Auftragsimporte.")
         except ValueError as error: return self.send_json(400, {"error": str(error)})
+        # A still-open older browser can discard fields introduced by an
+        # update, even when its optimistic-concurrency revision is current.
+        if payload.get("clientVersion") != VERSION:
+            return self.send_json(428, {"error": "client_version_mismatch", "version": VERSION})
         if "baseUpdatedAt" not in payload:
             return self.send_json(428, {"error": "Versionsstand fehlt. Bitte die Oberfläche neu laden."})
         with backend.get_connection() as connection:

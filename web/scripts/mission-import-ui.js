@@ -624,7 +624,7 @@ function stageSoloImports(items, importMode) {
 }
 
 async function autoImportPendingMissions(mode = activeAppMode) {
-  if (window.personalTransferBusy) return;
+  if (window.personalTransferBusy || window.soloUpdateRequired) return;
   const importMode = normalizeAppMode(mode);
   if (
     missionAutoImportBusy
@@ -643,7 +643,7 @@ async function autoImportPendingMissions(mode = activeAppMode) {
     const remotePayload = await fetchRemoteState(importMode);
     // A local save or another accepted read can finish while this request is
     // in flight. Its older response must not replace that newer shared state.
-    if (soloRevision !== readRevision || soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
+    if (window.soloUpdateRequired || soloRevision !== readRevision || soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
     if (
       remotePayload?.state
       && isRemoteScopeCompatible(remotePayload, importMode)
@@ -662,7 +662,7 @@ async function autoImportPendingMissions(mode = activeAppMode) {
 
     const items = Array.isArray(payload.imports) ? payload.imports : [];
     if (items.length === 0) return;
-    if (soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
+    if (window.soloUpdateRequired || soloPending || soloSaving || remoteSaveTimer || soloEditing()) return;
     const staged = stageSoloImports(items, importMode);
     if (!staged.importIds.length) return;
     // The PC commits the state and acknowledges these imports in one SQLite
@@ -671,7 +671,7 @@ async function autoImportPendingMissions(mode = activeAppMode) {
     try {
       const { response: saved, payload: committed } = await soloRequestJson("./api/state?scope=solo", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...staged, baseUpdatedAt: soloRevision }),
+        body: JSON.stringify({ ...staged, baseUpdatedAt: soloRevision, clientVersion: window.soloClientVersion }),
       });
       if (saved.status === 409) return;
       if (!saved.ok) throw new Error(committed.error || "solo_import_save_failed");

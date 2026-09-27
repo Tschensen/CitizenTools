@@ -13,7 +13,7 @@ function fixture() {
     sanitizeState:value=>value, pruneInvalidPlacements:value=>value,
     getStateStorageKey:()=> 'state', render:()=>{}, renderRemoteStatus:()=>{},
     applyRemoteMeta:()=>{}, currentUiLanguage:()=> 'de',
-    window:{addEventListener:()=>{}},
+    window:{addEventListener:()=>{},soloClientVersion:'test-current'},
     document:{activeElement:null, querySelector:()=>null},
     localStorage:{getItem:key=>storage.get(key), setItem:(key,value)=>storage.set(key,value)},
   });
@@ -199,5 +199,24 @@ const response = (status, payload) => ({status,ok:status>=200&&status<300,json:a
     assert.deepEqual(c.state.runRouteOrder,{ship:['b','a']},'A current background read must still apply another device\'s route edit');
     assert.equal(vm.runInContext('soloRevision',c),'r2');
   }
-  console.log('17 Solo synchronization tests passed.');
+  {
+    const {c,storage}=fixture();
+    let writes=0,notices=0;
+    c.window.soloConnection={requireReload:()=>notices++};
+    c.fetch=async(url,options)=>{
+      writes++;
+      assert.equal(JSON.parse(options.body).clientVersion,'test-current');
+      return response(428,{error:'client_version_mismatch',version:'test-new'});
+    };
+    const local={missions:[],runRouteOrder:{ship:['b','a']}};
+    assert.equal(await c.saveRemoteState(local),false);
+    assert.equal(c.window.soloUpdateRequired,true);
+    assert.deepEqual(JSON.parse(storage.get('solo-test:conflict-recovery')),local,'A rejected edit must remain recoverable');
+    assert.equal(vm.runInContext('soloRevision',c),'r1');
+    await c.pollSoloState();await c.flushSoloState();
+    assert.equal(writes,1,'An outdated view must stop retrying state writes and reads');
+    assert.ok(notices>0);
+    assert.equal(c.conflictShown,undefined,'An app update is not a two-device edit conflict');
+  }
+  console.log('18 Solo synchronization tests passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

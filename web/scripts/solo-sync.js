@@ -7,6 +7,16 @@ let soloHydrated = false;
 let soloBaseState = null;
 let soloRenderPending = false;
 
+function requireSoloReload() {
+  window.soloUpdateRequired = true;
+  if (soloPending || soloSaving) {
+    localStorage.setItem(`${STORAGE_KEY}:conflict-recovery`, JSON.stringify(soloPending || state));
+  }
+  if (remoteSaveTimer) { clearTimeout(remoteSaveTimer); remoteSaveTimer = null; }
+  remoteStatus.connected = false;
+  window.soloConnection?.requireReload();
+}
+
 // Seeded ships and the default pilot are reference data, not a personal edit.
 // Two fresh clients must not race to upload independently timestamped defaults.
 function soloHasPersonalState(candidate) {
@@ -28,6 +38,7 @@ async function soloRequestJson(url, options = {}, timeoutMs = 10000) {
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     const payload = await response.json();
+    if (response.status === 428 && payload.error === 'client_version_mismatch') requireSoloReload();
     return { response, payload };
   } finally {
     clearTimeout(timeout);
@@ -59,6 +70,7 @@ function scheduleRemotePersist() {
   if (!remoteHydrationComplete) return;
   if (remoteSaveTimer) clearTimeout(remoteSaveTimer);
   soloPending = soloCleanState(state);
+  if (window.soloUpdateRequired) { requireSoloReload(); return; }
   remoteSaveTimer = setTimeout(() => { remoteSaveTimer = null; void flushSoloState(); }, 250);
 }
 
@@ -95,6 +107,7 @@ function rebaseSoloState(payload, local = soloPending || soloCleanState(state)) 
 }
 
 async function flushSoloState() {
+  if (window.soloUpdateRequired) { requireSoloReload(); return false; }
   if (soloSaving) return soloSaving;
   if (!soloHydrated || !soloPending || soloPolling) return false;
   soloSaving = (async () => {
@@ -106,7 +119,7 @@ async function flushSoloState() {
       try {
         const { response, payload } = await soloRequestJson("./api/state?scope=solo", {
           method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({state: snapshot, baseUpdatedAt: soloRevision}),
+          body: JSON.stringify({state: snapshot, baseUpdatedAt: soloRevision, clientVersion: window.soloClientVersion}),
         });
         if (response.status === 409) {
           if (rebaseSoloState(payload, soloPending || snapshot)) {
@@ -129,6 +142,7 @@ async function flushSoloState() {
         applyRemoteMeta({...payload, meta: {lastBackupAt: remoteStatus.lastBackupAt, lastRestoreAt: remoteStatus.lastRestoreAt}});
       } catch (error) {
         soloPending ||= snapshot;
+        if (window.soloUpdateRequired) requireSoloReload();
         remoteStatus.connected = false;
         renderRemoteStatus();
         return false;
@@ -164,7 +178,7 @@ function showSoloConflict() {
 }
 
 async function pollSoloState() {
-  if (window.personalTransferBusy) return;
+  if (window.personalTransferBusy || window.soloUpdateRequired) return;
   if (!remoteHydrationComplete || soloSaving || soloPolling || missionAutoImportBusy) return;
   if (!soloHydrated) {
     if (soloEditing()) return;
@@ -192,6 +206,7 @@ async function pollSoloState() {
   soloPolling = true;
   try {
     const { response, payload } = await soloRequestJson("./api/state?scope=solo", {cache: "no-store"});
+    if (window.soloUpdateRequired) return;
     if (!response.ok) throw new Error("solo_poll_failed");
     if (!soloPending && !soloEditing() && payload.updatedAt !== soloRevision) applySoloState(payload);
     else if (!soloPending) applyRemoteMeta(payload);

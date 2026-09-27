@@ -29,7 +29,9 @@ class SoloIntegrationTests(unittest.TestCase):
         self.runtime.stop()
         self.temp.cleanup()
 
-    def api(self, path, payload=None, *, method=None, headers=None, raw=False):
+    def api(self, path, payload=None, *, method=None, headers=None, raw=False, client_version=VERSION):
+        if path.split('?')[0] == '/api/state' and isinstance(payload, dict) and client_version is not None:
+            payload = {**payload, 'clientVersion': client_version}
         body = payload if isinstance(payload, bytes) else json.dumps(payload).encode() if payload is not None else None
         hdr = {"Content-Type": "application/json"} if body else {}
         hdr.update(headers or {})
@@ -71,6 +73,7 @@ class SoloIntegrationTests(unittest.TestCase):
                     self.assertIn(b'flightLocalClock', body)
                     self.assertIn(b'Schiffszeit / UTC', body)
                     self.assertIn(b'Ortszeit', body)
+                    self.assertIn(f'window.soloClientVersion = "{VERSION}"'.encode(), body)
 
     def test_heartbeat_returns_current_server_utc_without_cache(self):
         before = datetime.now(timezone.utc)
@@ -155,6 +158,30 @@ class SoloIntegrationTests(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             replies = list(pool.map(lambda marker: self.api('/api/state', {'state': {'marker': marker}, 'baseUpdatedAt': None})[0], ['PC', 'tablet']))
         self.assertEqual(sorted(replies), [200, 409])
+
+    def test_old_open_browser_cannot_erase_route_order_with_a_current_revision(self):
+        state = {'missions': [], 'runRouteOrder': {'ship': ['pickup:b', 'pickup:a']}}
+        _, saved = self.api('/api/state', {'state': state, 'baseUpdatedAt': None})
+        for client_version in [None, '0.1.25', '0.2.1']:
+            # Old clients know the latest revision, but drop fields absent
+            # from their own normalizer before posting a passive refresh.
+            code, rejected = self.api('/api/state', {'state': {'missions': []}, 'baseUpdatedAt': saved['updatedAt']}, client_version=client_version)
+            self.assertEqual((code, rejected['error']), (428, 'client_version_mismatch'))
+            self.assertEqual(rejected['version'], VERSION)
+            current = self.api('/api/state')[1]
+            self.assertEqual((current['state'], current['updatedAt']), (state, saved['updatedAt']))
+        # A deliberate reset by the current interface remains possible.
+        self.assertEqual(self.api('/api/state', {'state': {'missions': [], 'runRouteOrder': {}}, 'baseUpdatedAt': saved['updatedAt']})[0], 200)
+        self.assertEqual(self.api('/api/state')[1]['state']['runRouteOrder'], {})
+
+    def test_old_browser_cannot_commit_or_acknowledge_pending_import(self):
+        with backend.get_connection() as connection:
+            connection.execute("INSERT INTO mission_imports VALUES (?, 'solo', 'pc', 'PC', ?, '{}', 'pending', ?, ?)", ('legacy-ocr', 'legacy-hash', 'now', 'now'))
+            connection.commit()
+        code, _ = self.api('/api/state', {'state': {'missions': [{'id': 'mission', 'sourceImportId': 'legacy-ocr'}]}, 'baseUpdatedAt': None, 'importIds': ['legacy-ocr']}, client_version=None)
+        self.assertEqual(code, 428)
+        self.assertIsNone(self.api('/api/state')[1]['state'])
+        self.assertEqual(self.api('/api/imports?scope=solo&status=pending')[1]['imports'][0]['id'], 'legacy-ocr')
 
     def test_import_commit_is_atomic_across_clients_and_cannot_resurrect_deleted_mission(self):
         with backend.get_connection() as connection:

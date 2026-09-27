@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import webview
-from runtime import SoloRuntime
+from runtime import SoloRuntime, VERSION
 from server import app as backend
 
 
@@ -23,7 +23,7 @@ def main():
     runtime = SoloRuntime(args.data_dir, port=0, lan=False)
     runtime.start(capture_enabled=False)
     fixture = json.loads(args.state_fixture.read_text(encoding='utf-8'))
-    with urlopen(Request(runtime.url+'/api/state', data=json.dumps({'state': fixture, 'baseUpdatedAt': None}).encode(), headers={'Content-Type':'application/json'})) as reply:
+    with urlopen(Request(runtime.url+'/api/state', data=json.dumps({'state': fixture, 'baseUpdatedAt': None, 'clientVersion': VERSION}).encode(), headers={'Content-Type':'application/json'})) as reply:
         assert reply.status == 200
     pc = webview.create_window('PC verification', runtime.url+'/?desktop=1', width=1280, height=800)
     tablet = webview.create_window('Tablet verification', runtime.url.replace('127.0.0.1', 'localhost')+'/', width=1280, height=720)

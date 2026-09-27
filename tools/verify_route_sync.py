@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import time
 import traceback
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -15,6 +16,7 @@ from runtime import SoloRuntime
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=Path, required=True)
+    parser.add_argument('--legacy-source', type=Path, help='Older release source ZIP for a stale-browser regression')
     args = parser.parse_args()
     runtime = SoloRuntime(args.data_dir, port=0, lan=False)
     runtime.start(capture_enabled=False)
@@ -91,6 +93,25 @@ def main():
             pc.load_url(runtime.desktop_url + '&route-sync=reload')
             until(pc, "location.search.includes('route-sync=reload') && window.soloStartup?.phase==='ready' && soloHydrated")
             expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===" + json.dumps(peer_order), 'shared-route-survives-reload')
+            if args.legacy_source:
+                # Run the shipped legacy normalizer and display selection code.
+                # The older browser drops fields it does not know, then writes
+                # the resulting state even though nobody edited on that device.
+                with zipfile.ZipFile(args.legacy_source) as archive:
+                    persistence = archive.read('CitizenTools-Source/web/scripts/state-persistence.js').decode('utf-8')
+                    cargo = archive.read('CitizenTools-Source/web/scripts/cargo-ui.js').decode('utf-8')
+                sanitizer = 'function sanitizeState(' + persistence.split('function sanitizeState(', 1)[1].split('function sanitizePlacement(', 1)[0]
+                selection = 'function ensureSelectedLoad(' + cargo.split('function ensureSelectedLoad(', 1)[1].split('\nfunction ', 1)[0]
+                peer.evaluate_js(sanitizer + '\n' + selection)
+                peer.evaluate_js("""window.beforeLegacyPosts=syncTrace.length;window.currentVersionFetch=fetch;
+                  window.fetch=(url,options={})=>{if(options.method==='POST' && String(url).includes('/api/state')){const body=JSON.parse(options.body);delete body.clientVersion;options={...options,body:JSON.stringify(body)};}return currentVersionFetch(url,options);};
+                  fetchRemoteState().then(applySoloState);""")
+                until(peer, 'syncTrace.length>beforeLegacyPosts')
+                expect(peer, 'syncTrace.at(-1).status===428', 'legacy-view-cannot-save-an-outdated-state-format')
+                pc.evaluate_js('window.legacyPolled=false;pollSoloState().then(()=>window.legacyPolled=true)')
+                until(pc, 'legacyPolled && !soloPolling')
+                expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===" + json.dumps(peer_order), 'saved-route-survives-an-old-passive-browser')
+                report['legacyPostStatuses'] = peer.evaluate_js('syncTrace.slice(beforeLegacyPosts).map(item=>item.status)')
             report['errors'] = [window.evaluate_js('window.soloErrors') for window in [pc, peer]]
             report['ok'] = not report['failures'] and not any(report['errors'])
         except Exception as error:

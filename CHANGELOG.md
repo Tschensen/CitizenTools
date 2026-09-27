@@ -1,5 +1,19 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.2.2 — Geöffnete Webansichten nach Updates absichern
+
+### Deutsch
+
+- Der Server nimmt Spielstandänderungen nur noch von der passenden Oberfläche an. Eine ältere, offen gebliebene Webansicht kann dadurch neue Felder wie die manuelle Stoppreihenfolge nicht mehr entfernen.
+- Die Verbindungsprüfung erkennt künftige Versionswechsel und zeigt „Ansicht neu laden“. Zurückgewiesene lokale Änderungen bleiben als Wiederherstellungskopie erhalten.
+- Nach diesem Update die Windows-App neu starten und bereits geöffnete Webansichten auf allen weiteren Geräten einmal neu laden. Ältere Ansichten kennen den neuen Update-Hinweis noch nicht.
+
+### English
+
+- The server only accepts state changes from the matching interface version. An older web view left open during an update can no longer remove new fields such as the manual stop order.
+- The connection check detects future version changes and displays “Reload view”. Rejected local edits remain available as a recovery copy.
+- After this update, restart the Windows app and reload existing web views on every additional device once. Older views do not yet know the new update notice.
+
 ## 0.2.1 — Routen zuverlässig speichern
 
 ### Deutsch

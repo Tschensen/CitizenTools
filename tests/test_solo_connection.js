@@ -8,18 +8,19 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 function fixture(instant = '2026-09-23T12:00:00Z') {
   let wall = Date.parse(instant), mono = 100;
   const elements = Object.fromEntries(['flightClock', 'flightLocalClock', 'soloConnectionBanner', 'soloConnectionMessage', 'soloConnectionRetry']
-    .map(id => [id, {hidden:true, textContent:'', dataset:{}, addEventListener(){}}]));
+    .map(id => [id, {hidden:true, textContent:'', dataset:{}, addEventListener(name,fn){this[name]=fn;}}]));
   const events = {}, intervals = new Map();
   const c = vm.createContext({
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [wall - 240000])); } static now() { return wall - 240000; } },
     performance:{now:()=>mono},
     document:{hidden:false, documentElement:{lang:'de'}, getElementById:id=>elements[id], addEventListener:(name,fn)=>events[name]=fn},
-    window:{addEventListener:(name,fn)=>events[name]=fn},
+    window:{addEventListener:(name,fn)=>events[name]=fn,soloClientVersion:'test-current'},
     setInterval:(fn,ms)=>intervals.set(ms,fn),
     renderRemoteStatus(){}, soloHydrated:true, pollSoloState:async()=>{},
     soloRequestJson:async()=>({response:{ok:true},payload:{ok:true,edition:'solo',serverTime:new Date(wall).toISOString()}}),
   });
   vm.runInContext(source,c);
+  c.requireSoloReload=()=>{c.window.soloUpdateRequired=true;c.window.soloConnection.requireReload();};
   return {c,api:c.window.soloConnection,elements,events,intervals,advance(ms){wall+=ms;mono+=ms;},serverNow:()=>wall};
 }
 
@@ -95,5 +96,24 @@ function fixture(instant = '2026-09-23T12:00:00Z') {
     if (originalZone === undefined) delete process.env.TZ;
     else process.env.TZ = originalZone;
   }
-  console.log('8 connection and clock tests passed.');
+  {
+    const f=fixture();let reloads=0,polls=0;
+    f.c.window.location={reload:()=>reloads++};
+    f.c.pollSoloState=async()=>polls++;
+    f.c.soloRequestJson=async()=>({response:{ok:true},payload:{ok:true,edition:'solo',version:'test-new',serverTime:new Date(f.serverNow()).toISOString()}});
+    f.api.start();await f.api.probe();
+    assert.equal(f.api.phase,'update-required');
+    assert.equal(f.elements.soloConnectionBanner.hidden,false);
+    assert.ok(f.elements.soloConnectionMessage.textContent.includes('aktualisiert'));
+    assert.equal(f.elements.soloConnectionRetry.textContent,'Ansicht neu laden');
+    assert.equal(polls,0,'An outdated view must not refresh state after reconnecting');
+    await f.api.probe();
+    assert.equal(f.api.phase,'update-required','A successful heartbeat must not hide the update notice');
+    f.c.document.documentElement.lang='en';f.api.render();
+    assert.ok(f.elements.soloConnectionMessage.textContent.includes('updated'));
+    assert.equal(f.elements.soloConnectionRetry.textContent,'Reload view');
+    f.elements.soloConnectionRetry.click();
+    assert.equal(reloads,1);
+  }
+  console.log('9 connection and clock tests passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

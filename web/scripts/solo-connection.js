@@ -36,17 +36,19 @@
     const english = document.documentElement.lang === 'en';
     banner.hidden = phase === 'online';
     banner.dataset.state = phase;
-    const text = phase === 'offline'
+    const text = phase === 'update-required'
+      ? (english ? 'Windows suite updated. Please reload this view.' : 'Windows-Suite wurde aktualisiert. Bitte diese Ansicht neu laden.')
+      : phase === 'offline'
       ? (english ? 'Windows suite unavailable. Reconnecting automatically.' : 'Windows-Suite nicht erreichbar. Verbindung wird automatisch erneut geprüft.')
       : (english ? 'Checking connection to the Windows suite …' : 'Verbindung zur Windows-Suite wird geprüft …');
     if (message.textContent !== text) message.textContent = text;
-    retry.textContent = english ? 'Check now' : 'Jetzt prüfen';
-    retry.disabled = Boolean(pending);
+    retry.textContent = phase === 'update-required' ? (english ? 'Reload view' : 'Ansicht neu laden') : (english ? 'Check now' : 'Jetzt prüfen');
+    retry.disabled = phase !== 'update-required' && Boolean(pending);
     updateClock();
   }
 
   function show(next) {
-    phase = next;
+    phase = window.soloUpdateRequired ? 'update-required' : next;
     render();
     renderRemoteStatus();
   }
@@ -68,9 +70,10 @@
         offset = serverTime + elapsed / 2 - Date.now();
         clockSynced = true;
         lastSuccess = performance.now();
+        if (payload.version && payload.version !== window.soloClientVersion) requireSoloReload();
         const reconnecting = phase !== 'online';
         show('online');
-        if (reconnecting || !soloHydrated) void pollSoloState();
+        if (!window.soloUpdateRequired && (reconnecting || !soloHydrated)) void pollSoloState();
       } catch {
         if (token === generation) show('offline');
       } finally {
@@ -93,7 +96,10 @@
     void probe();
   }
 
-  retry.addEventListener('click', () => { void probe(); });
+  retry.addEventListener('click', () => {
+    if (window.soloUpdateRequired) { window.location.reload(); return; }
+    void probe();
+  });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) resume(); });
   window.addEventListener('pageshow', resume);
   window.addEventListener('focus', resume);
@@ -103,6 +109,7 @@
     get phase() { return started ? phase : 'checking'; },
     render,
     probe,
+    requireReload() { show('update-required'); },
     start() {
       if (started) return;
       started = true;
