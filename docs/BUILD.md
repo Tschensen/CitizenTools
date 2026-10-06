@@ -34,6 +34,11 @@ node tests\test_solo_connection.js
 node tests\test_solo_sync.js
 node tests\test_solo_merge.js
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_updates.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_mission_import.py -v
+node tests\test_mission_import.js
+node tests\test_import_sounds.js
+node tests\test_calendar_date.js
+node tests\test_statistics_period.js
 ```
 
 Die zusätzlichen Integrationstests in `test_personal_transfer.py` benötigen
@@ -41,6 +46,28 @@ eine separat eingerichtete Testumgebung. Ohne deren Voraussetzungen werden
 sie übersprungen; die oben aufgeführten Prüfungen laufen eigenständig.
 Die Skripte `tools/verify_*.py` öffnen native Testfenster und erwarten ein
 eigenes `--data-dir`; dafür keine echten Benutzerdaten verwenden.
+
+## Gemeinsame Auftragserkennung
+
+`shared/mission_import/service.py` ist der gemeinsame Screenshot-Einstieg für
+Companion und manuellen Upload. `ocr.py` kapselt Tesseract und Bildausschnitte;
+`parser.py` wählt die Erkennungsregeln in `cargo.py`, `parcels.py` und
+`services.py`. Textfelder, Ortsabgleich und Feldqualität haben eigene Module.
+Diese Module kennen weder HTTP noch Datenbank oder Oberfläche. Neue Regeln
+gehören hierher und werden mit Beispielen in `tests/fixtures/mission-texts.json`
+abgesichert.
+
+`POST /api/imports/recognize` liefert einen Entwurf und gelernte Ortskorrekturen
+für die Vorschau, ohne einen Auftrag oder Inbox-Eintrag zu speichern.
+Companion-Import und Vorschau verwenden dieselbe Normalisierung und denselben
+Ortsabgleich. `POST /api/ocr` liefert weiterhin reinen Text, etwa für
+Schiffsregistrierungen. Die HTTP-Tests vergleichen beide Auftragseingänge mit
+denselben OCR-Texten; sie benötigen keine installierte OCR-Laufzeit.
+
+`web/scripts/calendar-date.js` enthält die gemeinsamen lokalen Kalendertage
+für Buchungen, Formulare und Statistik. Zeitstempel bleiben davon getrennt.
+Die Datumstests prüfen Mitternacht, Jahreswechsel und Sommerzeit in mehreren
+Zeitzonen. Bereits gespeicherte Buchungstage werden nicht umgeschrieben.
 
 ## Windows-Pakete
 

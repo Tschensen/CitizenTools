@@ -24,7 +24,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from shared.processes import hidden_subprocess_options
+from shared.mission_import import ocr, service as mission_import_service
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 WEB_DIR = PROJECT_ROOT / "web"
@@ -1247,6 +1247,22 @@ def match_import_locations(normalized_import: dict, known_locations: list[str]) 
     return normalized_import
 
 
+def match_known_import_locations(connection: sqlite3.Connection, normalized: dict) -> None:
+    """Apply the same learned aliases to previews and persisted Companion imports."""
+    known_locations = load_location_match_candidates(connection)
+    if not known_locations:
+        state_row = connection.execute(
+            "SELECT value FROM app_state WHERE state_key = ?",
+            (STATE_KEYS[normalized["scope"]],),
+        ).fetchone()
+        if state_row:
+            try:
+                known_locations = collect_known_locations(json.loads(state_row["value"]))
+            except (json.JSONDecodeError, TypeError):
+                known_locations = []
+    match_import_locations(normalized, known_locations)
+
+
 class CargoPlannerHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_DIR), **kwargs)
@@ -1321,6 +1337,9 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/ocr":
             self.handle_ocr()
+            return
+        if parsed.path == "/api/imports/recognize":
+            self.handle_ocr(mission=True)
             return
         if parsed.path == "/api/imports":
             self.handle_create_import()
@@ -1871,18 +1890,7 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
         now = datetime.now(timezone.utc).isoformat()
 
         with get_connection() as connection:
-            known_locations = load_location_match_candidates(connection)
-            if not known_locations:
-                state_row = connection.execute(
-                    "SELECT value FROM app_state WHERE state_key = ?",
-                    (STATE_KEYS[normalized["scope"]],),
-                ).fetchone()
-                if state_row:
-                    try:
-                        known_locations = collect_known_locations(json.loads(state_row["value"]))
-                    except (json.JSONDecodeError, TypeError):
-                        known_locations = []
-            match_import_locations(normalized, known_locations)
+            match_known_import_locations(connection, normalized)
             serialized_payload = json.dumps(normalized, ensure_ascii=False)
             try:
                 connection.execute(
@@ -2302,9 +2310,19 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
             },
         )
 
-    def handle_ocr(self) -> None:
-        from companion.app import resolve_tesseract
-        tesseract_path = resolve_tesseract(None)
+    def handle_ocr(self, *, mission: bool = False) -> None:
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            content_length = 0
+        if content_length <= 0:
+            self.send_json(400, {"ok": False, "error": "MISSING_IMAGE", "message": "Es wurde kein Screenshot übertragen."})
+            return
+        if content_length > 8 * 1024 * 1024:
+            self.send_json(413, {"ok": False, "error": "IMAGE_TOO_LARGE", "message": "Der Screenshot ist größer als 8 MB."})
+            return
+
+        tesseract_path = ocr.resolve_tesseract(None)
         if not tesseract_path:
             self.send_json(
                 501,
@@ -2314,14 +2332,6 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
                     "message": "Tesseract OCR ist auf diesem Rechner noch nicht installiert oder nicht im PATH.",
                 },
             )
-            return
-
-        content_length = int(self.headers.get("Content-Length", "0"))
-        if content_length <= 0:
-            self.send_json(400, {"ok": False, "error": "MISSING_IMAGE", "message": "Es wurde kein Screenshot übertragen."})
-            return
-        if content_length > 8 * 1024 * 1024:
-            self.send_json(413, {"ok": False, "error": "IMAGE_TOO_LARGE", "message": "Der Screenshot ist größer als 8 MB."})
             return
 
         raw_body = self.rfile.read(content_length)
@@ -2336,35 +2346,32 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
             temp_file.write(raw_body)
             temp_path = Path(temp_file.name)
 
+        status = 200
         try:
-            result = subprocess.run(
-                [tesseract_path, str(temp_path), "stdout", "-l", "eng", "--psm", "6"],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=20,
-                **hidden_subprocess_options(),
-            )
+            if mission:
+                draft, ocr_error = mission_import_service.read_mission_screenshot(tesseract_path, temp_path)
+                if not draft and ocr_error:
+                    raise ocr_error
+                payload = {"ok": True, "draft": None}
+                if draft:
+                    normalized = normalize_mission_import_payload({
+                        "scope": "solo", "imageHash": hashlib.sha256(raw_body).hexdigest(), "draft": draft,
+                    })
+                    with get_connection() as connection:
+                        match_known_import_locations(connection, normalized)
+                    payload = {"ok": True, "draft": normalized["draft"],
+                               "locationCorrections": normalized.get("locationCorrections", [])}
+            else:
+                payload = {"ok": True, "text": ocr.run_ocr(tesseract_path, temp_path)}
         except subprocess.TimeoutExpired:
-            self.send_json(504, {"ok": False, "error": "OCR_TIMEOUT", "message": "OCR hat zu lange gedauert."})
-            return
+            status, payload = 504, {"ok": False, "error": "OCR_TIMEOUT", "message": "OCR hat zu lange gedauert."}
+        except ValueError:
+            payload = {"ok": True, "draft": None}
+        except (OSError, RuntimeError):
+            status, payload = 500, {"ok": False, "error": "OCR_FAILED", "message": "Der Screenshot konnte nicht gelesen werden."}
         finally:
-            if temp_path.exists():
-                temp_path.unlink()
-
-        if result.returncode != 0:
-            self.send_json(
-                500,
-                {
-                    "ok": False,
-                    "error": "OCR_FAILED",
-                    "message": "Der Screenshot konnte nicht gelesen werden.",
-                    "details": result.stderr.strip()[:500],
-                },
-            )
-            return
-
-        self.send_json(200, {"ok": True, "text": result.stdout})
+            temp_path.unlink(missing_ok=True)
+        self.send_json(status, payload)
 
     def send_json(self, status_code: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

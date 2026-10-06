@@ -1,4 +1,6 @@
 (function registerFinanceModule() {
+  const { dateKey, localKey } = typeof module !== 'undefined' && module.exports
+    ? require('./calendar-date.js') : window.CalendarDate;
   const LEDGER_SCOPE_LABELS = {
     mission: "Aufträge",
     cargo: "Cargo",
@@ -72,16 +74,13 @@
   function parseFinanceDateInput(value) {
     const normalized = /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim())
       ? String(value).trim()
-      : new Date().toISOString().slice(0, 10);
+      : dateKey(new Date());
     const [year, month, day] = normalized.split("-").map(Number);
     return new Date(year, month - 1, day, 12, 0, 0, 0);
   }
 
   function formatFinanceDateInput(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return localKey(date);
   }
 
   function addFinanceDays(date, amount) {
@@ -178,7 +177,7 @@
     ));
   }
 
-  function reverseShipWorkflow(state, entry, { today = new Date().toISOString().slice(0, 10) } = {}) {
+  function reverseShipWorkflow(state, entry, { today = dateKey(new Date()) } = {}) {
     const workflowType = getShipWorkflowType(entry);
     if (!["sale", "upgrade"].includes(workflowType)) {
       return { restoredSourceId: "", removedTargetId: "", archivedTargetId: "" };
@@ -271,7 +270,7 @@
   }) {
     const normalizedBookedOn = /^\d{4}-\d{2}-\d{2}$/.test(String(bookedOn || "").trim())
       ? String(bookedOn).trim()
-      : new Date().toISOString().slice(0, 10);
+      : dateKey(new Date());
     const normalizedFlow = flow === "expense" ? "expense" : "income";
     const normalizedMissionId = String(missionId || "").trim();
     const normalizedCategory = String(category || "").trim();

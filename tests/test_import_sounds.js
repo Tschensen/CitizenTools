@@ -62,11 +62,11 @@ function fixture() {
     const events = []; let finish;
     const sound = {processing:() => events.push('processing'), success:() => events.push('success'), error:() => events.push('error'), cancel:() => events.push('cancel')};
     const c = vm.createContext({window:{soloImportSounds:{begin:() => {events.push('read'); return sound;}}}, missionImportRequestId:0,
-      missionImportPreview:{hidden:true}, selectedMissionImportId:'', OCR_URL:'/api/ocr', t:key => key,
-      fetch:() => new Promise(resolve => {finish = () => resolve({ok,json:async () => ({ok,text:'OCR text'})});}),
-      parseMissionObjectiveText:() => ({routes:recognized ? [{}] : []})});
+      missionImportPreview:{hidden:true}, selectedMissionImportId:'', MISSION_RECOGNITION_URL:'/api/imports/recognize', t:key => key,
+      normalizeMissionType: type => type || 'cargo',
+      fetch:() => new Promise(resolve => {finish = () => resolve({ok,json:async () => ({ok,draft:recognized ? {routes:[{}]} : null})});})});
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../web/scripts/mission-import-ui.js'), 'utf8'), c);
-    Object.assign(c, {renderMissionImportInbox() {}, showMissionImportImage() {}, setMissionImportBusy() {}, setMissionImportStatus() {}, renderMissionImportPreview() {}, parseMissionObjectiveText:() => ({routes:recognized ? [{}] : []})});
+    Object.assign(c, {renderMissionImportInbox() {}, showMissionImportImage() {}, setMissionImportBusy() {}, setMissionImportStatus() {}, renderMissionImportPreview() {}});
     const run = c.importMissionScreenshot({type:'image/png'}, {isTrusted:true});
     if (cancel) {vm.runInContext('missionImportRequestId += 1; missionImportSound.cancel()', c);}
     finish(); await run;

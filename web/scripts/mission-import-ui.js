@@ -1141,7 +1141,7 @@ async function importMissionScreenshot(file, event, sound = null) {
 
   try {
     operation?.processing();
-    const response = await fetch(OCR_URL, {
+    const response = await fetch(MISSION_RECOGNITION_URL, {
       method: "POST",
       headers: {
         "Content-Type": file.type || "application/octet-stream",
@@ -1155,8 +1155,8 @@ async function importMissionScreenshot(file, event, sound = null) {
       throw new Error(payload.message || t("contracts.import.ocrUnavailableMessage"));
     }
 
-    const parsed = parseMissionObjectiveText(payload.text || "");
-    if (!parsed || parsed.routes.length === 0) {
+    const parsed = payload.draft;
+    if (!parsed) {
       operation?.error();
       setMissionImportStatus(t("contracts.import.notRecognizedTitle"), t("contracts.import.notRecognizedMessage"), "warning");
       return;
@@ -1166,7 +1166,11 @@ async function importMissionScreenshot(file, event, sound = null) {
     operation?.success();
     setMissionImportStatus(
       t("contracts.import.recognizedTitle"),
-      t("contracts.import.recognizedMessage", { count: parsed.routes.length }),
+      normalizeMissionType(parsed.type) === "cargo"
+        ? t("contracts.import.recognizedMessage", {
+          count: normalizeMissionImportConsignments(parsed).reduce((sum, item) => sum + item.routes.length, 0),
+        })
+        : t("contracts.import.recognizedServiceMessage", { type: getMissionTypeLabel(parsed.type) }),
       "success",
     );
   } catch (error) {
@@ -1210,11 +1214,14 @@ async function importMissionFromClipboard(event) {
 
 function renderMissionImportPreview(parsed) {
   if (!missionImportPreview || !missionImportConsignmentList) return;
-  const payout = Math.round(Number(parsed?.payout) || 0);
-  const normalizedConsignments = normalizeMissionImportConsignments(parsed);
+  const payout = parsed?.payout == null ? null : Math.round(Number(parsed.payout));
+  const normalizedConsignments = normalizeMissionType(parsed?.type) === "cargo" ? normalizeMissionImportConsignments(parsed) : [];
   missionImportDraftMetadata = {
-    payout: payout > 0 ? payout : null,
+    title: parsed?.title || "",
+    payout: Number.isFinite(payout) && payout >= 0 ? payout : null,
     maxContainerScu: normalizeMissionMaxContainerScu(parsed?.maxContainerScu),
+    serviceDetails: parsed?.serviceDetails || {},
+    fieldQuality: parsed?.fieldQuality || {},
   };
   missionImportOriginalDraft = {
     ...parsed,
@@ -1224,7 +1231,16 @@ function renderMissionImportPreview(parsed) {
     })),
   };
   missionImportConsignmentList.innerHTML = "";
-  normalizedConsignments.forEach((consignment) => addMissionImportConsignment(consignment));
+  if (normalizeMissionType(parsed.type) === "cargo") {
+    normalizedConsignments.forEach((consignment) => addMissionImportConsignment(consignment));
+  } else {
+    missionImportConsignmentList.innerHTML = `
+      <div class="form-hint">
+        <strong>${escapeHtml(parsed.title || "")}</strong>
+        <span>${escapeHtml(t("contracts.import.servicePreviewMessage"))}</span>
+      </div>
+    `;
+  }
   missionImportPreview.hidden = false;
   syncMissionImportPreview();
 }
@@ -1245,6 +1261,13 @@ function normalizeMissionImportConsignments(parsed) {
 }
 
 function buildMissionDuplicateCandidateFromImportDraft(draft) {
+  if (normalizeMissionType(draft?.type) !== "cargo") {
+    return {
+      ...draft, id: "", type: normalizeMissionType(draft.type), segments: [],
+      serviceDetails: getMissionServiceDetails({ serviceDetails: draft.serviceDetails }),
+      createdAt: new Date().toISOString(), status: "active",
+    };
+  }
   const consignments = Array.isArray(draft?.consignments) ? draft.consignments : [];
   const segments = consignments.flatMap((consignment, cargoIndex) => (
     (Array.isArray(consignment?.routes) ? consignment.routes : []).map((route, routeIndex) => ({
@@ -1412,6 +1435,9 @@ function addMissionImportRouteRow(consignmentItem, route = {}, defaultPickup = "
 }
 
 function readMissionImportPreview() {
+  if (missionImportOriginalDraft && normalizeMissionType(missionImportOriginalDraft.type) !== "cargo") {
+    return missionImportOriginalDraft;
+  }
   const consignments = Array.from(missionImportConsignmentList?.children || []).map((item) => ({
     title: String(item.querySelector('[data-field="importCargo"]')?.value || "").trim(),
     totalScu: Number(String(item.querySelector('[data-field="importTotalScu"]')?.value || "").replace(",", ".")) || 0,
@@ -1430,6 +1456,7 @@ function readMissionImportPreview() {
 
 function isMissionImportPreviewValid() {
   const draft = readMissionImportPreview();
+  if (normalizeMissionType(draft.type) !== "cargo") return Boolean(draft.title && draft.serviceDetails);
   return Boolean(draft.consignments.length > 0 && draft.consignments.every(isMissionImportConsignmentValid));
 }
 
@@ -1449,6 +1476,17 @@ function isMissionImportConsignmentValid(consignment) {
 
 function syncMissionImportPreview() {
   const draft = readMissionImportPreview();
+  if (normalizeMissionType(draft.type) !== "cargo") {
+    if (missionImportPreviewSummary) {
+      missionImportPreviewSummary.textContent = [
+        getMissionTypeLabel(draft.type),
+        draft.payout != null ? `${Number(draft.payout).toLocaleString(currentUiLanguage() === "en" ? "en-US" : "de-DE")} aUEC` : "",
+      ].filter(Boolean).join(" · ");
+    }
+    renderMissionImportDuplicateWarning(draft);
+    if (missionImportApply) missionImportApply.disabled = missionImportBusy || !isMissionImportPreviewValid();
+    return;
+  }
   const allRoutes = draft.consignments.flatMap((consignment) => consignment.routes);
   const totalScu = draft.consignments.reduce((sum, consignment) => sum + consignment.totalScu, 0);
   Array.from(missionImportConsignmentList?.children || []).forEach((item, index) => {
@@ -1514,6 +1552,13 @@ async function applyMissionImportPreview() {
       return;
     }
   }
+  if (normalizeMissionType(draft.type) !== "cargo") {
+    populateMissionForm({
+      ...draft, id: "", sourceImportQuality: draft.fieldQuality,
+    }, { create: true });
+    closeMissionImportDialog();
+    return;
+  }
   missionTypeSelect.value = "cargo";
   syncMissionTypeFields();
   if (missionForm?.elements?.maxContainerScu) {
@@ -1540,11 +1585,15 @@ async function applyMissionImportPreview() {
   if (missionForm?.elements?.title && !missionForm.elements.title.value.trim()) {
     missionForm.elements.title.value = draft.title;
   }
-  if (missionForm?.elements?.payout && draft.payout) {
+  if (missionForm?.elements?.payout && draft.payout != null) {
     missionForm.elements.payout.value = String(draft.payout);
+  }
+  if (missionForm?.elements?.cargoCustomer && !missionForm.elements.cargoCustomer.value.trim()) {
+    missionForm.elements.cargoCustomer.value = draft.serviceDetails?.customer || "";
   }
   setCollapsibleExpanded("consignmentBuilderBody", true);
   updateDimensionHint();
+  renderMissionImportQuality(draft.fieldQuality);
   closeMissionImportDialog();
 }
 
@@ -1554,76 +1603,6 @@ function setQuickMissionStatus(title, message) {
     <strong>${escapeHtml(title)}</strong>
     <span>${escapeHtml(message)}</span>
   `;
-}
-
-function parseMissionObjectiveText(text) {
-  const normalizedText = String(text || "")
-    .replace(/\r/g, "\n")
-    .replace(/[◇◆◈]/g, "\n")
-    .replace(/[ \t]+/g, " ");
-  const events = [];
-  const collectPattern = /Collect\s+(.+?)\s+from\s+(.+?)(?:\.|\n|$)/gi;
-  const deliverPattern = /Deliver\s+(?:0\s*\/\s*)?(\d+(?:[.,]\d+)?)\s*SCU(?:\s+of\s+(.+?))?\s+to\s+(.+?)(?:\.|\n|$)/gi;
-
-  for (const match of normalizedText.matchAll(collectPattern)) {
-    events.push({
-      type: "collect",
-      index: match.index ?? 0,
-      cargo: cleanObjectiveText(match[1]),
-      pickup: cleanObjectiveText(match[2]),
-    });
-  }
-
-  for (const match of normalizedText.matchAll(deliverPattern)) {
-    events.push({
-      type: "deliver",
-      index: match.index ?? 0,
-      targetScu: Number(String(match[1]).replace(",", ".")) || 0,
-      cargo: cleanObjectiveText(match[2] || ""),
-      dropoff: cleanObjectiveText(match[3]),
-    });
-  }
-
-  events.sort((left, right) => left.index - right.index);
-
-  let activeCargo = "";
-  let activePickup = "";
-  const cargoNames = [];
-  const routes = [];
-
-  events.forEach((event) => {
-    if (event.type === "collect") {
-      activeCargo = event.cargo || activeCargo;
-      activePickup = event.pickup || activePickup;
-      if (activeCargo && !cargoNames.includes(activeCargo)) {
-        cargoNames.push(activeCargo);
-      }
-      return;
-    }
-
-    const cargo = event.cargo || activeCargo;
-    if (cargo && !cargoNames.includes(cargo)) {
-      cargoNames.push(cargo);
-    }
-    routes.push({
-      pickup: activePickup,
-      dropoff: event.dropoff,
-      targetScu: event.targetScu,
-    });
-  });
-
-  return {
-    title: cargoNames.length === 1 ? cargoNames[0] : cargoNames.length > 1 ? "Gemischte Fracht" : "",
-    pickup: routes.length > 0 && routes.every((route) => route.pickup === routes[0].pickup) ? routes[0].pickup : "",
-    routes,
-  };
-}
-
-function cleanObjectiveText(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .replace(/^[-–•\s]+/, "")
-    .trim();
 }
 
 function fillQuickMissionCapture(parsed) {

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "German cargo",
+    "text": "Liefere 0/8 SCU Titan zu Lorville\nTitan bei Area18 abholen",
+    "checks": {"title": "Titan", "pickup": "Area18", "consignments.0.totalScu": 8, "consignments.0.routes.0.dropoff": "Lorville", "consignments.0.routes.0.targetScu": 8}
+  },
+  {
+    "name": "German multiple pickups require allocation",
+    "text": "Liefere 0/16 SCU Titan zu Lorville\nTitan bei Area18 abholen\nTitan bei Baijini Point abholen",
+    "checks": {"allocationRequired": true, "consignments.0.totalScu": 16, "consignments.0.routes.0.targetScu": 0, "consignments.0.routes.1.pickup": "Baijini Point", "consignments.0.routes.1.targetScu": 0}
+  },
+  {
+    "name": "German distinct consignments",
+    "text": "Liefere 0/8 SCU Titan zu Lorville\nTitan bei Area18 abholen\nLiefere 0/4 SCU Eisen zu Lorville\nEisen bei Baijini Point abholen",
+    "checks": {"title": "Titan + Eisen", "consignments.0.title": "Titan", "consignments.1.title": "Eisen", "consignments.1.totalScu": 4}
+  },
+  {
+    "name": "German OCR digits and wrapped pickup",
+    "text": "Liefere O/IS SCU Titan zu Lorville\nTitan bei Area18\nabholen",
+    "checks": {"consignments.0.totalScu": 15, "consignments.0.routes.0.pickup": "Area18"}
+  },
+  {
+    "name": "English cargo with several destinations",
+    "text": "Collect Titanium from Area18.\nDeliver 0/8 SCU of Titanium to Lorville.\nDeliver 4 SCU to New Babbage.",
+    "checks": {"title": "Titanium", "pickup": "Area18", "routes.0.targetScu": 8, "routes.1.dropoff": "New Babbage", "routes.1.targetScu": 4}
+  },
+  {
+    "name": "German courier",
+    "text": "Medizinpaket zu Lorville liefern\nMedizinpaket bei Area18 abholen",
+    "checks": {"type": "courier", "serviceDetails.packages.0.name": "Medizinpaket", "serviceDetails.packages.0.destination": "Lorville"}
+  },
+  {
+    "name": "German refuel",
+    "text": "Missionstyp: Betankung\nAuftraggeber: Test Pilot\nEinsatzort: Lorville\nZu betankendes Fahrzeug: Freelancer\nHydrogen: 12 aUEC / SCU",
+    "checks": {"type": "refuel", "serviceDetails.targetVehicle": "Freelancer", "serviceDetails.location": "Lorville", "serviceDetails.hydrogenRate": 12}
+  },
+  {
+    "name": "English refuel",
+    "text": "REFUEL REQUEST\nContractor: Test Pilot\nVehicle to refuel: Freelancer\nQuantum: 23 aUEC / SCU",
+    "checks": {"type": "refuel", "serviceDetails.customer": "Test Pilot", "serviceDetails.quantumRate": 23, "serviceDetails.serviceType": "quantum"}
+  },
+  {
+    "name": "Procurement",
+    "text": "Bringe 0/2 Multitool zu Lorville",
+    "checks": {"type": "procurement", "serviceDetails.items.0.quantity": 2, "serviceDetails.items.0.name": "Multitool", "serviceDetails.location": "Lorville"}
+  },
+  {
+    "name": "Investigation",
+    "text": "Fallakte: #AB-123\nLeitender Ermittler: Test Pilot\nJohn Doe suchen und Status klären\nLorville",
+    "checks": {"type": "investigation", "serviceDetails.subject": "John Doe", "serviceDetails.location": "Lorville", "serviceDetails.caseNumber": "#AB-123"}
+  },
+  {
+    "name": "Mining",
+    "text": "Suchgebiet: Daymar\nMineralien liefern\nEmpfohlenes Werkzeug: Multitool\n> Lorville",
+    "checks": {"type": "mining", "serviceDetails.searchArea": "Daymar", "serviceDetails.tool": "Multitool", "serviceDetails.location": "Lorville"}
+  },
+  {
+    "name": "Salvage",
+    "text": "SALVAGE RIGHTS\nContractor: Test Pilot",
+    "checks": {"type": "salvage", "serviceDetails.customer": "Test Pilot"}
+  },
+  {"name": "Unrelated text", "text": "Welcome to the main menu", "checks": null},
+  {"name": "Incomplete English cargo", "text": "Deliver 8 SCU to Lorville", "checks": null},
+  {"name": "Incomplete German cargo", "text": "Liefere 0/8 SCU Titan zu Lorville", "checks": null}
+]

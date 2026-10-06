@@ -57,7 +57,8 @@ Der [Versionsverlauf](CHANGELOG.md) enthält auch die bisherigen internen Entwic
 | --- | --- |
 | `app.py`, `runtime.py` | Windows-App und lokaler Server |
 | `web/` | Oberfläche, Übersetzungen, Grafiken und Standardtöne |
-| `companion/` | Screenshot-Erfassung und OCR-Anbindung |
+| `companion/` | Screenshot-Erfassung, Warteschlange und Import-Übertragung |
+| `shared/mission_import/` | Gemeinsame OCR-Pipeline und Auftragserkennung für Companion und manuellen Import |
 | `server/`, `shared/` | Datenbank, lokale API und gemeinsame Hilfsfunktionen |
 | `tools/`, `packaging/` | Build-Skripte, Installer und Lizenztexte |
 | `tests/` | Automatische Prüfungen |

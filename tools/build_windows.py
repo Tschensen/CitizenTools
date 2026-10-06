@@ -79,7 +79,7 @@ def main():
     source_archive = stage/'CitizenTools-Solo-Source.zip'
     create_archive(source_archive)
     command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onedir', '--windowed', '--name', 'CitizenTools-Solo', '--distpath', str(stage), '--workpath', str(stage/'build'), '--specpath', str(stage/'spec'), '--icon', str(ROOT/'companion/assets/citizen-tools.ico'), '--collect-all', 'webview', '--hidden-import', 'webview.platforms.edgechromium', '--hidden-import', 'webview.platforms.winforms']
-    for source, destination in [(ROOT/'web','web'), (ROOT/'companion/assets','companion/assets'), (ROOT/'companion/scripts','companion/scripts'), (ocr,'ocr'), (legal,'legal'), (ROOT/'release-notes.json','.'), (ROOT/'project.json','.'), (source_archive,'source')]:
+    for source, destination in [(ROOT/'web','web'), (ROOT/'companion/assets','companion/assets'), (ROOT/'shared/mission_import/prepare-ocr-image.ps1','shared/mission_import'), (ocr,'ocr'), (legal,'legal'), (ROOT/'release-notes.json','.'), (ROOT/'project.json','.'), (source_archive,'source')]:
         command += ['--add-data', f'{source}{os.pathsep}{destination}']
     command.append(str(ROOT/'app.py'))
     subprocess.run(command, cwd=ROOT, check=True)
