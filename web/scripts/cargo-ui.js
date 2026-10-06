@@ -769,10 +769,10 @@ function buildConsignmentRowsFromMission(mission) {
     }));
 }
 
-function populateMissionForm(mission) {
+function populateMissionForm(mission, { create = false } = {}) {
   resetMissionForm();
   const missionType = normalizeMissionType(mission?.type);
-  if (missionForm.elements.entryId) missionForm.elements.entryId.value = mission.id || "";
+  if (missionForm.elements.entryId) missionForm.elements.entryId.value = create ? "" : mission.id || "";
   if (missionTypeSelect) missionTypeSelect.value = missionType;
   if (missionForm.elements.title) missionForm.elements.title.value = mission.title || "";
   if (missionForm.elements.payout) {
@@ -782,7 +782,7 @@ function populateMissionForm(mission) {
   if (missionForm.elements.maxContainerScu) missionForm.elements.maxContainerScu.value = mission.maxContainerScu ?? "";
   if (missionForm.elements.color) missionForm.elements.color.value = mission.color || DEFAULT_COLOR;
   if (missionForm.elements.notes) missionForm.elements.notes.value = mission.notes || "";
-  renderMissionAssignmentEditor(mission);
+  if (!create) renderMissionAssignmentEditor(mission);
 
   if (missionType === "cargo") {
     const details = getMissionServiceDetails(mission);
@@ -862,13 +862,13 @@ function populateMissionForm(mission) {
     }
   }
 
-  if (missionFormTitle) {
+  if (missionFormTitle && !create) {
     missionFormTitle.textContent = cargoText("contracts.form.title.edit", "Auftrag bearbeiten");
   }
-  if (missionSubmitButton) {
+  if (missionSubmitButton && !create) {
     missionSubmitButton.textContent = cargoText("common.saveChanges", "Änderungen speichern");
   }
-  if (missionCancelButton) {
+  if (missionCancelButton && !create) {
     missionCancelButton.hidden = false;
   }
 

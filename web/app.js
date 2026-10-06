@@ -12,7 +12,7 @@ const REMOTE_STATE_URL = "./api/state";
 const APP_MODE_STORAGE_KEY = `${STORAGE_KEY}:active-mode`;
 const DISPATCHER_MODE_ENABLED = false;
 const APP_MODES = DISPATCHER_MODE_ENABLED ? ["solo", "dispatcher"] : ["solo"];
-const OCR_URL = "./api/ocr";
+const MISSION_RECOGNITION_URL = "./api/imports/recognize";
 const MISSION_IMPORTS_URL = "./api/imports";
 const MISSION_IMPORT_PROGRESS_URL = "./api/imports/progress";
 const IMPORT_TOKEN_SETTINGS_URL = "./api/settings/import-token";
@@ -3486,7 +3486,7 @@ function formatDateTimeDisplay(value) {
 }
 
 function formatDateForInput(date) {
-  return new Date(date).toISOString().slice(0, 10);
+  return window.CalendarDate.dateKey(date);
 }
 
 function renderPresetOptions() {

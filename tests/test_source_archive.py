@@ -14,7 +14,9 @@ class SourceArchiveTests(unittest.TestCase):
             root = Path(folder)
             for name in ROOT_FILES:
                 (root/name).write_text('source', encoding='utf-8')
-            included = ['web/app.js', 'companion/capture.py', 'packaging/licenses/NOTICE.txt']
+            included = ['web/app.js', 'companion/capture.py', 'packaging/licenses/NOTICE.txt',
+                        'shared/mission_import/service.py', 'shared/mission_import/prepare-ocr-image.ps1',
+                        'tests/fixtures/mission-texts.json']
             excluded = ['.build/report.json', 'dist/app.exe', '.venv/secret.py', 'server/data/accounts.json',
                         'companion/settings.json', 'companion/capture-state.json', 'companion/__pycache__/cache.pyc',
                         'web/.credentials.json', 'packaging/licenses/EULA-de.txt', 'web/data/private.json']

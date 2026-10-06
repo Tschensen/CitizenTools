@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlparse
 
 from companion import app as capture_app
 from companion import capture
+from shared.mission_import import ocr
 from server import app as backend
 import transfer
 import solo_sounds
@@ -165,7 +166,7 @@ class SoloRuntime:
                 "restartRequired": bool(self.httpd and (self.settings["lanEnabled"] != self.active_lan or self.settings["port"] != self.httpd.server_port)),
                 "captureRunning": bool(self.worker and self.worker.is_alive()),
                 "captureReady": self.capture_ready, "captureError": self.capture_error,
-                "message": self.last_message, "ocrAvailable": bool(capture_app.resolve_tesseract(None)),
+                "message": self.last_message, "ocrAvailable": bool(ocr.resolve_tesseract(None)),
             }
 
     def save_settings(self, payload):
@@ -205,7 +206,7 @@ class SoloRuntime:
                 self.capture_error = ""
                 self.capture_ready = False
                 settings = dict(self.settings)
-            if not capture_app.resolve_tesseract(None):
+            if not ocr.resolve_tesseract(None):
                 self.emit("OCR-Laufzeit fehlt. Bitte das vollständige Solo-Paket verwenden.", True)
                 return
             self.worker_stop = threading.Event()
