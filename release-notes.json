@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.5.1",
+    "de": {
+      "title": "Screenshot-Aufnahme",
+      "changes": ["Fehler behoben, durch den Screenshots nicht erstellt werden konnten.", "Update-Arbeitsordner und Programmsicherungen liegen jetzt in einem Unterordner der Anwendung."]
+    },
+    "en": {
+      "title": "Screenshot capture",
+      "changes": ["Fixed an issue that prevented screenshots from being captured.", "Update working files and program backups now reside in a subfolder of the application."]
+    }
+  },
+  {
     "version": "0.5.0",
     "de": {
       "title": "Frachtraum",

@@ -21,6 +21,7 @@ from update_contract import FULL_ASSETS, UPDATE_ASSETS, PLATFORM
 PRODUCT = 'CitizenTools'
 EXE = 'CitizenTools-Solo.exe'
 MANIFEST = 'installation.json'
+UPDATE_WORK = '.CitizenTools-updates'
 
 
 def digest(path):
@@ -51,6 +52,8 @@ def validate_program(program, version):
         raise ValueError('Invalid installation manifest')
     for name in files:
         safe_relative(name)
+        if PurePosixPath(name).parts[0].casefold() == UPDATE_WORK.casefold():
+            raise ValueError('Package uses reserved update directory')
     return set(files) | {MANIFEST}
 
 
@@ -97,6 +100,8 @@ def reject_links(root):
 def preserve_extra_files(old, new, managed):
     reject_links(old)
     for path in old.rglob('*'):
+        if path.relative_to(old).parts[0].casefold() == UPDATE_WORK.casefold():
+            continue
         if path.is_file():
             relative = path.relative_to(old)
             if relative.as_posix() not in managed and not (new / relative).exists():
@@ -177,32 +182,59 @@ def validate_job(path):
 
 
 def apply_update(job, program, package, folder, *, run_installer=subprocess.run):
-    """No running app here. All renames stay beside the validated program."""
+    """Keep the program root stable and all transaction files inside it."""
     managed = validate_program(program, job['currentVersion'])
+    reject_links(program)
     identifier = folder.name
-    stage = program.parent / f'.{program.name}.update-{identifier}'
-    backup = program.parent / f'.{program.name}.previous-{identifier}'
+    if not re.fullmatch(r'[a-f0-9]{32}', identifier):
+        raise ValueError('Invalid update identifier')
+    workspace = program / UPDATE_WORK
+    owner = workspace / 'owner.json'
+    if workspace.exists():
+        if json.loads(owner.read_text(encoding='utf-8')) != {'product': PRODUCT}:
+            raise ValueError('Update directory is not owned by Citizen Tools')
+    else:
+        workspace.mkdir()
+        owner.write_text(json.dumps({'product': PRODUCT}), encoding='utf-8')
+    stage = workspace / f'update-{identifier}'
+    backup = workspace / f'previous-{identifier}'
     if stage.exists() or backup.exists():
         raise ValueError('Update staging folder already exists')
-    if not stage.resolve().parent == backup.resolve().parent == program.resolve().parent:
+    if not stage.resolve().parent == backup.resolve().parent == workspace.resolve():
         raise ValueError('Invalid staging path')
     stage.mkdir()
-    moved = False
+    moved, installed = [], []
+    installer_started = False
+    def entries():
+        return [path for path in program.iterdir() if path.name != UPDATE_WORK]
     try:
         if job['kind'] == 'portable':
             fresh = stage / 'new'
             extract_portable(package, fresh, job['version'])
             preserve_extra_files(program, fresh, managed)
-            program.rename(backup)
-            moved = True
-            fresh.rename(program)
+            backup.mkdir()
+            for path in entries():
+                target = backup / path.name
+                path.rename(target)
+                moved.append(target)
+            for path in list(fresh.iterdir()):
+                target = program / path.name
+                path.rename(target)
+                installed.append(target)
         else:
             reject_links(program)
-            needed = sum(file.stat().st_size for file in program.rglob('*') if file.is_file()) + package.stat().st_size * 2
+            needed = sum(file.stat().st_size for file in program.rglob('*')
+                         if file.is_file() and file.relative_to(program).parts[0] != UPDATE_WORK) + package.stat().st_size * 2
             if shutil.disk_usage(program.parent).free < needed:
                 raise OSError('Not enough disk space to back up and install the update')
-            shutil.copytree(program, backup)
-            moved = True
+            backup.mkdir()
+            for path in entries():
+                target = backup / path.name
+                if path.is_dir():
+                    shutil.copytree(path, target)
+                else:
+                    shutil.copy2(path, target)
+            installer_started = True
             completed = run_installer([str(package), '/VERYSILENT', '/SUPPRESSMSGBOXES', '/SP-', '/NORESTART',
                                       '/NOCLOSEAPPLICATIONS', '/NORESTARTAPPLICATIONS', '/NOFORCECLOSEAPPLICATIONS',
                                       f'/DIR={program}', f'/LOG={folder / "installer.log"}'],
@@ -211,13 +243,23 @@ def apply_update(job, program, package, folder, *, run_installer=subprocess.run)
                 raise RuntimeError('Installer failed; previous program files restored')
         validate_program(program, job['version'])
         (backup / 'update-backup.json').write_text(json.dumps({'program': str(program), 'version': job['currentVersion']}), encoding='utf-8')
-        return backup
     except Exception:
-        if moved:
-            if program.exists():
-                program.rename(stage / 'failed')
-            backup.rename(program)
+        if moved or installer_started:
+            failed = stage / 'failed'
+            failed.mkdir()
+            for path in entries() if installer_started else installed:
+                path.rename(failed / path.name)
+            for path in list(backup.iterdir()) if installer_started else moved:
+                path.rename(program / path.name)
         raise
+    # Cleanup cannot turn a successful replacement into a failed transaction.
+    try:
+        if job['kind'] == 'portable':
+            (stage / 'new').rmdir()
+        stage.rmdir()
+    except OSError:
+        pass
+    return backup
 
 
 def clean_previous_backup(data_root, program, keep):
@@ -225,7 +267,9 @@ def clean_previous_backup(data_root, program, keep):
     try:
         result = json.loads((data_root / 'Updates/last-result.json').read_text(encoding='utf-8'))
         old = Path(result['backup']).resolve()
-        if old == keep or old.parent != program.parent or not re.fullmatch(re.escape('.' + program.name + '.previous-') + r'[a-f0-9]{32}', old.name):
+        legacy = old.parent == program.parent and re.fullmatch(re.escape('.' + program.name + '.previous-') + r'[a-f0-9]{32}', old.name)
+        internal = old.parent == program / UPDATE_WORK and re.fullmatch(r'previous-[a-f0-9]{32}', old.name)
+        if old == keep or not (legacy or internal):
             return
         owner = json.loads((old / 'update-backup.json').read_text(encoding='utf-8'))
         if owner.get('program') != str(program) or old.is_symlink() or old.is_junction():
@@ -233,6 +277,11 @@ def clean_previous_backup(data_root, program, keep):
         validate_program(old, owner['version'])
         reject_links(old)
         shutil.rmtree(old)
+        if legacy:
+            # Only remove the empty staging directory belonging to that backup.
+            stale_stage = program.parent / old.name.replace('.previous-', '.update-', 1)
+            if not stale_stage.is_symlink() and not stale_stage.is_junction():
+                stale_stage.rmdir()
     except (OSError, ValueError, KeyError):
         pass
 
