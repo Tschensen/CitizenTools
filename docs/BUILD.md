@@ -271,6 +271,13 @@ Für Testbuilds einen eigenen `--output`-Ordner verwenden; vor dem Austausch ein
 benutzten Programmordners die bisherige App schließen.
 Die erstellten Pakete sind nicht codesigniert.
 
+Ab 0.5.1 legt der Updater Arbeitsordner und die letzte Programmsicherung unter
+`.CitizenTools-updates/` im Programmordner ab. Der Programmordner selbst bleibt
+beim Austausch bestehen. Bei Fehlern werden bereits ersetzte Einträge zurückgesetzt;
+nach erfolgreichem Austausch wird der leere Arbeitsordner entfernt. Die vorherige
+Sicherung wird beim nächsten erfolgreichen Update entfernt. Der Übergang auf
+0.5.1 verwendet noch den Updater der zuvor installierten Version.
+
 Der sichtbare Produktname in App, Tray und Windows-Installer ist **Citizen Tools**.
 EXE- und Paketnamen, Installationskennung und Datenpfade behalten ihre bisherigen
 technischen Bezeichnungen, damit vorhandene Installationen, Updates und
@@ -291,7 +298,7 @@ bleibt außerdem im Programm enthalten und dort abrufbar. Bei Bedarf erzeugt
 `--source-artifact` zusätzlich `CitizenTools-Solo-Source.zip` als Release-Anhang.
 Das OCR-Quellpaket bleibt davon unabhängig Bestandteil der Release-Ausgabe.
 
-Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.5.0`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
+Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.5.1`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
 
 Die Dateinamen müssen unverändert bleiben. `release.json` enthält zusätzlich den zweisprachigen Versionsverlauf; daraus zeigt der Updater alle Änderungen seit der installierten Version. Für alte Manifeste verwendet er den GitHub-Release-Text. Kein GitHub-Token wird benötigt oder mitgeliefert. Prüfsummen werden vor der Übergabe an den separaten Updater und dort erneut geprüft.
 

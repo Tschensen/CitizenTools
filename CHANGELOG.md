@@ -1,5 +1,10 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.5.1 — Citizen Tools
+
+- Fehler behoben, durch den Screenshots nicht erstellt werden konnten.
+- Update-Arbeitsordner und Programmsicherungen liegen jetzt in einem Unterordner der Anwendung.
+
 ## 0.5.0 — Citizen Tools
 
 ### Deutsch

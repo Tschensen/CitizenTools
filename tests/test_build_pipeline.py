@@ -83,6 +83,7 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ['web/scripts/current.js', 'web/scripts/removed.js', 'companion/assets/logo.svg',
+                         'companion/scripts/capture-screen.ps1',
                          'shared/mission_import/prepare-ocr-image.ps1', 'release-notes.json', 'project.json',
                          'packaging/ocr-lock.json', 'LICENSE', 'NOTICE.md', 'CHANGELOG.md', 'README.md', 'docs/BUILD.md']:
                 put(root, name)
@@ -97,9 +98,17 @@ class PackageTests(unittest.TestCase):
             assemble_program(root, root / 'first', *args)
             (root / 'web/scripts/removed.js').unlink()
             put(root, 'web/scripts/current.js', 'fresh')
+            put(root, 'companion/scripts/capture-screen.ps1', 'fresh capture script')
             assemble_program(root, root / 'second', *args)
             self.assertEqual((root / 'second/_internal/web/scripts/current.js').read_text(), 'fresh')
             self.assertFalse((root / 'second/_internal/web/scripts/removed.js').exists())
+            capture = 'companion/scripts/capture-screen.ps1'
+            self.assertEqual((root / 'second/_internal' / capture).read_text(), 'fresh capture script')
+            manifest = json.loads((root / 'second/installation.json').read_text())
+            self.assertIn('_internal/' + capture, manifest['files'])
+            (root / capture).unlink()
+            with self.assertRaises(FileNotFoundError):
+                assemble_program(root, root / 'missing-capture', *args)
             self.assertFalse((native / '_internal/web').exists())
             self.assertEqual((root / 'first/CitizenTools-Solo.exe').read_bytes(), (root / 'second/CitizenTools-Solo.exe').read_bytes())
 

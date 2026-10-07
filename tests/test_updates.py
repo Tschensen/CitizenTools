@@ -259,16 +259,79 @@ class ReplacementTests(unittest.TestCase):
         self.assertEqual((backup / helper.EXE).read_text(), '0.3.0')
         self.assertEqual((self.program / 'personal.txt').read_text(), 'keep')
         self.assertFalse((self.program / 'old-library.txt').exists())
+        self.assertEqual(backup.parent, self.program / helper.UPDATE_WORK)
+        self.assertFalse(list(self.root.glob('.program.*')))
+        self.assertFalse(list(backup.parent.glob('update-*')))
+        self.assertFalse((backup / helper.UPDATE_WORK).exists())
 
     def test_failed_rename_rolls_back_complete_old_program(self):
         original = Path.rename
         def rename(source, destination):
-            if source.name == 'new': raise PermissionError('locked')
+            if source.parent.name == 'new': raise PermissionError('locked')
             return original(source, destination)
         with patch.object(Path, 'rename', rename), self.assertRaises(PermissionError):
             helper.apply_update(self.job, self.program, self.package, self.folder)
         self.assertEqual((self.program / helper.EXE).read_text(), '0.3.0')
         self.assertTrue((self.program / 'old-library.txt').exists())
+
+    def test_partial_backup_move_rolls_back(self):
+        original = Path.rename
+        calls = []
+        def rename(source, destination):
+            if Path(destination).parent.name.startswith('previous-'):
+                calls.append(source)
+                if len(calls) == 2:
+                    raise PermissionError('locked old file')
+            return original(source, destination)
+        with patch.object(Path, 'rename', rename), self.assertRaises(PermissionError):
+            helper.apply_update(self.job, self.program, self.package, self.folder)
+        helper.validate_program(self.program, '0.3.0')
+        self.assertTrue((self.program / 'old-library.txt').exists())
+
+    def test_partial_install_rolls_back(self):
+        original = Path.rename
+        calls = []
+        def rename(source, destination):
+            if source.parent.name == 'new':
+                calls.append(source)
+                if len(calls) == 2:
+                    raise PermissionError('locked new file')
+            return original(source, destination)
+        with patch.object(Path, 'rename', rename), self.assertRaises(PermissionError):
+            helper.apply_update(self.job, self.program, self.package, self.folder)
+        helper.validate_program(self.program, '0.3.0')
+        self.assertEqual((self.program / helper.EXE).read_text(), '0.3.0')
+        self.assertTrue((self.program / 'old-library.txt').exists())
+
+    def test_legacy_backup_and_empty_stage_are_cleaned(self):
+        old = self.root / ('.program.previous-' + 'c' * 32)
+        program(old, '0.3.0')
+        (old / 'update-backup.json').write_text(json.dumps({'program': str(self.program), 'version': '0.3.0'}))
+        stage = self.root / ('.program.update-' + 'c' * 32); stage.mkdir()
+        data = self.root / 'data'; (data / 'Updates').mkdir(parents=True)
+        (data / 'Updates/last-result.json').write_text(json.dumps({'backup': str(old)}))
+        helper.clean_previous_backup(data, self.program, self.program / helper.UPDATE_WORK / 'keep')
+        self.assertFalse(old.exists())
+        self.assertFalse(stage.exists())
+
+    def test_second_update_does_not_copy_update_workspace(self):
+        first = helper.apply_update(self.job, self.program, self.package, self.folder)
+        data = self.root / 'data'; (data / 'Updates').mkdir(parents=True)
+        (data / 'Updates/last-result.json').write_text(json.dumps({'backup': str(first)}))
+        second_job = self.root / ('b' * 32); second_job.mkdir()
+        second = helper.apply_update({**self.job, 'currentVersion': '0.4.0'}, self.program, self.package, second_job)
+        self.assertFalse((second / helper.UPDATE_WORK).exists())
+        helper.clean_previous_backup(data, self.program, second)
+        self.assertFalse(first.exists())
+        self.assertTrue(second.exists())
+
+    def test_unowned_workspace_is_not_overwritten(self):
+        workspace = self.program / helper.UPDATE_WORK; workspace.mkdir()
+        (workspace / 'personal.txt').write_text('keep')
+        with self.assertRaises(OSError):
+            helper.apply_update(self.job, self.program, self.package, self.folder)
+        self.assertEqual((workspace / 'personal.txt').read_text(), 'keep')
+        helper.validate_program(self.program, '0.3.0')
 
     def test_installer_failure_restores_program_without_touching_user_data(self):
         data = self.root / 'personal-data'; data.mkdir()

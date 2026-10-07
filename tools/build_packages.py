@@ -27,6 +27,7 @@ def assemble_program(root, package, native, helper, ocr, legal, source, version,
                                     (ocr, 'ocr'), (legal, 'legal')]:
         shutil.copytree(source_dir, internal / destination)
     for source_file, destination in [
+        (root / 'companion/scripts/capture-screen.ps1', 'companion/scripts/capture-screen.ps1'),
         (root / 'shared/mission_import/prepare-ocr-image.ps1', 'shared/mission_import/prepare-ocr-image.ps1'),
         (root / 'release-notes.json', 'release-notes.json'), (root / 'project.json', 'project.json'),
         (source, 'source/CitizenTools-Solo-Source.zip')]:

@@ -14,7 +14,7 @@ import zipfile
 from contextlib import closing
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from update_helper import digest, EXE, MANIFEST, validate_program
+from update_helper import digest, EXE, MANIFEST, UPDATE_WORK, validate_program
 
 
 def main():
@@ -81,6 +81,9 @@ class App { static void Main(string[] args) {
             assert connection.execute('select value from example').fetchone()[0] == 'my contract'
         report = json.loads((folder / 'result.json').read_text())
         assert report['ok']; validate_program(Path(report['backup']), '0.3.0')
+        assert Path(report['backup']).parent == program / UPDATE_WORK
+        assert not list((program / UPDATE_WORK).glob('update-*'))
+        assert not list(root.glob('.program.*'))
         report['checks'] = ['wait-for-running-parent', 'replace-in-same-directory', 'preserve-extra-files', 'preserve-sounds', 'consistent-data-backup', 'previous-program-backup', 'restart-new-version']
         (root / 'helper-result.json').write_text(json.dumps(report, indent=2))
         print(json.dumps(report))
