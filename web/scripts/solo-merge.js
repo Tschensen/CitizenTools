@@ -60,6 +60,10 @@ function soloMergeStates(base, local, remote) {
       } else item = choose(b, l, r);
       if (item !== undefined) value[key] = item;
     }
-    return { ok: true, state: cloneData(value) };
+    return { ok: true, state: JSON.parse(JSON.stringify(value)) };
   } catch { return { ok: false }; }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { equal: soloEqual, merge: soloMergeStates };
 }

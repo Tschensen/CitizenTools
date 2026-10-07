@@ -42,14 +42,14 @@ def main():
             report['checks'].append(name)
 
         def ready(window):
-            until(window, "window.soloStartup?.phase==='ready' && soloHydrated && !soloPending && !soloSaving && !soloPolling && !missionAutoImportBusy")
+            until(window, "window.soloStartup?.phase==='ready' && soloSync.status.hydrated && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.busy && !missionAutoImportBusy")
 
         def probe(window):
             window.evaluate_js('window.updateProbeDone=false;soloConnection.probe().then(()=>window.updateProbeDone=true)')
             until(window, 'window.updateProbeDone')
 
         def refreshed():
-            until(browser, "window.soloClientVersion===" + json.dumps(VERSION) + " && window.soloStartup?.phase==='ready' && soloHydrated && soloConnection.phase==='online'")
+            until(browser, "window.soloClientVersion===" + json.dumps(VERSION) + " && window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloConnection.phase==='online'")
 
         try:
             for window in [pc, browser]:
@@ -80,18 +80,19 @@ def main():
             expect(browser, "activePage==='run'", 'resetting-draft-allows-automatic-update')
 
             ready(browser)
-            browser.evaluate_js("soloPending=cloneData(state);window.soloClientVersion='0.0.0'")
-            probe(browser)
-            expect(browser, "window.soloClientVersion==='0.0.0' && soloPending && localStorage.getItem(`${STORAGE_KEY}:conflict-recovery`)", 'pending-save-is-protected-and-recoverable')
-            browser.evaluate_js('soloPending=null;void soloConnection.probe()')
-            refreshed()
-            report['checks'].append('automatic-update-resumes-after-pending-edit-is-cleared')
-
-            ready(browser)
             browser.evaluate_js("sessionStorage.setItem('citizen-tools:version-reload',JSON.stringify({from:'0.0.0',to:window.soloClientVersion,page:'run'}));window.soloClientVersion='0.0.0'")
             probe(browser)
             probe(browser)
             expect(browser, "window.soloClientVersion==='0.0.0' && soloConnection.phase==='update-required'", 'stale-cache-reload-loop-is-blocked')
+            browser.load_url(runtime.url.replace('127.0.0.1', 'localhost') + '/?verify=fresh')
+            refreshed()
+
+            # Last scenario: a pending edit intentionally prevents navigation.
+            # Do not mutate the coordinator's private queue to bypass that guard.
+            ready(browser)
+            browser.evaluate_js("state.currentLocation='Area18';soloSync.schedule(state);window.soloClientVersion='0.0.0'")
+            probe(browser)
+            expect(browser, "window.soloClientVersion==='0.0.0' && soloSync.status.pending && localStorage.getItem(`${STORAGE_KEY}:conflict-recovery`)", 'pending-save-is-protected-and-recoverable')
             report['errors'] = [window.evaluate_js('window.soloErrors') for window in [pc, browser]]
             assert not any(report['errors']), report['errors']
             report['ok'] = True

@@ -1,10 +1,5 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const path = require('node:path');
-const context = vm.createContext({cloneData: structuredClone});
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../web/scripts/solo-merge.js'), 'utf8'), context);
-const merge = (b,l,r) => context.soloMergeStates(b,l,r);
+const { merge, equal } = require('../web/scripts/solo-merge.js');
 const mission = (title, id='a') => ({id,title});
 const base = {missions:[mission('before')]};
 assert.equal(merge(base, {missions:[]}, {missions:[mission('edited')]}).ok, false, 'Delete versus edit is a genuine conflict');
@@ -20,7 +15,7 @@ assert.deepEqual(merge({runCompletedRoutePoints:['a']}, {runCompletedRoutePoints
   {runCompletedRoutePoints:['c','b']});
 assert.deepEqual(merge({currentLocation:'A',uiLanguage:'de'}, {currentLocation:'A',uiLanguage:'en'}, {currentLocation:'B',uiLanguage:'de'}).state,
   {currentLocation:'B',uiLanguage:'en'});
-assert.equal(context.soloEqual({b:2,a:1},{a:1,b:2}),true);
+assert.equal(equal({b:2,a:1},{a:1,b:2}),true);
 assert.deepEqual(merge({runRouteOrder:{a:['x'],b:['y']}}, {runRouteOrder:{a:['z','x'],b:['y']}}, {runRouteOrder:{a:['x'],b:['k','y']}}).state.runRouteOrder,
   {a:['z','x'],b:['k','y']});
 assert.equal(merge({runRouteOrder:{a:['x','y','z']}}, {runRouteOrder:{a:['y','x','z']}}, {runRouteOrder:{a:['z','y','x']}}).ok, false);

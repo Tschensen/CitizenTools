@@ -80,8 +80,9 @@
   }
   async function settled() {
     if (online) return window.OperationsOnlineAdapter.waitForPersonalTransfer();
-    if (!soloHydrated || soloPolling || missionAutoImportBusy) throw new Error('transfer_unsaved');
-    if (soloPending || soloSaving) {
+    const status = getSoloSync().status;
+    if (!status.hydrated || status.blocked || status.reading || status.importing || missionAutoImportBusy) throw new Error('transfer_unsaved');
+    if (status.hasUnsaved) {
       if (!await flushSoloState()) throw new Error('transfer_unsaved');
     }
   }

@@ -1,220 +1,75 @@
-// Single shared SQLite state, optimistic concurrency and device refresh.
-let soloRevision = null;
-let soloPending = null;
-let soloSaving = null;
-let soloPolling = false;
-let soloHydrated = false;
-let soloBaseState = null;
-let soloRenderPending = false;
+// Browser composition: bind the reusable state services to the existing views.
+let soloStateApi = null;
+let soloStateStore = null;
+let soloSyncTimer = null;
 
-function requireSoloReload() {
-  window.soloUpdateRequired = true;
-  if (soloPending || soloSaving) {
-    localStorage.setItem(`${STORAGE_KEY}:conflict-recovery`, JSON.stringify(soloPending || state));
+function getSoloStateApi() {
+  soloStateApi ||= StateApi.create({
+    fetch: (...args) => fetch(...args),
+    clientVersion: () => window.soloClientVersion,
+    onVersionMismatch: () => requireSoloReload(),
+  });
+  return soloStateApi;
+}
+
+function getSoloStateStore() {
+  soloStateStore ||= StateStore.create({
+    read: () => state,
+    replace: value => { state = value; },
+    defaults: () => defaultState,
+    normalize: value => pruneInvalidPlacements(sanitizeState(value)),
+    clone: cloneData,
+    equal: soloEqual,
+    storage: getLocalStateStorage(),
+  });
+  return soloStateStore;
+}
+
+function getSoloSync() {
+  if (!window.soloSync) {
+    window.soloSync = StateSync.create({
+      store: getSoloStateStore(),
+      api: {
+        fetchState: () => fetchRemoteState(),
+        saveState: (...args) => getSoloStateApi().saveState(...args),
+      },
+      equal: soloEqual,
+      merge: (...args) => soloMergeStates(...args),
+      isEditing: soloEditing,
+      isPaused: () => Boolean(window.personalTransferBusy || missionAutoImportBusy),
+      enabled: canUseRemotePersistence,
+      onMeta: applyRemoteMeta,
+      onOffline: () => { remoteStatus.connected = false; renderRemoteStatus(); },
+      onRender: () => render(),
+      onConflict: showSoloConflict,
+      onReload: () => { window.soloUpdateRequired = true; window.soloConnection?.requireReload(); },
+    });
   }
-  if (remoteSaveTimer) { clearTimeout(remoteSaveTimer); remoteSaveTimer = null; }
-  remoteStatus.connected = false;
-  window.soloConnection?.requireReload();
+  return window.soloSync;
 }
 
-// Seeded ships and the default pilot are reference data, not a personal edit.
-// Two fresh clients must not race to upload independently timestamped defaults.
-function soloHasPersonalState(candidate) {
-  const comparable = value => {
-    const clean = soloCleanState(sanitizeState(cloneData(value)));
-    for (const name of ['shipLibrary', 'pilots']) {
-      for (const entry of clean[name] || []) delete entry.createdAt;
-    }
-    return clean;
-  };
-  return !soloEqual(comparable(candidate), comparable(defaultState));
-}
-
-// A dropped LAN connection must not hold a polling/save lock indefinitely.
-// The timeout also covers reading the response body.
-async function soloRequestJson(url, options = {}, timeoutMs = 10000) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    const payload = await response.json();
-    if (response.status === 428 && payload.error === 'client_version_mismatch') requireSoloReload();
-    return { response, payload };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+function requireSoloReload() { getSoloSync().blockForUpdate(); }
+function soloCleanState(value) { return getSoloStateStore().clean(value); }
+function soloRequestJson(...args) { return getSoloStateApi().requestJson(...args); }
+function fetchRemoteState() { return getSoloStateApi().fetchState(); }
+function saveRemoteState(snapshot) { return getSoloSync().save(snapshot); }
+function flushSoloState() { return getSoloSync().flush(); }
+function pollSoloState() { return getSoloSync().poll(); }
 
 function soloEditing() {
   return Boolean(document.activeElement?.matches("input,select,textarea")
     || document.querySelector('.app-dialog-backdrop:not([hidden]), .run-route-row.is-dragging, #cargoAreaEditor:focus-within, #cargoAreaGrid.is-painting'));
 }
 
-function soloCleanState(snapshot) {
-  const value = cloneData(snapshot);
-  delete value.organization;
-  delete value.pilotGroups;
-  for (const mission of value.missions || []) {
-    for (const key of ["organizationLink", "organizationOrigin", "organizationProgress", "participantAllocations", "participants"]) delete mission[key];
+async function initializeRemotePersistence() {
+  const sync = getSoloSync();
+  if (soloSyncTimer === null) {
+    soloSyncTimer = window.setInterval(() => { void sync.poll(); }, 2000);
   }
-  return value;
+  await sync.hydrate();
+  if (sync.status.hydrated) await autoImportPendingMissions();
 }
 
-async function fetchRemoteState() {
-  const { response, payload } = await soloRequestJson("./api/state?scope=solo", {cache: "no-store"});
-  if (!response.ok) throw new Error("solo_state_unavailable");
-  return payload;
-}
-
-function scheduleRemotePersist() {
-  if (!remoteHydrationComplete) return;
-  if (remoteSaveTimer) clearTimeout(remoteSaveTimer);
-  soloPending = soloCleanState(state);
-  if (window.soloUpdateRequired) { requireSoloReload(); return; }
-  remoteSaveTimer = setTimeout(() => { remoteSaveTimer = null; void flushSoloState(); }, 250);
-}
-
-async function saveRemoteState(snapshot) {
-  soloPending = soloCleanState(snapshot);
-  return flushSoloState();
-}
-
-function applySoloState(payload) {
-  soloRevision = payload.updatedAt;
-  state = pruneInvalidPlacements(sanitizeState(payload.state || cloneData(defaultState)));
-  soloBaseState = soloCleanState(state);
-  localStorage.setItem(getStateStorageKey(), JSON.stringify(state));
-  applyRemoteMeta(payload);
-  soloRenderPending = false;
-  render();
-}
-
-// Adopt a committed change without losing edits made while its request was
-// in flight. Form values are left in place until the user finishes editing.
-function rebaseSoloState(payload, local = soloPending || soloCleanState(state)) {
-  const remote = soloCleanState(pruneInvalidPlacements(sanitizeState(payload.state || cloneData(defaultState))));
-  const merged = soloBaseState && soloMergeStates(soloBaseState, local, remote);
-  if (!merged?.ok) return false;
-  soloRevision = payload.updatedAt;
-  soloBaseState = remote;
-  state = merged.state;
-  soloPending = soloEqual(state, remote) ? null : soloCleanState(state);
-  localStorage.setItem(getStateStorageKey(), JSON.stringify(state));
-  applyRemoteMeta(payload);
-  soloRenderPending = true;
-  if (!soloEditing()) { soloRenderPending = false; render(); }
-  return true;
-}
-
-async function flushSoloState() {
-  if (window.soloUpdateRequired) { requireSoloReload(); return false; }
-  if (soloSaving) return soloSaving;
-  if (!soloHydrated || !soloPending || soloPolling) return false;
-  soloSaving = (async () => {
-    let retries = 0;
-    while (soloPending) {
-      const snapshot = soloPending;
-      soloPending = null;
-      if (soloBaseState && soloEqual(snapshot, soloBaseState)) continue;
-      try {
-        const { response, payload } = await soloRequestJson("./api/state?scope=solo", {
-          method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({state: snapshot, baseUpdatedAt: soloRevision, clientVersion: window.soloClientVersion}),
-        });
-        if (response.status === 409) {
-          if (rebaseSoloState(payload, soloPending || snapshot)) {
-            // Another client changed independent data: keep both changes.
-            // Leave a pending retry for the next poll under heavy contention.
-            if (++retries >= 3 && soloPending) return false;
-            continue;
-          }
-          // Preserve the local edit before adopting the newer shared state.
-          localStorage.setItem(`${STORAGE_KEY}:conflict-recovery`, JSON.stringify(soloPending || snapshot));
-          soloPending = null;
-          if (remoteSaveTimer) { clearTimeout(remoteSaveTimer); remoteSaveTimer = null; }
-          applySoloState(payload);
-          showSoloConflict();
-          return false;
-        }
-        if (!response.ok) throw new Error(payload.error || "solo_save_failed");
-        soloRevision = payload.updatedAt;
-        soloBaseState = snapshot;
-        applyRemoteMeta({...payload, meta: {lastBackupAt: remoteStatus.lastBackupAt, lastRestoreAt: remoteStatus.lastRestoreAt}});
-      } catch (error) {
-        soloPending ||= snapshot;
-        if (window.soloUpdateRequired) requireSoloReload();
-        remoteStatus.connected = false;
-        renderRemoteStatus();
-        return false;
-      }
-    }
-    return true;
-  })();
-  try { return await soloSaving; } finally { soloSaving = null; }
-}
-
-function showSoloConflict() {
-  if (document.querySelector(".solo-conflict")) return;
-  const bar = document.createElement("div");
-  bar.className = "solo-conflict";
-  bar.setAttribute("role", "alert");
-  const english = currentUiLanguage() === "en";
-  const label = document.createElement("span");
-  label.textContent = english
-    ? "The same data was changed on two devices. The shared version has been loaded; your unsaved change is available as a recovery copy."
-    : "Dieselben Daten wurden auf zwei Geräten geändert. Der gemeinsame Stand wurde geladen; deine nicht gespeicherte Änderung liegt als Wiederherstellungskopie bereit.";
-  const download = document.createElement("button");
-  download.className = "secondary-button";
-  download.textContent = english ? "Save recovery copy" : "Änderungskopie speichern";
-  download.onclick = () => {
-    const url = URL.createObjectURL(new Blob([localStorage.getItem(`${STORAGE_KEY}:conflict-recovery`) || "{}"], {type: "application/json"}));
-    const link = document.createElement("a");
-    link.href = url; link.download = "CitizenTools-Solo-Wiederherstellung.json"; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-  };
-  const close = document.createElement("button");
-  close.textContent = "OK"; close.className = "secondary-button"; close.onclick = () => bar.remove();
-  bar.append(label, download, close); document.body.append(bar);
-}
-
-async function pollSoloState() {
-  if (window.personalTransferBusy || window.soloUpdateRequired) return;
-  if (!remoteHydrationComplete || soloSaving || soloPolling || missionAutoImportBusy) return;
-  if (!soloHydrated) {
-    if (soloEditing()) return;
-    soloPolling = true;
-    const unbased = soloPending;
-    try {
-      // If the first read failed, cached edits have no trustworthy base
-      // revision. Keep a recovery copy before adopting the server's state.
-      if (unbased) localStorage.setItem(`${STORAGE_KEY}:conflict-recovery`, JSON.stringify(unbased));
-      soloPending = null;
-      await initializeRemotePersistence(undefined, { preserveEditing: true });
-      if (!soloHydrated) soloPending ||= unbased;
-      else if (unbased) showSoloConflict();
-    } catch {
-      if (!soloHydrated) soloPending ||= unbased;
-      remoteStatus.connected = false;
-      renderRemoteStatus();
-    } finally { soloPolling = false; }
-    return;
-  }
-  if (soloPending) { await flushSoloState(); return; }
-  // Do not replace an in-progress form or an open dialog on the other device.
-  if (soloEditing()) return;
-  if (soloRenderPending) { soloRenderPending = false; render(); }
-  soloPolling = true;
-  try {
-    const { response, payload } = await soloRequestJson("./api/state?scope=solo", {cache: "no-store"});
-    if (window.soloUpdateRequired) return;
-    if (!response.ok) throw new Error("solo_poll_failed");
-    if (!soloPending && !soloEditing() && payload.updatedAt !== soloRevision) applySoloState(payload);
-    else if (!soloPending) applyRemoteMeta(payload);
-  } catch (error) { remoteStatus.connected = false; renderRemoteStatus(); }
-  finally { soloPolling = false; }
-}
-
-setInterval(() => { void pollSoloState(); }, 2000);
-window.addEventListener("beforeunload", event => {
-  if (soloPending || soloSaving || remoteSaveTimer) { event.preventDefault(); event.returnValue = ""; }
+window.addEventListener('beforeunload', event => {
+  if (window.soloSync?.status.hasUnsaved) { event.preventDefault(); event.returnValue = ''; }
 });

@@ -628,8 +628,6 @@ let activeSettingsView = "profile";
 let activeShipDbView = "database";
 let lastCargoPage = "overview";
 let runViewController = null;
-let remoteHydrationComplete = false;
-let remoteSaveTimer = null;
 let remoteStatus = createRemoteStatusState();
 window.t = t;
 const backupController = BackupUi.createBackupController({
@@ -648,8 +646,7 @@ const backupController = BackupUi.createBackupController({
     },
     onRestored: async (payload) => {
       remoteStatus.lastRestoreAt = payload.restoredAt || new Date().toISOString();
-      remoteHydrationComplete = false;
-      await initializeRemotePersistence();
+      await getSoloSync().reset();
       render();
     },
     setConnected: (connected) => {
@@ -1575,16 +1572,10 @@ async function switchAppMode(nextMode) {
     return;
   }
 
-  if (remoteSaveTimer) {
-    window.clearTimeout(remoteSaveTimer);
-    remoteSaveTimer = null;
-  }
-
   const previousLanguage = currentUiLanguage();
   const hasLocalModeState = hasStoredState(normalizedMode);
   activeAppMode = normalizedMode;
   localStorage.setItem(APP_MODE_STORAGE_KEY, activeAppMode);
-  remoteHydrationComplete = false;
   remoteStatus = createRemoteStatusState();
   state = pruneInvalidPlacements(loadState(activeAppMode));
   if (!hasLocalModeState) {
@@ -1605,7 +1596,7 @@ async function switchAppMode(nextMode) {
   setShipDbView("database");
   syncLayoutInputs();
   render();
-  await initializeRemotePersistence(activeAppMode);
+  await getSoloSync().reset();
 }
 
 function renderAppModeControls() {

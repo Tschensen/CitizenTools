@@ -57,14 +57,14 @@ def main():
 
         def start_import(window):
             window.evaluate_js("document.activeElement?.blur();")
-            until(window, "(() => {if(soloPolling || soloSaving || soloPending || remoteSaveTimer || missionAutoImportBusy || soloEditing())return false;window.importDone=false;autoImportPendingMissions().then(()=>window.importDone=true);return true;})()")
+            until(window, "(() => {if(soloSync.status.busy || soloSync.status.saving || soloSync.status.pending || soloSync.status.scheduled || missionAutoImportBusy || soloEditing())return false;window.importDone=false;autoImportPendingMissions().then(()=>window.importDone=true);return true;})()")
 
         def shared():
             with urlopen(runtime.url+'/api/state') as response: return json.load(response)
 
         try:
             for window in [pc, tablet]:
-                until(window, "window.soloStartup?.phase === 'ready' && soloHydrated && !soloSaving && !soloPending && !missionAutoImportBusy")
+                until(window, "window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && !soloSync.status.saving && !soloSync.status.pending && !missionAutoImportBusy")
                 window.evaluate_js("clearInterval(missionAutoImportTimer);missionAutoImportTimer=null;window.originalMerge=soloMergeStates;soloMergeStates=(b,l,r)=>{const result=originalMerge(b,l,r);if(!result.ok)window.failedMerge={base:b,local:l,remote:r};return result;};window.originalFetch=fetch;window.fetch=async(url,options)=>{if(window.holdImports&&options?.method==='POST'&&JSON.parse(options.body||'{}').importIds){window.importWaiting=true;await new Promise(resolve=>window.releaseImport=resolve);}return originalFetch(url,options);};")
             expect(pc, "location.search.includes('desktop=1')", 'pc-app-view')
             expect(tablet, "!location.search.includes('desktop=1')", 'tablet-web-view')
@@ -74,13 +74,13 @@ def main():
                     window.evaluate_js('window.holdImports=true;window.importWaiting=false;')
                     start_import(window)
                 for window in [pc, tablet]:
-                    until(window, "(() => {if(window.importWaiting)return true;if(window.importDone&&!soloPending&&!soloSaving&&!soloPolling&&!remoteSaveTimer&&!missionAutoImportBusy){window.importDone=false;autoImportPendingMissions().then(()=>window.importDone=true);}return false;})()")
+                    until(window, "(() => {if(window.importWaiting)return true;if(window.importDone&&!soloSync.status.pending&&!soloSync.status.saving&&!soloSync.status.busy&&!soloSync.status.scheduled&&!missionAutoImportBusy){window.importDone=false;autoImportPendingMissions().then(()=>window.importDone=true);}return false;})()")
                 pc.evaluate_js('window.holdImports=false;releaseImport()')
                 until(pc, 'window.importDone')
                 tablet.evaluate_js('window.holdImports=false;releaseImport()')
                 until(tablet, 'window.importDone')
                 for window in [pc, tablet]:
-                    until(window, f"state.missions.filter(m=>m.sourceImportId==='shared-{number}').length===1 && !soloSaving && !soloPending")
+                    until(window, f"state.missions.filter(m=>m.sourceImportId==='shared-{number}').length===1 && !soloSync.status.saving && !soloSync.status.pending")
                     expect(window, "!document.querySelector('.solo-conflict')", f'import-{number}-without-conflict-{window.uid}')
                 assert len([m for m in shared()['state']['missions'] if m.get('sourceImportId') == f'shared-{number}']) == 1
                 result['checks'].append(f'import-{number}-stored-once')
@@ -93,7 +93,7 @@ def main():
             expect(tablet, "missionForm.elements.title.value==='Vom Tablet bearbeitet' && getMissionEditId()===editId", 'pc-import-preserves-tablet-edit-form')
             tablet.evaluate_js('document.activeElement.blur();missionSubmitButton.click()')
             for window in [pc, tablet]:
-                until(window, "state.missions.some(m=>m.title==='Vom Tablet bearbeitet') && state.missions.some(m=>m.sourceImportId==='shared-4') && !soloPending && !soloSaving")
+                until(window, "state.missions.some(m=>m.title==='Vom Tablet bearbeitet') && state.missions.some(m=>m.sourceImportId==='shared-4') && !soloSync.status.pending && !soloSync.status.saving")
                 expect(window, "!document.querySelector('.solo-conflict')", f'tablet-edit-and-pc-import-retained-{window.uid}')
 
             # Delete confirmation blocks polling; a new import must survive
@@ -109,7 +109,7 @@ def main():
             until(pc, "window.importDone && state.missions.some(m=>m.sourceImportId==='shared-5')")
             tablet.evaluate_js('missionConfirmDialogConfirm.click()')
             for window in [pc, tablet]:
-                until(window, "!state.missions.some(m=>m.sourceImportId==='shared-2') && state.missions.some(m=>m.sourceImportId==='shared-5') && !soloPending && !soloSaving")
+                until(window, "!state.missions.some(m=>m.sourceImportId==='shared-2') && state.missions.some(m=>m.sourceImportId==='shared-5') && !soloSync.status.pending && !soloSync.status.saving")
                 expect(window, "!document.querySelector('.solo-conflict')", f'tablet-delete-and-pc-import-retained-{window.uid}')
 
             # Completion uses the real card action and confirmation dialog.
@@ -117,7 +117,7 @@ def main():
             until(tablet, '!missionConfirmDialog.hidden')
             tablet.evaluate_js('missionConfirmDialogConfirm.click()')
             for window in [pc, tablet]:
-                until(window, "isMissionCompleted(state.missions.find(m=>m.sourceImportId==='shared-3')) && !soloPending && !soloSaving")
+                until(window, "isMissionCompleted(state.missions.find(m=>m.sourceImportId==='shared-3')) && !soloSync.status.pending && !soloSync.status.saving")
             result['checks'].append('tablet-completion-visible-on-pc')
             for window in [pc, tablet]:
                 window.evaluate_js('document.activeElement?.blur();startMissionAutoImportPolling();')
@@ -129,14 +129,14 @@ def main():
                 expect(window, "!document.querySelector('.solo-conflict') && !localStorage.getItem(STORAGE_KEY+':conflict-recovery')", f'no-spurious-recovery-copy-{window.uid}')
             # Both persisted edits survive a fresh tablet navigation.
             tablet.load_url(runtime.url.replace('127.0.0.1', 'localhost')+'/?verify=reload')
-            until(tablet, "location.search.includes('reload') && window.soloStartup?.phase==='ready' && soloHydrated")
+            until(tablet, "location.search.includes('reload') && window.soloStartup?.phase==='ready' && soloSync.status.hydrated")
             expect(tablet, "state.missions.some(m=>m.title==='Vom Tablet bearbeitet') && !state.missions.some(m=>m.sourceImportId==='shared-2')", 'tablet-reload-uses-shared-pc-state')
             errors = {window.uid:window.evaluate_js('window.soloErrors') for window in [pc, tablet]}
             assert not any(errors.values()), errors
             result.update(ok=True, errors=errors)
         except Exception as error:
             result.update(error=str(error), traceback=traceback.format_exc())
-            result['diagnostics'] = {window.uid:window.evaluate_js("({errors:window.soloErrors,phase:window.soloStartup?.phase,conflict:document.querySelector('.solo-conflict')?.textContent,pending:soloPending,revision:soloRevision,importDone:window.importDone,importWaiting:window.importWaiting,autoBusy:missionAutoImportBusy,polling:soloPolling,saving:!!soloSaving,timer:remoteSaveTimer,editing:soloEditing(),failedMerge:window.failedMerge})") for window in [pc, tablet]}
+            result['diagnostics'] = {window.uid:window.evaluate_js("({errors:window.soloErrors,phase:window.soloStartup?.phase,conflict:document.querySelector('.solo-conflict')?.textContent,pending:soloSync.status.pending,revision:soloSync.status.revision,importDone:window.importDone,importWaiting:window.importWaiting,autoBusy:missionAutoImportBusy,polling:soloSync.status.busy,saving:!!soloSync.status.saving,timer:soloSync.status.scheduled,editing:soloEditing(),failedMerge:window.failedMerge})") for window in [pc, tablet]}
         finally:
             (args.data_dir/'shared-state-result.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
             tablet.destroy()

@@ -77,7 +77,7 @@ def main():
             else:
                 expect("Boolean(document.querySelector('#oldClockPage'))", 'old-page-reproduced-from-persistent-cache')
                 window.load_url(runtime.desktop_url)
-                until("window.soloStartup?.phase === 'ready' && soloHydrated && remoteHydrationComplete && !soloSaving && soloConnection.phase==='online'")
+                until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && soloConnection.phase==='online'")
                 expect("localStorage.getItem('clock-update-test')==='keep-this-setting'", 'update-keeps-browser-settings')
                 expect("flightClockLabel.textContent==='Schiffszeit / UTC' && flightLocalClockLabel.textContent==='Ortszeit'", 'german-clock-labels')
                 expect("flightLocalClock.dateTime===flightClock.dateTime && /^\\d{2}:\\d{2}:\\d{2}$/.test(flightLocalClock.textContent)", 'both-clocks-running')
@@ -88,11 +88,11 @@ def main():
                 window.resize(1280,720)
                 window.evaluate_js("uiLanguageSelect.value='en';uiLanguageSelect.dispatchEvent(new Event('change',{bubbles:true}));")
                 expect("flightClockLabel.textContent==='Ship time / UTC' && flightLocalClockLabel.textContent==='Local time'", 'english-clock-labels')
-                until('!soloPending && !soloSaving && !remoteSaveTimer')
-                result['beforeReload'] = window.evaluate_js("({language:state.uiLanguage,base:soloBaseState?.uiLanguage,hydrated:remoteHydrationComplete,labels:[flightClockLabel.textContent,flightLocalClockLabel.textContent]})")
+                until('!soloSync.status.pending && !soloSync.status.saving && !soloSync.status.scheduled')
+                result['beforeReload'] = window.evaluate_js("({language:state.uiLanguage,base:null,hydrated:soloSync.status.initialized,labels:[flightClockLabel.textContent,flightLocalClockLabel.textContent]})")
                 # Setting WebView2.Source to the identical URI does not navigate.
                 window.evaluate_js('window.__clockReloadMarker=true; setTimeout(()=>location.reload(),0)')
-                until("!window.__clockReloadMarker && window.soloStartup?.phase==='ready' && soloHydrated")
+                until("!window.__clockReloadMarker && window.soloStartup?.phase==='ready' && soloSync.status.hydrated")
                 expect("flightClockLabel.textContent==='Ship time / UTC' && flightLocalClockLabel.textContent==='Local time'", 'language-and-new-interface-survive-reload')
                 errors = window.evaluate_js('window.soloErrors')
                 assert not errors, errors
@@ -101,7 +101,7 @@ def main():
         except Exception as error:
             result.update(error=str(error), traceback=traceback.format_exc())
             try:
-                result['diagnostic'] = window.evaluate_js("({url:location.href,phase:window.soloStartup,errors:window.soloErrors,loadErrors:window.soloLoadErrors,status:document.querySelector('#soloStartupStatus')?.textContent,hydrated:typeof soloHydrated!=='undefined'?soloHydrated:null,language:typeof state!=='undefined'?state.uiLanguage:null,labels:[document.querySelector('#flightClockLabel')?.textContent,document.querySelector('#flightLocalClockLabel')?.textContent]})")
+                result['diagnostic'] = window.evaluate_js("({url:location.href,phase:window.soloStartup,errors:window.soloErrors,loadErrors:window.soloLoadErrors,status:document.querySelector('#soloStartupStatus')?.textContent,hydrated:window.soloSync?.status.hydrated,language:typeof state!=='undefined'?state.uiLanguage:null,labels:[document.querySelector('#flightClockLabel')?.textContent,document.querySelector('#flightLocalClockLabel')?.textContent]})")
             except Exception as diagnostic_error:
                 result['diagnosticError'] = str(diagnostic_error)
         finally:

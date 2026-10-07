@@ -51,7 +51,7 @@ def main():
             result['checks'].append(name)
         def reload(window):
             window.evaluate_js('window.__oldPage=true;setTimeout(()=>location.reload(),0)')
-            until(window,"!window.__oldPage && window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
+            until(window,"!window.__oldPage && window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && !soloSync.status.pending")
         def screenshot(name):
             if not args.screenshots: return
             from System import Action
@@ -63,7 +63,7 @@ def main():
             (args.data_dir/(name+'.png')).write_bytes(base64.b64decode(payload['data']))
         try:
             for window in [pc,tablet]:
-                until(window,"window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
+                until(window,"window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && !soloSync.status.pending")
             until(pc,"!document.getElementById('soloSetupWelcome').hidden")
             result['checks'].append('fresh-profile-offers-setup')
             for window in [pc,tablet]:
@@ -103,7 +103,7 @@ def main():
             until(pc,"!soloSetupError.hidden && soloSetupError.textContent.includes('Simulated') && !soloSetupNext.disabled")
             expect(pc,"state.fleet.length===1 && !soloSetupForm.elements.port.disabled",'failed-settings-save-is-retryable')
             pc.evaluate_js("soloSetupNext.click()")
-            until(pc,"soloSetupDialog.hidden && !soloSaving && !soloPending")
+            until(pc,"soloSetupDialog.hidden && !soloSync.status.saving && !soloSync.status.pending")
             expect(pc,"state.fleet.length===1 && state.fleet[0].registration==='TEST-024' && state.activeFleetEntryId===state.fleet[0].id",'retry-does-not-duplicate-ship')
             expect(pc,"getSoloPilotProfile().name==='Verification Pilot' && soloSettingsForm.elements.captureHotkey.value==='Ctrl+Shift+F10'",'pilot-and-hotkey-saved')
             assert runtime.settings['setupCompleted'] and runtime.settings['captureHotkey']=='Ctrl+Shift+F10'
@@ -118,7 +118,7 @@ def main():
             pc.evaluate_js("soloSetupNext.click()")
             expect(pc,"!soloSetupFleetReady.hidden && soloSetupShipFields.hidden",'existing-fleet-preserved-on-reopen')
             pc.evaluate_js("soloSetupCancel.click();uiLanguageSelect.value='en';uiLanguageSelect.dispatchEvent(new Event('change',{bubbles:true}))")
-            until(pc,"!soloSaving && !soloPending")
+            until(pc,"!soloSync.status.saving && !soloSync.status.pending")
             pc.evaluate_js("document.querySelector('[data-cockpit-open]').click()")
             expect(pc,"soloCockpitTitle.textContent==='Customize cockpit'",'english-layout-editor')
             pc.resize(768,1024)
@@ -136,7 +136,7 @@ def main():
                 assert not window.evaluate_js('window.soloErrors'), window.evaluate_js('window.soloErrors')
             result['ok'] = True
         except Exception as error:
-            result.update(error=str(error), traceback=traceback.format_exc(), errors=pc.evaluate_js('window.soloErrors'), setup=pc.evaluate_js("({hidden:soloSetupDialog.hidden,message:soloSetupError.textContent,pending:Boolean(soloPending),saving:Boolean(soloSaving)})"))
+            result.update(error=str(error), traceback=traceback.format_exc(), errors=pc.evaluate_js('window.soloErrors'), setup=pc.evaluate_js("({hidden:soloSetupDialog.hidden,message:soloSetupError.textContent,pending:Boolean(soloSync.status.pending),saving:Boolean(soloSync.status.saving)})"))
         finally:
             (args.data_dir/'personalize-result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
             for window in [pc,tablet]: window.destroy()

@@ -35,7 +35,7 @@ def main():
                 assert response.status == 200
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated", 30)
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated", 30)
             window.evaluate_js("""(() => {
                 window.testImportPlayed = []; window.testSourcesStarted = 0;
                 const Native = window.AudioContext;

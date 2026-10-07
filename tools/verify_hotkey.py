@@ -56,7 +56,7 @@ def main():
             window.evaluate_js(f"soloHotkey.dispatchEvent(new KeyboardEvent('keydown', {json.dumps(dict(key=key, bubbles=True, cancelable=True, **options))}));")
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated && soloStatus.textContent !== ''")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && soloStatus.textContent !== ''")
             window.evaluate_js("setSettingsView('companion')")
             begin()
             assert runtime.hotkey_recording_gate.active()
