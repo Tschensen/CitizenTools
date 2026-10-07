@@ -43,25 +43,27 @@ def parse_reward_amount(text: str) -> int | None:
 
 
 def parse_max_container_scu(text: str) -> int | None:
-    for raw_line in str(text or "").splitlines():
-        line = re.sub(r"\s+", " ", raw_line).strip()
-        labelled_maximum = (
-            re.search(r"\bmax(?:imum)?\.?\b", line, re.IGNORECASE)
-            and re.search(r"container", line, re.IGNORECASE)
-        )
-        ship_requirement = re.search(
-            r"\bschiff\b.+?\b\d+(?:[.,]\d+)?\s*SCU\s+Frachtcontainer\b.+?\btransportieren\b",
-            line,
-            re.IGNORECASE,
-        )
-        if not labelled_maximum and not ship_requirement:
-            continue
-        match = re.search(r"(?<!\d)(\d+(?:[.,]\d+)?)\s*SCU\b", line, re.IGNORECASE)
-        if not match:
-            continue
-        amount = float(match.group(1).replace(",", "."))
-        if amount.is_integer() and 0 < amount <= 1000:
-            return int(amount)
+    source = str(text or "")
+    amount_pattern = r"(?P<amount>\d+(?:[.,]\d+)?)\s*SCU\b"
+    patterns = (
+        # Keep the number attached to its label, even when OCR wraps the value.
+        # The suffix also covers OCR variants such as ContainergroBe/-grosse.
+        r"\bmax(?:imum|imal(?:e[rns]?)?)?\.?\s+(?:fracht)?container\w*"
+        r"(?:\s+(?:size|gr\w+e))?\s*:?\s*" + amount_pattern,
+        r"\bmax(?:imum|imal)?\.?\s+" + amount_pattern + r"[\s-]+(?:fracht)?container\b",
+        # German Supply Haul contracts label the container size this way;
+        # Tesseract commonly drops the umlaut, and some show 'SCU SCU'.
+        r"\bschiffskapazit(?:ä|a|ae)t\s*:?\s*" + amount_pattern,
+        r"\bschiff\b[^.!?]*?\b" + amount_pattern
+        + r"[\s-]+Frachtcontainer\b[^.!?]*?\btransportieren\b",
+    )
+    # Prefer an explicit maximum over the alternative ship-capacity label.
+    # Never infer a container size from a delivery's total SCU quantity.
+    for pattern in patterns:
+        for match in re.finditer(pattern, source, re.IGNORECASE):
+            amount = float(match.group("amount").replace(",", "."))
+            if amount.is_integer() and 0 < amount <= 1000:
+                return int(amount)
     return None
 
 

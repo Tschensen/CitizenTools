@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Small Supply Haul, OCR from 2026-10-07",
+    "text": "DETAILS\n# Cooldown fiir Mission: 1 Minute\n# Mission kann geteilt werden? Ja\nMissionstyp: Sanitatsmaterial-Transport (klein)\nSchiffskapazitat: 1 SCU SCU\nAbholort:\n> Covalex Distribution Center S4DC05 auf microTech",
+    "expected": 1
+  },
+  {
+    "name": "Medium Supply Haul, German label",
+    "text": "Missionstyp: Sanitätsmaterial-Transport (mittel)\nSchiffskapazität: 8 SCU SCU\nLiefere 0/96 SCU Medical Supplies zu August Dunlow Spaceport in Orison",
+    "expected": 8
+  },
+  {
+    "name": "Large Supply Haul, OCR from 2026-10-07",
+    "text": "DETAILS 7\n# Cooldown fiir Mission: 1 Minute\n# Mission kann geteilt werden? Ja\nMissionstyp: Sanitatsmaterial-Transport (gro)\nSchiffskapazitat: 16 SCU SCU\nAbholort:\n> microTech Logistics Depot S4LD01 auf microTech",
+    "expected": 16
+  },
+  {"name": "German maximum", "text": "Max. Containergröße: 32 SCU", "expected": 32},
+  {"name": "German OCR maximum", "text": "Max. ContainergroBe: 16 SCU", "expected": 16},
+  {"name": "German spelled-out maximum", "text": "Maximale Containergröße: 8 SCU", "expected": 8},
+  {"name": "Maximum before container amount", "text": "Maximal 16 SCU Frachtcontainer", "expected": 16},
+  {"name": "Wrapped maximum before container amount", "text": "Maximal 32 SCU\nFrachtcontainer", "expected": 32},
+  {"name": "Maximum before hyphenated container amount", "text": "Maximal 8 SCU-Frachtcontainer", "expected": 8},
+  {"name": "Maximum cargo total alone is not container size", "text": "Maximal 96 SCU Fracht transportieren", "expected": null},
+  {"name": "English maximum", "text": "Maximum container size: 4 SCU", "expected": 4},
+  {"name": "English abbreviated maximum", "text": "Max. container: 2 SCU", "expected": 2},
+  {"name": "Wrapped maximum label and value", "text": "Max.\nContainergröße:\n16\nSCU", "expected": 16},
+  {"name": "Wrapped capacity", "text": "Schiffskapazität:\n8 SCU", "expected": 8},
+  {"name": "Capacity with transliterated umlaut", "text": "SCHIFFSKAPAZITAET: 16 SCU", "expected": 16},
+  {"name": "Legacy ship requirement", "text": "Du brauchst ein Schiff, das 8 SCU Frachtcontainer sicher transportieren kann.", "expected": 8},
+  {"name": "Ship requirement without extra words", "text": "Ein Schiff, das 16 SCU Frachtcontainer transportieren kann", "expected": 16},
+  {"name": "Wrapped legacy ship requirement", "text": "Du brauchst ein Schiff, das\n16 SCU Frachtcontainer sicher\ntransportieren kann.", "expected": 16},
+  {"name": "Container quantity follows cargo total", "text": "Du brauchst ein Schiff mit 96 SCU Frachtraum, das 8 SCU Frachtcontainer transportieren kann.", "expected": 8},
+  {"name": "Explicit maximum takes precedence", "text": "Schiffskapazität: 96 SCU\nMax. Containergröße: 8 SCU", "expected": 8},
+  {"name": "Integral decimal", "text": "Max. Containergröße: 8,0 SCU", "expected": 8},
+  {"name": "No size", "text": "DETAILS\nMission kann geteilt werden? Ja", "expected": null},
+  {"name": "Cargo total is not container size", "text": "Liefere 0/960 SCU Ammonia zu Seraphim-Station\nAmmonia bei microTech Logistics Depot S4LD01 abholen", "expected": null},
+  {"name": "Generic cargo capacity is not a container label", "text": "Benötigte Frachtkapazität: 96 SCU", "expected": null},
+  {"name": "Unrelated SCU on same line", "text": "Liefere 96 SCU, max. 12 Container", "expected": null},
+  {"name": "Missing labelled value does not consume next field", "text": "Max. Containergröße:\nLiefere 0/96 SCU Titan zu Lorville", "expected": null},
+  {"name": "Fuel amount is not container size", "text": "Benötigter Treibstoff: 12 SCU Wasserstofftreibstoff", "expected": null},
+  {"name": "Courier package is not a cargo container", "text": "Frachtgröße: bis zu 0,25 SCU", "expected": null},
+  {"name": "Fractional container size", "text": "Max. Containergröße: 0,25 SCU", "expected": null},
+  {"name": "Zero capacity", "text": "Schiffskapazität: 0 SCU", "expected": null},
+  {"name": "Negative capacity", "text": "Schiffskapazität: -8 SCU", "expected": null},
+  {"name": "Out-of-range capacity", "text": "Schiffskapazität: 1001 SCU", "expected": null},
+  {"name": "Missing unit", "text": "Schiffskapazität: 8", "expected": null}
+]

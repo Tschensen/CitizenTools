@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.5.2",
+    "de": {
+      "title": "Containergrößen-Erkennung",
+      "changes": [
+        "Die Screenshot-Erkennung übernimmt Containergrößen aus „Max. Containergröße“, „Schiffskapazität“, „Maximal X SCU Frachtcontainer“ und „Ein Schiff, das X SCU Frachtcontainer transportieren kann“.",
+        "Zeilenumbrüche, „Schiffskapazitat“ ohne Umlaut und doppelte SCU-Angaben werden berücksichtigt. Gesamtfrachtmengen werden nicht als Containergröße übernommen.",
+        "Die Korrektur gilt für den Companion und den manuellen Screenshot-Import."
+      ]
+    },
+    "en": {
+      "title": "Container size recognition",
+      "changes": [
+        "Screenshot recognition reads container sizes from all four German formats: “Max. Containergröße”, “Schiffskapazität”, “Maximal X SCU Frachtcontainer”, and “Ein Schiff, das X SCU Frachtcontainer transportieren kann”.",
+        "Line breaks, OCR text without the umlaut in “Schiffskapazität”, and repeated SCU units are supported. Total cargo quantities are not used as container sizes.",
+        "The fix applies to the Companion and manual screenshot import."
+      ]
+    }
+  },
+  {
     "version": "0.5.1",
     "de": {
       "title": "Screenshot-Aufnahme",
