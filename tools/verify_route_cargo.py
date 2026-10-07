@@ -39,7 +39,7 @@ def main():
 
         def save():
             pc.evaluate_js('window.testSaved=false; flushSoloState().then(()=>window.testSaved=true)')
-            until(pc, 'window.testSaved && !soloPending && !soloSaving && !soloPolling')
+            until(pc, 'window.testSaved && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.busy')
 
         def screenshot(name, selector):
             from System import Action
@@ -57,7 +57,7 @@ def main():
 
         try:
             for window in [pc, device]:
-                until(window, "window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
+                until(window, "window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && !soloSync.status.pending")
             pc.evaluate_js("""window.makeCargoTestMission=(id,pickup,dropoff,quantity=4,area='all')=>({id,type:'cargo',title:'Fracht '+id,status:'active',assignedFleetEntryId:'test-hermes',pickup,dropoff,autoloadArea:area,segments:[{id:'segment-'+id,title:'Titanium',pickup,dropoff,width:2,depth:2,height:2,quantity,order:0}],loads:Array.from({length:quantity},(_,i)=>({id:id+'-'+i,segmentId:'segment-'+id,label:'Titanium '+i,width:2,depth:2,height:2,scu:8,pickup,dropoff,placement:null}))});
               state=sanitizeState({...state, fleet:[{id:'test-hermes',shipId:'ship:hermes',manufacturer:'RSI',model:'Hermes',status:'active',acquiredOn:'2026-09-01'}],activeFleetEntryId:'test-hermes',missions:[makeCargoTestMission('a','Area18','Lorville'),makeCargoTestMission('b','New Babbage','Orison')],runRouteProgress:{},runRouteOrder:{},currentLocation:'',runCompletedRoutePoints:[]});
               applyLayoutDefinition(getShipGridDefinition(findShipLibraryEntryById('ship:hermes')), 'test-hermes','ship:hermes');
@@ -73,7 +73,7 @@ def main():
             expect("moveRunRouteStop(3,0)===false && runRouteOrderStatus.textContent.includes('Abholung')", 'delivery-before-pickup-rejected')
             save()
             device.load_url(runtime.url.replace('127.0.0.1', 'localhost')+'/?test=shared')
-            until(device, "location.search.includes('test=shared') && soloHydrated && state.runRouteOrder?.['test-hermes']?.length===4")
+            until(device, "location.search.includes('test=shared') && soloSync.status.hydrated && state.runRouteOrder?.['test-hermes']?.length===4")
             assert device.evaluate_js("buildRunRouteState().openPoints[0].dropoff==='New Babbage'")
             report['checks'].append('another-device-shares-order')
             pc.evaluate_js("window.savedFirst=buildRunRouteState().openPoints[0].dropoff;state.fleet.push({...state.fleet[0],id:'other'});state.activeFleetEntryId='other';render()")
@@ -125,7 +125,7 @@ def main():
             expect("Array.from(document.querySelectorAll('[data-autoload-fill]')).every(s=>s.value==='areas')", 'fill-controls-stay-in-sync')
             save()
             pc.load_url(runtime.desktop_url+'&test=reload')
-            until(pc, "location.search.includes('test=reload') && window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete")
+            until(pc, "location.search.includes('test=reload') && window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized")
             expect("state.autoload.fillOrder==='areas' && state.missions[0].autoloadArea==='left' && state.missions[1].autoloadArea==='right'", 'cargo-settings-survive-restart')
             pc.evaluate_js("setActivePage('load')")
             screenshot('cargo-desktop-de', '#loadAutoloadOptions')

@@ -58,7 +58,7 @@ def main():
             assert window.evaluate_js(script), name
             result['checks'].append(name)
         try:
-            until("window.soloStartup?.phase==='ready' && soloHydrated && typeof window.pywebview?.api?.install_update==='function'")
+            until("window.soloStartup?.phase==='ready' && soloSync.status.hydrated && typeof window.pywebview?.api?.install_update==='function'")
             window.evaluate_js("settingsMenuButton.click();document.querySelector('[data-settings-view-target=about]').click()")
             until('!soloUpdateCheck.disabled')
             window.evaluate_js('soloUpdateCheck.click()')

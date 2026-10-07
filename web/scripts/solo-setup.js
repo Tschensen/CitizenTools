@@ -59,7 +59,7 @@
   }
   async function open() {
     if (busy || !backdrop.hidden) return;
-    if (!soloHydrated || !remoteHydrationComplete || soloSaving || soloPending) { await showAppNotice(words().offline); return; }
+    if (!soloSync.status.hydrated || !soloSync.status.initialized || soloSync.status.saving || soloSync.status.pending) { await showAppNotice(words().offline); return; }
     busy = true;
     try {
       const data = await request('./api/solo/status'); initial = data.settings; hasLanAddress = data.lanUrls.length > 0;
@@ -114,7 +114,7 @@
         persist(); applied = true; // A retry must never create a second ship.
         for (const name of ['pilot','language','ship','registration']) fields.namedItem(name).disabled = true;
       }
-      if ((soloPending || soloSaving) && !await flushSoloState()) throw new Error(words().failed);
+      if ((soloSync.status.pending || soloSync.status.saving) && !await flushSoloState()) throw new Error(words().failed);
       if (getSoloPilotProfile()?.name !== normalizePilotName(fields.pilot.value)
           || (createdShipId && !state.fleet.some(entry => entry.id === createdShipId))) throw new Error(words().failed);
       if (pc) {
@@ -150,7 +150,7 @@
   // Offer setup only after the authoritative PC state has finished loading.
   let offering = false;
   const offer = setInterval(async () => {
-    if (offering || !soloHydrated || !remoteHydrationComplete || soloSaving || soloPending) return;
+    if (offering || !soloSync.status.hydrated || !soloSync.status.initialized || soloSync.status.saving || soloSync.status.pending) return;
     offering = true;
     try {
       let dismissed = false; try { dismissed = localStorage.getItem(dismissedKey) === '1'; } catch { /* Optional preference. */ }

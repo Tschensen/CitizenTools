@@ -41,11 +41,11 @@ def main():
 
         def saved(window):
             window.evaluate_js('window.syncTestSaved=false;flushSoloState().then(()=>window.syncTestSaved=true)')
-            until(window, 'syncTestSaved && !soloPending && !soloSaving && !soloPolling && !remoteSaveTimer')
+            until(window, 'syncTestSaved && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.scheduled')
 
         try:
             for window in [pc, peer]:
-                until(window, "window.soloStartup?.phase==='ready' && soloHydrated && !soloPending && !soloSaving && !missionAutoImportBusy")
+                until(window, "window.soloStartup?.phase==='ready' && soloSync.status.hydrated && !soloSync.status.pending && !soloSync.status.saving && !missionAutoImportBusy")
                 window.evaluate_js("""window.syncTrace=[];window.syncFetch=window.fetch.bind(window);
                   window.fetch=async(url,options={})=>{const response=await syncFetch(url,options);if(options.method==='POST' && String(url).includes('/api/state')) syncTrace.push({status:response.status,body:JSON.parse(options.body)});return response;};
                   window.syncMerge=soloMergeStates;soloMergeStates=(base,local,remote)=>{const result=syncMerge(base,local,remote);if(!result.ok) syncTrace.push({conflict:Object.keys(local).filter(key=>!soloEqual(base[key],local[key])&&!soloEqual(base[key],remote[key])&&!soloEqual(local[key],remote[key]))});return result;};""")
@@ -53,9 +53,9 @@ def main():
               state=sanitizeState({...state,fleet:[{id:'route-ship',shipId:'ship:hermes',manufacturer:'RSI',model:'Hermes',status:'active',acquiredOn:'2026-09-01'}],activeFleetEntryId:'route-ship',missions:[routeMission('a','Area18','Lorville'),routeMission('b','New Babbage','Orison')],runRouteProgress:{},runRouteOrder:{},currentLocation:'',runCompletedRoutePoints:[]});
               applyLayoutDefinition(getShipGridDefinition(findShipLibraryEntryById('ship:hermes')),'route-ship','ship:hermes');render();setActivePage('run');persist();""")
             saved(pc)
-            until(peer, "state.missions.length===2 && !soloPending && !soloSaving && !missionAutoImportBusy")
-            peer.evaluate_js("window.passivePostsBefore=syncTrace.length;window.passiveDone=false;fetchRemoteState().then(payload=>{applySoloState(payload);window.passiveDone=true;})")
-            until(peer, 'passiveDone && !soloPending && !soloSaving && !remoteSaveTimer')
+            until(peer, "state.missions.length===2 && !soloSync.status.pending && !soloSync.status.saving && !missionAutoImportBusy")
+            peer.evaluate_js("window.passivePostsBefore=syncTrace.length;window.passiveDone=false;soloSync.refresh().then(()=>{window.passiveDone=true;})")
+            until(peer, 'passiveDone && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.scheduled')
             expect(peer, 'syncTrace.length===passivePostsBefore', 'refresh-on-passive-device-does-not-write-state')
             pc.evaluate_js("moveRunRouteStop(2,0);window.expectedRoute=JSON.stringify(state.runRouteOrder['route-ship']);")
             saved(pc)
@@ -65,18 +65,18 @@ def main():
             for _ in range(3):
                 for window in [pc, peer]:
                     window.evaluate_js('window.syncPolled=false;pollSoloState().then(()=>window.syncPolled=true)')
-                    until(window, 'syncPolled && !soloPending && !soloSaving')
+                    until(window, 'syncPolled && !soloSync.status.pending && !soloSync.status.saving')
             expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===expectedRoute && !document.querySelector('.solo-conflict')", 'route-stays-saved-after-repeated-live-polls')
-            until(pc, '!missionAutoImportBusy && !soloPolling && !soloSaving && !soloPending && !remoteSaveTimer')
+            until(pc, '!missionAutoImportBusy && !soloSync.status.busy && !soloSync.status.saving && !soloSync.status.pending && !soloSync.status.scheduled')
             pc.evaluate_js("""window.originalRouteFetch=fetchRemoteState;window.delayedReadReady=false;window.delayedReadDone=false;
               fetchRemoteState=async()=>{const payload=await originalRouteFetch();window.delayedReadReady=true;await new Promise(resolve=>window.releaseDelayedRead=resolve);return payload;};
               autoImportPendingMissions().finally(()=>window.delayedReadDone=true);""")
             until(pc, 'delayedReadReady')
             pc.evaluate_js("moveRunRouteStop(1,0);window.expectedRoute=JSON.stringify(state.runRouteOrder['route-ship']);")
             saved(pc)
-            pc.evaluate_js('window.savedRevision=soloRevision;releaseDelayedRead()')
+            pc.evaluate_js('window.savedRevision=soloSync.status.revision;releaseDelayedRead()')
             until(pc, 'delayedReadDone')
-            expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===expectedRoute && soloRevision===savedRevision", 'late-background-read-cannot-undo-committed-route')
+            expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===expectedRoute && soloSync.status.revision===savedRevision", 'late-background-read-cannot-undo-committed-route')
             pc.evaluate_js('fetchRemoteState=originalRouteFetch')
             pc.evaluate_js("moveRunRouteStop(2,3);window.expectedRoute=JSON.stringify(state.runRouteOrder['route-ship']);")
             saved(pc)
@@ -91,7 +91,7 @@ def main():
             report['pcTrace'] = pc.evaluate_js('syncTrace')
             report['peerTrace'] = peer.evaluate_js('syncTrace')
             pc.load_url(runtime.desktop_url + '&route-sync=reload')
-            until(pc, "location.search.includes('route-sync=reload') && window.soloStartup?.phase==='ready' && soloHydrated")
+            until(pc, "location.search.includes('route-sync=reload') && window.soloStartup?.phase==='ready' && soloSync.status.hydrated")
             expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===" + json.dumps(peer_order), 'shared-route-survives-reload')
             if args.legacy_source:
                 # Run the shipped legacy normalizer and display selection code.
@@ -105,11 +105,11 @@ def main():
                 peer.evaluate_js(sanitizer + '\n' + selection)
                 peer.evaluate_js("""window.beforeLegacyPosts=syncTrace.length;window.currentVersionFetch=fetch;
                   window.fetch=(url,options={})=>{if(options.method==='POST' && String(url).includes('/api/state')){const body=JSON.parse(options.body);delete body.clientVersion;options={...options,body:JSON.stringify(body)};}return currentVersionFetch(url,options);};
-                  fetchRemoteState().then(applySoloState);""")
+                  soloSync.refresh();""")
                 until(peer, 'syncTrace.length>beforeLegacyPosts')
                 expect(peer, 'syncTrace.at(-1).status===428', 'legacy-view-cannot-save-an-outdated-state-format')
                 pc.evaluate_js('window.legacyPolled=false;pollSoloState().then(()=>window.legacyPolled=true)')
-                until(pc, 'legacyPolled && !soloPolling')
+                until(pc, 'legacyPolled && !soloSync.status.busy')
                 expect(pc, "JSON.stringify(state.runRouteOrder['route-ship'])===" + json.dumps(peer_order), 'saved-route-survives-an-old-passive-browser')
                 report['legacyPostStatuses'] = peer.evaluate_js('syncTrace.slice(beforeLegacyPosts).map(item=>item.status)')
             report['errors'] = [window.evaluate_js('window.soloErrors') for window in [pc, peer]]

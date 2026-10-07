@@ -30,7 +30,7 @@ class NativeUpdates:
             window = self._runtime.window
             if not window or window.get_current_url() != self._runtime.desktop_url:
                 raise UpdateError('update_native_only')
-            if not window.evaluate_js('Boolean(window.soloUpdates?.canRestart && !soloPending && !soloSaving && !remoteSaveTimer && !missionAutoImportBusy && !window.personalTransferBusy)'):
+            if not window.evaluate_js('Boolean(window.soloUpdates?.canRestart && !soloSync.status.hasUnsaved && !missionAutoImportBusy && !window.personalTransferBusy)'):
                 raise UpdateError('update_unsaved')
             self._runtime.updates.launch_installer(version, self._restart_args)
             # Allow the bridge promise to resolve before destroying its window.
@@ -112,7 +112,7 @@ def main():
                 # WebView evaluation marshals to the UI thread. Never wait for
                 # it inside the synchronous Windows closing event itself.
                 try:
-                    if window.evaluate_js("Boolean(soloPending || soloSaving || remoteSaveTimer)"):
+                    if window.evaluate_js("Boolean(window.soloSync?.status.hasUnsaved)"):
                         window.evaluate_js("void flushSoloState(); void showAppNotice(currentUiLanguage()==='en'?'Changes are still being saved. Please close again after saving.':'Änderungen werden noch gespeichert. Bitte nach dem Speichern erneut schließen.')")
                         return
                     close_state["confirmed"] = True
@@ -191,7 +191,7 @@ def main():
                         clicks += 1
                     window.evaluate_js("state.backupReminderDays=14; persist();")
                     time.sleep(2)
-                    result = window.evaluate_js("({title:document.title,ready:window.soloAppReady,errors:window.soloErrors||[],loadErrors:window.soloLoadErrors||[],saved:remoteStatus.connected,revision:soloRevision,settings:!!document.querySelector('#soloSettingsForm')})")
+                    result = window.evaluate_js("({title:document.title,ready:window.soloAppReady,errors:window.soloErrors||[],loadErrors:window.soloLoadErrors||[],saved:remoteStatus.connected,revision:soloSync.status.revision,settings:!!document.querySelector('#soloSettingsForm')})")
                     result['clicks'] = clicks
                     (root / "window-result.json").write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
                 except Exception as error:

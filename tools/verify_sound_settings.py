@@ -44,7 +44,7 @@ def main():
             }})()""")
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated && window.soloSound.catalog().navigation")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && window.soloSound.catalog().navigation")
             window.evaluate_js("document.querySelector('#settingsMenuButton').click(); document.querySelector('[data-settings-view-target=profile]').click()")
             assert window.evaluate_js("document.querySelectorAll('.solo-cue-row').length") == 9
             assert not window.evaluate_js("document.querySelector('#soloSoundPanel').textContent.includes('LCARS')")

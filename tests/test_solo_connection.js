@@ -19,9 +19,10 @@ function fixture(instant = '2026-09-23T12:00:00Z', storage = new Map()) {
     window:{addEventListener:(name,fn)=>events[name]=fn,soloClientVersion:'test-current',location:{search:'',reload:()=>reloads++}},
     sessionStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
     URLSearchParams, queueMicrotask,
-    activePage:'run', soloPending:null,soloSaving:null,remoteSaveTimer:null,soloPolling:false,missionAutoImportBusy:false,soloEditing:()=>false,
+    activePage:'run', soloSync:{status:{hydrated:true,pending:false,saving:false,scheduled:false,busy:false,
+      get hasUnsaved(){return this.pending || this.saving || this.scheduled;}}}, missionAutoImportBusy:false,soloEditing:()=>false,
     setInterval:(fn,ms)=>intervals.set(ms,fn),
-    renderRemoteStatus(){}, soloHydrated:true, pollSoloState:async()=>{},
+    renderRemoteStatus(){}, pollSoloState:async()=>{},
     soloRequestJson:async()=>({response:{ok:true},payload:{ok:true,edition:'solo',serverTime:new Date(wall).toISOString()}}),
   });
   vm.runInContext(source,c);
@@ -140,10 +141,11 @@ function updatedServer(f) {
     assert.equal(f.storage.size,0,'A successful update clears the retry marker');
   }
   {
-    for(const lock of ['soloPending','soloSaving','remoteSaveTimer','soloPolling','missionAutoImportBusy']) {
-      const f=fixture();f.c[lock]=true;updatedServer(f);f.api.start();await f.api.probe();
+    for(const lock of ['pending','saving','scheduled','busy','missionAutoImportBusy']) {
+      const f=fixture();if(lock === 'missionAutoImportBusy') f.c[lock]=true; else f.c.soloSync.status[lock]=true;updatedServer(f);f.api.start();await f.api.probe();
       assert.equal(f.reloads,0,`${lock} prevents an automatic reload`);
-      f.c[lock]=false;await f.api.probe();assert.equal(f.reloads,1,'A later check can reload when the operation has finished');
+      if(lock === 'missionAutoImportBusy') f.c[lock]=false; else f.c.soloSync.status[lock]=false;
+      await f.api.probe();assert.equal(f.reloads,1,'A later check can reload when the operation has finished');
     }
     for(const hold of [f=>f.c.window.location.search='?desktop=1',f=>f.c.window.personalTransferBusy=true,f=>f.c.document.hidden=true,f=>f.c.soloEditing=()=>true]) {
       const f=fixture();hold(f);updatedServer(f);f.api.start();await f.api.probe();assert.equal(f.reloads,0);

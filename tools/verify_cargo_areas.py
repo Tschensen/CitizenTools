@@ -39,7 +39,7 @@ def main():
 
         def save():
             pc.evaluate_js('window.testSaved=false; flushSoloState().then(()=>window.testSaved=true)')
-            until(pc, 'window.testSaved && !soloPending && !soloSaving && !soloPolling')
+            until(pc, 'window.testSaved && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.busy')
 
         def screenshot(name, selector):
             from System import Action
@@ -58,7 +58,7 @@ def main():
 
         try:
             for window in [pc, device]:
-                until(window, "window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
+                until(window, "window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && !soloSync.status.pending")
             expect("findShipLibraryEntryById('ship:hermes').cargoAreas.length===2 && findShipLibraryEntryById('ship:origin_315p').cargoAreas.map(a=>a.name).join(',')==='Vorne,Hinten' && findShipLibraryEntryById('ship:starlancer_max').cargoAreas.length===3", 'existing-profiles-receive-appropriate-areas')
             pc.evaluate_js("setActivePage('ships');document.querySelector('[data-shipdb-id=\"ship:starlancer_max\"] .shipdb-edit').click();window.areaHeights=JSON.stringify(shipBuilderState.heights)")
             expect("document.querySelectorAll('#cargoAreaList [data-area-id]').length===3 && document.querySelectorAll('#cargoAreaGrid button:not(:disabled)').length===96", 'starlancer-editor-shows-three-areas-and-96-floor-cells')
@@ -98,11 +98,11 @@ def main():
             until(pc,"activeShipDbView==='database' && findShipLibraryEntryById('ship:starlancer_max').cargoAreas.some(a=>a.name==='Reserve')")
             save()
             device.load_url(runtime.url.replace('127.0.0.1','localhost')+'/?area-test=shared')
-            until(device,"location.search.includes('area-test=shared') && soloHydrated && findShipLibraryEntryById('ship:starlancer_max').cargoAreas.some(a=>a.name==='Reserve')")
+            until(device,"location.search.includes('area-test=shared') && soloSync.status.hydrated && findShipLibraryEntryById('ship:starlancer_max').cargoAreas.some(a=>a.name==='Reserve')")
             assert device.evaluate_js("findShipLibraryEntryById('ship:starlancer_max').cargoAreas[0].id==='hold-rear'")
             report['checks'].append('saved-profile-and-order-shared-with-another-device')
             pc.load_url(runtime.desktop_url+'&area-test=reload')
-            until(pc,"location.search.includes('area-test=reload') && window.soloStartup?.phase==='ready' && soloHydrated && !soloPending && !soloSaving && !soloPolling")
+            until(pc,"location.search.includes('area-test=reload') && window.soloStartup?.phase==='ready' && soloSync.status.hydrated && !soloSync.status.pending && !soloSync.status.saving && !soloSync.status.busy")
             expect("findShipLibraryEntryById('ship:starlancer_max').cargoAreas.some(a=>a.name==='Reserve' && a.color==='#ff8844' && a.slots.length===2)", 'custom-name-color-and-cells-survive-restart')
             pc.evaluate_js("""window.areaMission=(id,region='',ship='ship:starlancer_max',width=2)=>({id,type:'cargo',title:'Fracht '+id,status:'active',assignedFleetEntryId:'area-fleet',pickup:'Area18',dropoff:'Lorville',autoloadArea:'all',autoloadAreaId:region,autoloadAreaShipId:region?ship:'',segments:[{id:'s-'+id,pickup:'Area18',dropoff:'Lorville',width,depth:1,height:1,quantity:1}],loads:[{id:'l-'+id,segmentId:'s-'+id,label:'Fracht',width,depth:1,height:1,scu:width,pickup:'Area18',dropoff:'Lorville',placement:null}]});
               state=sanitizeState({...state,fleet:[{id:'area-fleet',shipId:'ship:starlancer_max',manufacturer:'MISC',model:'Starlancer MAX',status:'active',acquiredOn:'2026-09-01'}],activeFleetEntryId:'area-fleet',missions:[areaMission('auto')],autoload:{fillOrder:'areas'},runRouteProgress:{},runRouteOrder:{},currentLocation:'Area18'});

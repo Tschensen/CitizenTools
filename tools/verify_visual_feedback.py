@@ -46,7 +46,7 @@ def main():
             until(f"matchMedia('(prefers-reduced-motion: {value})').matches")
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated")
             media('no-preference')
             window.evaluate_js("""window.testPulses=[];
                 const originalAnimate=Element.prototype.animate;

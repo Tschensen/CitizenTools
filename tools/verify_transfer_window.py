@@ -47,7 +47,7 @@ def main():
             }})()""")
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated")
             document = fixture()
             document['state']['missions'][0].update(type='other', client='Transfer client', futurePersonalField='preserved')
             document['state']['shipLibrary'][0]['futurePersonalField'] = 'preserved'
@@ -62,10 +62,10 @@ def main():
             evaluate("document.querySelector('#personalTransferApply').click()")
             until("!document.querySelector('#missionConfirmDialog').hidden")
             evaluate("document.querySelector('#missionConfirmDialogConfirm').click()")
-            until("window.soloStartup?.phase === 'ready' && soloHydrated && state.missions.length === 1 && !window.personalTransferBusy")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && state.missions.length === 1 && !window.personalTransferBusy")
             # A regular subsequent save must retain contacts and online-only personal fields.
             evaluate("state.missions[0].notes='Edited offline'; persist();")
-            until("!soloPending && !soloSaving && !remoteSaveTimer")
+            until("!soloSync.status.pending && !soloSync.status.saving && !soloSync.status.scheduled")
             with request.urlopen(runtime.url + '/api/transfer/personal') as response:
                 exported = json.load(response)
             assert exported['state']['contacts'][0]['notes'] == 'Persönliche Notiz'

@@ -27,7 +27,7 @@
   window.soloEffects = {
     hub(values) {
       const visible = document.querySelector('[data-page="hub"]')?.classList.contains('is-active');
-      const hydrated = typeof soloHydrated !== 'undefined' && soloHydrated;
+      const hydrated = window.soloSync?.status.hydrated;
       for (const [name, value] of Object.entries(values)) {
         const fingerprint = JSON.stringify(value);
         const changed = previous.has(name) && previous.get(name) !== fingerprint;

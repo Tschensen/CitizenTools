@@ -74,7 +74,7 @@ def main():
 
         try:
             for window in [pc, device]:
-                until(window, "window.soloStartup?.phase==='ready' && soloHydrated && remoteHydrationComplete && !soloSaving && !soloPending")
+                until(window, "window.soloStartup?.phase==='ready' && soloSync.status.hydrated && soloSync.status.initialized && !soloSync.status.saving && !soloSync.status.pending")
                 window.evaluate_js("document.querySelector('[data-module-target=statistics]').click()")
             expect("statisticsPeriod.value==='all' && statisticsTrend.textContent.includes('Keine datierten')", 'empty-first-start')
             expect("statisticsComparisonCaption.hidden && !document.querySelector('[data-statistics-comparison]')", 'all-time-without-invented-comparison')

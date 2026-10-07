@@ -32,6 +32,7 @@ Binäre OCR-Laufzeiten und der WebView2-Installer sind nicht im Repository entha
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_source_archive.py -v
 node tests\test_solo_connection.js
 node tests\test_solo_sync.js
+node tests\test_state_services.js
 node tests\test_solo_merge.js
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_updates.py -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_mission_import.py -v
@@ -68,6 +69,57 @@ denselben OCR-Texten; sie benötigen keine installierte OCR-Laufzeit.
 für Buchungen, Formulare und Statistik. Zeitstempel bleiben davon getrennt.
 Die Datumstests prüfen Mitternacht, Jahreswechsel und Sommerzeit in mehreren
 Zeitzonen. Bereits gespeicherte Buchungstage werden nicht umgeschrieben.
+
+## Zustand, Speichern und Synchronisation
+
+Die SQLite-Datenbank auf dem PC bleibt der gemeinsame Datenstand. Jede Ansicht
+bindet dieselben Dienste ein; ein passives weiteres Gerät schreibt beim Abrufen
+keinen Zustand zurück. Der Browser-Cache dient dem Start und der Wiederherstellung.
+
+- `web/scripts/state-storage.js`: Browser-Cache und Wiederherstellungskopien;
+  bei nicht verfügbarem Speicher bleibt die Kopie für die laufende Sitzung im RAM.
+- `web/scripts/state-store.js`: Zustandskopien, Bereinigung und Normalisierung
+  über übergebene Adapter, ohne HTTP oder Oberfläche.
+- `web/scripts/state-api.js`: HTTP-Anfragen mit Zeitlimit, Versionsprüfung und
+  Prüfung des Antwortformats; verändert selbst keinen Zustand.
+- `web/scripts/state-sync.js`: besitzt Revision, Schreibwarteschlange und
+  laufende Lese-/Importvorgänge. Verspätete Antworten dürfen neuere Änderungen
+  nicht ersetzen. Unabhängige Änderungen werden über `solo-merge.js` vereinigt.
+- `web/scripts/solo-sync.js`: verbindet diese Dienste mit der Oberfläche und
+  startet das Polling. `state-persistence.js` enthält die bisherigen Einstiege
+  `loadState()` und `persist()`, ohne eine zweite Synchronisationsimplementierung.
+- `web/scripts/state-normalization.js`: bestehende Datenmigration und
+  Platzierungsprüfung; `state-status-ui.js`: Verbindungsanzeige und Konflikthinweis.
+
+Oberflächenänderungen werden weiter mit `persist()` angemeldet. Hintergrundabrufe
+laufen über `getSoloSync().refresh()`, sofortiges Speichern über `flush()`.
+`status` ist eine schreibgeschützte Momentaufnahme; Revisionen und Sperren dürfen
+nicht von Auftragsimport, Updateanzeige oder anderen Ansichten gesetzt werden.
+Nach einem externen Wiederherstellen lädt `reset()` den neuen Serverstand und
+verwirft Antworten aus der vorherigen Sitzung. Der Auftragsimport verwendet
+`checkpoint()`/`canApply()` gegen zwischenzeitliche Änderungen und `commitImports()`
+für die atomare Speicherung von Zustand und Inbox-Bestätigung.
+
+Die vorhandenen Ansichten arbeiten noch mit dem gemeinsamen `state`-Objekt.
+Der Store kapselt den Zugriff für die Dienste; die Formular- und Fachlogik wird
+dadurch nicht vollständig neu geschrieben. Zusätzliche Hintergrundschreiber
+sollen ausschließlich den Synchronisationsdienst verwenden.
+
+`test_solo_sync.js` prüft unter anderem verspätete Antworten, parallele Änderungen,
+Netzausfälle, Wiederherstellung und atomare Importe. `test_state_services.js` prüft
+Transport, Cache und Store unabhängig von DOM und Server. Für die vollständige
+Windows-Oberfläche mit getrennten Testdaten:
+
+```powershell
+.\.venv\Scripts\python.exe app.py --smoke-window --no-capture --localhost --port 0 --data-dir .build\sync-smoke
+.\.venv\Scripts\python.exe tools\verify_route_sync.py --data-dir .build\sync-route
+.\.venv\Scripts\python.exe tools\verify_shared_state.py --data-dir .build\sync-shared --state-fixture <synthetischer-Testzustand.json>
+.\.venv\Scripts\python.exe tools\verify_version_reload.py --data-dir .build\sync-version
+```
+
+Für jeden Durchlauf einen neuen Testordner verwenden. Der gemeinsame Zustands-Test
+benötigt einen synthetischen Zustand mit einem aktiven Frachtauftrag und Schiff;
+keine persönlichen Daten als Fixture verwenden.
 
 ## Windows-Pakete
 

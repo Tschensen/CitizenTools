@@ -57,7 +57,7 @@ def main():
             runtime.start(capture_enabled=False)
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated && soloConnection.phase === 'online'")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated && soloConnection.phase === 'online'")
             expect("soloConnectionBanner.hidden && serverStatusLinkLabel.textContent === 'LINK ACTIVE'", 'connected-without-banner')
             window.evaluate_js("window.originalDate=Date; window.Date=class extends originalDate {constructor(...args){super(...(args.length?args:[originalDate.now()-240000]));}static now(){return originalDate.now()-240000;}}; window.clockProbeDone=false; soloConnection.probe().then(()=>clockProbeDone=true);")
             until('window.clockProbeDone')
@@ -81,14 +81,14 @@ def main():
             until("soloConnection.phase === 'online' && soloConnectionBanner.hidden", timeout=12)
             expect("missionForm.elements.title.value === 'Diese Eingabe bleibt erhalten' && document.activeElement === missionForm.elements.title", 'automatic-reconnect-keeps-form')
             window.evaluate_js("document.activeElement.blur(); setActivePage('hub');")
-            until('!soloPolling && !soloSaving && !missionAutoImportBusy')
+            until('!soloSync.status.busy && !soloSync.status.saving && !missionAutoImportBusy')
             runtime.stop()
             until("soloConnection.phase === 'offline'", timeout=12)
             window.evaluate_js("state.currentLocation='Lorville'; persist();")
-            until('soloPending && !soloSaving')
+            until('soloSync.status.pending && !soloSync.status.saving')
             expect("localStorage.getItem(getStateStorageKey()).includes('Lorville')", 'offline-edit-kept-locally')
             restart()
-            until("soloConnection.phase === 'online' && !soloPending && !soloSaving")
+            until("soloConnection.phase === 'online' && !soloSync.status.pending && !soloSync.status.saving")
             with urlopen(url+'/api/state') as response:
                 assert json.load(response)['state']['currentLocation'] == 'Lorville'
             result['checks'].append('offline-edit-saved-after-restart')
@@ -96,10 +96,10 @@ def main():
             # recovery separately from the independent connectivity probe.
             state_unavailable = True
             window.load_url(url+'/?desktop=1&verify=initial-failure')
-            until("location.search.includes('initial-failure') && window.soloStartup?.phase === 'ready' && remoteHydrationComplete && !soloHydrated")
+            until("location.search.includes('initial-failure') && window.soloStartup?.phase === 'ready' && soloSync.status.initialized && !soloSync.status.hydrated")
             expect("soloConnection.phase === 'online'", 'heartbeat-independent-of-failed-initial-data-read')
             state_unavailable = False
-            until('soloHydrated && remoteStatus.connected')
+            until('soloSync.status.hydrated && remoteStatus.connected')
             result['checks'].append('failed-initial-read-recovers-without-reload')
             # Browser resume events request a fresh check and refresh the clock.
             window.evaluate_js("window.nativeFetch=fetch;window.heartbeatRequests=0;window.fetch=(url,options)=>{if(String(url).includes('/heartbeat'))heartbeatRequests++;return nativeFetch(url,options);};window.beforeResumeChecks=heartbeatRequests;window.dispatchEvent(new Event('pageshow'));")

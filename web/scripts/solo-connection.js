@@ -49,7 +49,7 @@
 
   function reloadPassiveView(version) {
     if (reloadRequested || document.hidden || new URLSearchParams(window.location.search).get('desktop') === '1'
-      || !soloHydrated || soloPending || soloSaving || remoteSaveTimer || soloPolling || missionAutoImportBusy
+      || !soloSync.status.hydrated || soloSync.status.hasUnsaved || soloSync.status.busy || missionAutoImportBusy
       || window.personalTransferBusy || soloEditing()
       || [...drafts].some(form => form.isConnected)) return;
     const previous = reloadRecord();
@@ -127,7 +127,7 @@
         }
         const reconnecting = phase !== 'online';
         show('online');
-        if (!window.soloUpdateRequired && (reconnecting || !soloHydrated)) void pollSoloState();
+        if (!window.soloUpdateRequired && (reconnecting || !soloSync.status.hydrated)) void pollSoloState();
       } catch {
         if (token === generation) show('offline');
       } finally {

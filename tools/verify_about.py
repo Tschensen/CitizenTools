@@ -47,7 +47,7 @@ def main():
             result['checks'].append(name)
 
         try:
-            until("window.soloStartup?.phase === 'ready' && soloHydrated")
+            until("window.soloStartup?.phase === 'ready' && soloSync.status.hydrated")
             window.evaluate_js("settingsMenuButton.click(); document.querySelector('[data-settings-view-target=about]').click()")
             until("soloAboutContent.textContent.includes('Erneut versuchen')")
             result['checks'].append('unavailable-documents-have-retry')
