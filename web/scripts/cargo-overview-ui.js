@@ -48,13 +48,6 @@ function renderSummary() {
     );
   }
 
-  if (overviewShipPanel) {
-    overviewShipPanel.hidden = dispatcherMode || !activeShipHasCargo;
-  }
-  if (overviewLayout) {
-    overviewLayout.classList.toggle("is-mission-only", dispatcherMode || !activeShipHasCargo);
-  }
-
   summaryCards.innerHTML = cards
     .map(
       (card) => `
@@ -79,13 +72,10 @@ function renderSummary() {
     });
   });
 
-  if (overviewShipName) {
-    overviewShipName.textContent = formatPlannerShipName(fleetShip, preset);
-  }
-
   renderCreateShipIndicator();
 }
 function renderHomeLoads() {
+  renderWarehouse();
   const entries = getAllLoads().filter(({ mission, load }) =>
     !isLoadDelivered(load) && canMissionUseCurrentCargoGrid(mission),
   );
@@ -223,6 +213,15 @@ function renderHomeLoads() {
       autoLoadMission(mission);
     });
     bindAutoloadAreaControls(autoLoadActions);
+    const unloadMissionButton = document.createElement('button');
+    unloadMissionButton.type = 'button';
+    unloadMissionButton.className = 'secondary-button mission-unload-button';
+    unloadMissionButton.textContent = t('contracts.iso.unloadMission');
+    unloadMissionButton.disabled = !getPlacedLoadEntries().some(entry => entry.mission.id === mission.id) || isDispatcherMode();
+    unloadMissionButton.addEventListener('click', () => unloadCargoBatch(mission.id));
+    autoLoadActions.appendChild(unloadMissionButton);
+    setCargoButtonIcon(autoLoadActions.querySelector('.mission-autoload-button'), 'autoload', t('contracts.load.autoloadTooltip'));
+    setCargoButtonIcon(unloadMissionButton, 'unloadMission', t('contracts.iso.unloadMission'));
     missionBody.insertBefore(autoLoadActions, containerList);
 
     const sortedLoads = [...activeMissionLoads].sort((left, right) => {
@@ -268,6 +267,9 @@ function renderHomeLoads() {
       item.querySelector(".load-queue-unload")?.addEventListener("click", () => {
         unloadLoad(load);
       });
+      setCargoButtonIcon(item.querySelector('.load-queue-unload'), 'unload', t('contracts.load.unload'));
+      setCargoButtonIcon(item.querySelector('.load-queue-rotate'), 'rotate', t('common.rotate'));
+      setCargoButtonIcon(item.querySelector('.load-queue-select'), state.selectedLoadId === load.id ? 'deselect' : 'select', t(state.selectedLoadId === load.id ? 'common.deselect' : 'common.select'));
 
       item.querySelector(".load-queue-rotate")?.addEventListener("click", () => {
         rotateLoad(load);
@@ -302,53 +304,6 @@ function renderHomeLoads() {
     });
 
     homeLoadList.appendChild(missionNode);
-  });
-}
-
-function renderManifest() {
-  const entries = getPlacedLoadEntries()
-    .sort((left, right) => {
-      const slotCompare = left.load.placement.slotId.localeCompare(right.load.placement.slotId, "de", { numeric: true });
-      if (slotCompare !== 0) return slotCompare;
-      return left.load.placement.z - right.load.placement.z;
-    });
-
-  manifestEmpty.hidden = entries.length > 0;
-  manifestList.innerHTML = "";
-
-  if (entries.length === 0) {
-    return;
-  }
-
-  manifestList.innerHTML = entries
-    .map(({ mission, load }) => {
-      const dims = getLoadDimensions(load, placementRotation(load));
-      const isStopTarget = isLoadInSelectedStop(load, mission);
-      return `
-        <article class="manifest-item${isStopTarget ? " is-stop-target" : ""}" data-load-id="${load.id}">
-          <div class="manifest-slot">${escapeHtml(load.placement.slotId)}</div>
-          <div class="manifest-main">
-            <strong>${escapeHtml(load.label)}</strong>
-            <p>${escapeHtml(mission.title)} · ${escapeHtml(formatLoadRoute(load, mission))}</p>
-          </div>
-          <div class="manifest-meta">
-            <span>z ${load.placement.z}</span>
-            <span>${dims.width}×${dims.depth}×${dims.height}</span>
-            <span>${load.scu} SCU</span>
-          </div>
-          <button class="secondary-button manifest-select" type="button">${escapeHtml(cargoText("common.show", "Anzeigen"))}</button>
-        </article>
-      `;
-    })
-    .join("");
-
-  manifestList.querySelectorAll(".manifest-item").forEach((node) => {
-    node.querySelector(".manifest-select")?.addEventListener("click", () => {
-      state.selectedLoadId = node.dataset.loadId || null;
-      state.selectionCleared = false;
-      persist();
-      render();
-    });
   });
 }
 
@@ -671,13 +626,6 @@ function renderStopHistory(history = state.stopHistory) {
 }
 
 function registerCargoOverviewEvents() {
-  overviewDeselectButton?.addEventListener("click", () => {
-    state.selectedLoadId = null;
-    state.selectionCleared = true;
-    persist();
-    render();
-  });
-
   nextStopSelect?.addEventListener("change", () => {
     selectStopByDropoff(nextStopSelect.value);
     lastUnloadPlan = null;

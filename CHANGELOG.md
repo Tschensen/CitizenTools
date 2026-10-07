@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.5.0 — Citizen Tools
+
+### Deutsch
+
+- Verladebildschirm grundlegend überarbeitet und in Frachtraum umbenannt.
+
+### English
+
+- Fundamentally redesigned the loading screen and renamed it Cargo hold.
+
 ## 0.4.0 — Citizen Tools
 
 ### Deutsch

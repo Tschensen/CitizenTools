@@ -334,23 +334,11 @@ const layoutMetricsMode = document.querySelector("#layoutMetricsMode");
 const layoutRowsValue = document.querySelector("#layoutRowsValue");
 const layoutColsValue = document.querySelector("#layoutColsValue");
 const layoutHeightValue = document.querySelector("#layoutHeightValue");
-const overviewIsoStats = document.querySelector("#isoStats");
-const loadIsoStats = document.querySelector("#loadIsoStats");
-const isoEmpty = document.querySelector("#isoEmpty");
-const overviewIsoView = document.querySelector("#overviewIsoView");
 const isoView = document.querySelector("#isoView");
 const selectionIsoView = document.querySelector("#selectionIsoView");
-const isoDetailTitle = document.querySelector("#isoDetailTitle");
-const isoDetailRoute = document.querySelector("#isoDetailRoute");
-const isoDetailMeta = document.querySelector("#isoDetailMeta");
-const overviewDetailActions = document.querySelector("#overviewDetailActions");
-const overviewDeselectButton = document.querySelector("#overviewDeselectButton");
 const loadIsoDetailTitle = document.querySelector("#loadIsoDetailTitle");
 const loadIsoDetailRoute = document.querySelector("#loadIsoDetailRoute");
 const loadIsoDetailMeta = document.querySelector("#loadIsoDetailMeta");
-const overviewLayout = document.querySelector(".overview-layout");
-const overviewShipPanel = document.querySelector(".panel-overview-ship");
-const overviewShipName = document.querySelector("#overviewShipName");
 const createShipIndicator = document.querySelector(".mission-ship-indicator");
 const createShipName = document.querySelector("#createShipName");
 const createShipRegistration = document.querySelector("#createShipRegistration");
@@ -475,8 +463,6 @@ const autoloadStrategySelects = Array.from(document.querySelectorAll("[data-auto
 const autoloadOverloadInputs = Array.from(document.querySelectorAll("[data-autoload-overload]"));
 const topdownLevelFilter = document.querySelector("#topdownLevelFilter");
 const isoLevelFilter = document.querySelector("#isoLevelFilter");
-const manifestEmpty = document.querySelector("#manifestEmpty");
-const manifestList = document.querySelector("#manifestList");
 const unloadPlanPanel = document.querySelector(".panel-unload-plan");
 const stopListEmpty = document.querySelector("#stopListEmpty");
 const stopList = document.querySelector("#stopList");
@@ -1797,6 +1783,7 @@ function createLoad({
   segmentId = null,
   loadedByFleetEntryId = "",
   loadedAt = null,
+  cargoFixed = false,
   deliveredByFleetEntryId = "",
   deliveredAt = null,
 }) {
@@ -1818,6 +1805,7 @@ function createLoad({
     segmentId: segmentId ? String(segmentId) : null,
     loadedByFleetEntryId: String(loadedByFleetEntryId || ""),
     loadedAt: loadedAt ? String(loadedAt) : null,
+    cargoFixed: Boolean(cargoFixed && placement),
     deliveredByFleetEntryId: String(deliveredByFleetEntryId || ""),
     deliveredAt: deliveredAt ? String(deliveredAt) : null,
   };
@@ -3946,7 +3934,6 @@ function renderPilotProfileSettings() {
 
 function renderIsoDetails(entry) {
   const detailTargets = [
-    { title: isoDetailTitle, route: isoDetailRoute, meta: isoDetailMeta },
     { title: loadIsoDetailTitle, route: loadIsoDetailRoute, meta: loadIsoDetailMeta },
   ].filter((target) => target.title && target.route && target.meta);
 
@@ -3956,9 +3943,6 @@ function renderIsoDetails(entry) {
       target.route.textContent = t("contracts.overview.selectLoad");
       target.meta.textContent = "";
     });
-    if (overviewDetailActions) {
-      overviewDetailActions.hidden = true;
-    }
     return;
   }
 
@@ -3971,9 +3955,6 @@ function renderIsoDetails(entry) {
     target.route.textContent = formatLoadRoute(load, mission);
     target.meta.textContent = `${mission.title} · ${dimensions.width}×${dimensions.depth}×${dimensions.height} · ${load.scu} SCU · z ${zStart}–${zEnd}`;
   });
-  if (overviewDetailActions) {
-    overviewDetailActions.hidden = false;
-  }
 }
 
 function shadeColor(color, percent) {

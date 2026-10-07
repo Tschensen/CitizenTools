@@ -479,6 +479,7 @@ function registerMissionFormEvents() {
 
   missionCancelButton?.addEventListener("click", () => {
     resetMissionForm();
+    setActivePage("overview");
   });
 
   missionForm.addEventListener("input", (event) => {

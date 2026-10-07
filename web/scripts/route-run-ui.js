@@ -657,15 +657,14 @@ function focusLoadInCargoGrid(loadId) {
   state.levelFilter = clamp(Number(entry.load.placement.z) || 0, 0, 8);
   state.selectedStopDropoff = getLoadDropoff(entry.load, entry.mission);
   setActivePage("load");
-  setCollapsibleExpanded("loadTopdownBody", true);
+  changeIsoZoom("reset");
+  setCargoCamera("top");
   persist();
   render();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const focusedSlots = Array.from(shipGrid?.querySelectorAll(".slot.selected-load") || []);
-      focusedSlots.forEach((slot) => slot.classList.add("is-guidance-focus"));
-      shipGrid?.closest(".panel-ship")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      window.setTimeout(() => focusedSlots.forEach((slot) => slot.classList.remove("is-guidance-focus")), 1800);
+      isoView?.closest(".panel-load-iso")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      isoView?.focus({ preventScroll: true });
     });
   });
 }

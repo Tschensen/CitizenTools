@@ -6980,6 +6980,154 @@ button[aria-disabled="true"]:hover {
   overflow: visible;
 }
 
+#isoView {
+  touch-action: pan-y;
+  user-select: none;
+  cursor: default;
+  display: block;
+  overflow: hidden;
+}
+
+.load-view-column .cargo-camera-frame, .warehouse-frame {
+  height: clamp(360px, 64vh, 620px);
+  min-height: 0;
+  flex: none;
+}
+
+.load-view-column .cargo-camera-frame #isoView, #warehouseView {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.cargo-capacity-guide {
+  fill: rgba(120, 214, 255, 0.03);
+  stroke: rgba(120, 214, 255, 0.25);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.cargo-camera-controls button[aria-pressed="true"] {
+  border-color: rgba(120, 214, 255, 0.85);
+  background: rgba(36, 92, 144, 0.72);
+}
+
+#isoView.is-orbiting,
+#isoView.is-orbiting * {
+  cursor: grabbing;
+}
+
+.cargo-camera-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.cargo-camera-controls button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.cargo-camera-controls .cargo-icon-button,
+.mission-autoload-actions .cargo-icon-button,
+.load-queue-actions .cargo-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  flex: 0 0 40px;
+  box-sizing: border-box;
+  line-height: 1;
+}
+.cargo-icon-button > svg { display: block; width: 22px; height: 22px; flex: none; }
+.cargo-shared-controls, .cargo-order-details { grid-column: 1 / -1; }
+.cargo-shared-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.cargo-shared-buttons .cargo-icon-button { width: 40px; height: 40px; padding: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.load-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.panel-warehouse, .load-view-column { min-width: 0; align-self: stretch; }
+.panel-warehouse, .load-view-column > .panel-load-iso { margin-bottom: 0; }
+.warehouse-frame { margin-top: 10px; }
+.warehouse-group-label { fill: #d5eaff; font-size: 10px; pointer-events: none; }
+#warehouseStatus { min-height: 3em; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+#warehouseView .iso-floor { pointer-events: auto; }
+#warehouseView.is-drop-target .iso-floor { fill: rgba(75,230,145,.18); stroke: #4be691; }
+.cargo-info-button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: help; }
+.cargo-info-button svg { display: block; width: 22px; height: 22px; }
+.cargo-info-button:hover, .cargo-info-button:focus-visible { color: #d5eaff; background: rgba(120,214,255,.12); }
+.cargo-info-button:focus-visible { outline: 2px solid #78d6ff; outline-offset: 2px; }
+.panel-load-iso > .panel-header > div { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px; }
+.warehouse-load:focus { outline: none; }
+.warehouse-load:focus .iso-face { stroke: white; stroke-width: 2; }
+#cargoDragLabel { position: fixed; z-index: 10001; pointer-events: none; background: #102234; border: 1px solid #78d6ff; border-radius: 6px; padding: 6px 10px; color: white; max-width: 220px; }
+.cargo-order-details > summary { cursor: pointer; }
+.ship-zoom-footer { display: flex; justify-content: flex-end; padding: 10px 12px 0; }
+
+.cargo-camera-hint {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cargo-placement-preview {
+  pointer-events: none;
+  fill: rgba(75, 230, 145, .12);
+  stroke: #4be691;
+  stroke-width: 2;
+}
+.cargo-fixed-marker { font-size: 10px; text-anchor: middle; pointer-events: none; }
+.cargo-context-menu button:disabled { opacity: .4; cursor: default; }
+#cargoFixButton[aria-pressed="true"] { border-color: #c4b5fd; }
+.cargo-placement-preview polygon { vector-effect: non-scaling-stroke; }
+.cargo-placement-preview.is-invalid {
+  fill: rgba(255, 97, 105, .12);
+  stroke: #ff6169;
+  stroke-dasharray: 5 3;
+}
+.cargo-placement-status { min-height: 2.8em; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.cargo-context-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 170px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid rgba(120, 214, 255, 0.45);
+  border-radius: 10px;
+  background: #102234;
+  color: #e8f3ff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.cargo-context-title {
+  padding: 7px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.cargo-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cargo-context-menu button:hover,
+.cargo-context-menu button:focus-visible {
+  background: rgba(120, 214, 255, 0.18);
+  outline: 1px solid rgba(120, 214, 255, 0.55);
+}
+
 .iso-floor {
   fill: rgba(16, 43, 70, 0.55);
   stroke: rgba(120, 214, 255, 0.18);
@@ -7026,6 +7174,11 @@ button[aria-disabled="true"]:hover {
   cursor: pointer;
 }
 
+.iso-load.is-context-level {
+  opacity: 0.15;
+  pointer-events: none;
+}
+
 .iso-load.selected .iso-face {
   stroke: rgba(255, 255, 255, 0.92);
   stroke-width: 2;
@@ -7045,6 +7198,19 @@ button[aria-disabled="true"]:hover {
 .iso-load.stack-placeable .iso-face-top {
   filter: brightness(1.08);
 }
+
+.cargo-stop-status { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0; font-size: 12px; }
+.cargo-stop-status[hidden] { display: none; }
+.cargo-stop-target, .cargo-stop-blocked { color: #ffd67a; }
+.cargo-stop-blocker { color: #ff777e; }
+#cargoStopFocusButton[aria-pressed="true"] { border-color: #ffd67a; }
+.iso-load.is-stop-background:not(.selected):not(.is-context-level) { opacity: .25; }
+.iso-load.is-stop-blocker .iso-face { stroke: #ff777e; stroke-width: 2.5; }
+.iso-load.is-stop-blocked .iso-face { stroke-dasharray: 4 2; }
+.iso-load.is-stop-target .iso-face, .iso-load.is-stop-blocked .iso-face { stroke: #ffd67a; stroke-width: 2.3; }
+.iso-load.is-stop-blocker.selected .iso-face,
+.iso-load.is-stop-target.selected .iso-face,
+.iso-load.is-stop-blocked.selected .iso-face { stroke-width: 3.5; }
 
 .iso-load-label {
   fill: #f6fbff;
