@@ -40,6 +40,9 @@ node tests\test_mission_import.js
 node tests\test_import_sounds.js
 node tests\test_calendar_date.js
 node tests\test_statistics_period.js
+node tests\test_mission_cargo_edit.js
+node tests\test_mission_submit.js
+node tests\test_view_renderer.js
 ```
 
 Die zusätzlichen Integrationstests in `test_personal_transfer.py` benötigen
@@ -120,6 +123,63 @@ Windows-Oberfläche mit getrennten Testdaten:
 Für jeden Durchlauf einen neuen Testordner verwenden. Der gemeinsame Zustands-Test
 benötigt einen synthetischen Zustand mit einem aktiven Frachtauftrag und Schiff;
 keine persönlichen Daten als Fixture verwenden.
+
+## Aufträge, Ladung und Ansichten
+
+`cargo-ui.js` ist nur noch der gemeinsame Einstieg für Beschriftungen und die
+einmalige Registrierung der Ereignisse. Die Funktionen sind nach Verantwortung
+aufgeteilt; alle Skripte werden durch `web/index.html` und den vorhandenen Loader
+in fester Reihenfolge eingebunden. Es ist kein zusätzlicher Bundler erforderlich.
+
+| Bereich | Dateien unter `web/scripts/` | Verantwortung |
+| --- | --- | --- |
+| Fracht bearbeiten | `mission-cargo-edit.js` | Übernimmt vorhandenen Fortschritt, schützt verladene/gelieferte Container und erzeugt neue Ladungen über übergebene Abhängigkeiten. Ohne DOM und Speicherung direkt testbar. |
+| Auftragseingabe | `mission-form-ui.js`, `mission-service-form-ui.js`, `mission-cargo-form-ui.js`, `mission-quality-ui.js` | Formularzustand, dynamische Eingabezeilen und Prüfmarkierungen. |
+| Auftrag speichern | `mission-submit-ui.js` | Liest gemeinsame Felder einmal, validiert je Auftragstyp und führt den gemeinsamen Abschluss mit Speichern und Seitenwechsel aus. |
+| Auftragsaktionen | `mission-actions.js` | Ändern, Löschen, Abschließen und Bezahlen. `saveMissionEntry()` erhält Formularauswahl und Importqualität als Parameter. |
+| Auftragsdarstellung | `mission-list-ui.js`, `mission-assignment-ui.js`, `mission-service-view-ui.js` | Karten, Gruppen, Zuordnungen und Dienstleistungsdetails. |
+| Ladung | `cargo-overview-ui.js`, `cargo-layout-ui.js`, `cargo-grid-ui.js` | Übersicht, Manifest, Layouteingabe sowie bestehende Rasterdarstellung und Platzierungsaktionen. |
+| Flugplanung | `run-route-state.js`, `run-mode-ui.js` | Routen-/Fortschrittszustand getrennt von Cockpitdarstellung und Benutzeraktionen. |
+| Weitere Ansichten | `hub-ui.js`, `location-picker-ui.js`, `app-navigation.js` | Startseite, gemeinsame Ortsauswahl und Navigation. |
+
+`mission-domain.js` enthält die Auftragsregeln und Bereitschaftsprüfungen;
+Dialoge für Abschluss und Zahlung sowie die Dienstleistungskarten liegen in den
+Aktions- bzw. Darstellungsdateien. Die bestehenden UI-Adapter verwenden weiterhin
+den gemeinsamen Anwendungszustand und die bisherigen Funktionsnamen. Die
+Aufteilung ist kein vollständiger Wechsel zu ES-Modulen oder unveränderlichen
+Zustandsobjekten.
+
+`view-renderer.js` verwaltet die Aktualisierung unabhängig vom DOM. Der Adapter
+`app-render.js` ordnet die sichtbaren Seiten den Darstellungsfunktionen zu:
+
+- `render()` aktualisiert gemeinsame Bedienelemente, markiert Ansichten als
+  veraltet und zeichnet die sichtbaren Bereiche neu.
+- `persist()` markiert Ansichten ebenfalls als veraltet. Das deckt Aktionen ab,
+  die direkt speichern und anschließend navigieren, ohne `render()` aufzurufen.
+- `setActivePage()` aktualisiert Navigation und Zielansicht. Versteckte Bereiche
+  werden erst beim Öffnen aufgebaut. Beim Wiederbetreten werden auch zeitabhängige
+  Angaben wie „Heute“ neu berechnet.
+- Raster und isometrische Darstellung werden zwischen `home`, `overview` und
+  `load` geteilt. Ihre Vorschauen kopieren dieselbe aktuelle Darstellung.
+- Die Formularinhalte werden beim Navigieren nicht zurückgesetzt.
+
+Neue Ansichten in `app-render.js` registrieren und ihre Ereignisse im jeweiligen
+UI-Modul bündeln. Neue fachliche Regeln möglichst mit Daten und expliziten
+Abhängigkeiten implementieren, damit sie ohne gestartete Oberfläche testbar sind.
+
+`test_mission_cargo_edit.js` prüft Frachtidentität, Fortschrittsschutz und
+Routenkorrekturen. `test_mission_submit.js` deckt Anlegen und Bearbeiten aller neun
+Auftragstypen sowie Validierung und Abbruch ab. `test_view_renderer.js` prüft
+verzögerte Aktualisierung, gemeinsame Ansichten und Fehlerwiederholung.
+
+```powershell
+.\.venv\Scripts\python.exe tools\verify_views.py --data-dir .build\views-test
+```
+
+Dieser native Test erzeugt seine Fracht- und Schiffsdaten selbst. Er zählt
+Darstellungsaufrufe, prüft alle Seiten und nutzt die echten Formulare. Er misst
+keine allgemeine Beschleunigung in Millisekunden. Routen- und Mehrgeräteprüfungen
+aus dem vorigen Abschnitt zusätzlich ausführen, wenn ihre Module geändert werden.
 
 ## Windows-Pakete
 

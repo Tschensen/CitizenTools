@@ -37,6 +37,7 @@ function getLocalStateStorage(mode = activeAppMode) {
 
 function persist() {
   syncRunRouteProgress();
+  invalidateAppViews();
   getSoloSync().schedule(state);
 }
 
