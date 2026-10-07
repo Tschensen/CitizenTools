@@ -291,7 +291,7 @@ bleibt außerdem im Programm enthalten und dort abrufbar. Bei Bedarf erzeugt
 `--source-artifact` zusätzlich `CitizenTools-Solo-Source.zip` als Release-Anhang.
 Das OCR-Quellpaket bleibt davon unabhängig Bestandteil der Release-Ausgabe.
 
-Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.3.0`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
+Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.4.0`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
 
 Die Dateinamen müssen unverändert bleiben. `release.json` enthält zusätzlich den zweisprachigen Versionsverlauf; daraus zeigt der Updater alle Änderungen seit der installierten Version. Für alte Manifeste verwendet er den GitHub-Release-Text. Kein GitHub-Token wird benötigt oder mitgeliefert. Prüfsummen werden vor der Übergabe an den separaten Updater und dort erneut geprüft.
 

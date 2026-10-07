@@ -1,4 +1,4 @@
-# Citizen Tools · Flight Deck · 0.3.0
+# Citizen Tools · Flight Deck · 0.4.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 

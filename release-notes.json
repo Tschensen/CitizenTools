@@ -1,5 +1,32 @@
 [
   {
+    "version": "0.4.0",
+    "de": {
+      "title": "Citizen Tools – überarbeitete Grundlagen und kleinere Updates",
+      "changes": [
+        "Die Anwendung heißt sichtbar jetzt Citizen Tools. Tray, Ladehinweise, Installer und Windows-Verknüpfungen wurden angepasst. Bestehende EXE-Namen und Datenpfade bleiben für die Kompatibilität erhalten.",
+        "Companion und manueller Screenshot-Import verwenden eine gemeinsame Auftragserkennung. Auch die Berechnung lokaler Kalendertage für Formulare, Buchungen und Statistik ist vereinheitlicht.",
+        "Speicherung und Geräteabgleich wurden intern getrennt und mit parallelen Änderungen, Verbindungsabbrüchen und verzögerten Antworten geprüft. Der PC bleibt der gemeinsame Datenstand für alle verbundenen Geräte.",
+        "Auftrags- und Frachtansichten sind in kleinere Module aufgeteilt. Aufwendige Ansichten werden bei Bedarf aktualisiert; Formularentwürfe bleiben beim Seitenwechsel erhalten.",
+        "Für künftige Updates stehen kleinere Installer- und Portable-Pakete bereit: Sie enthalten das vollständige Programm samt OCR, aber keinen zusätzlichen WebView2-Installer. Erstinstallationspakete enthalten ihn weiterhin.",
+        "Beim Wechsel von 0.3.0 auf 0.4.0 lädt der bisherige Updater noch das vollständige Paket. Erst nach diesem Update kann die Anwendung bei späteren Releases die kleineren Pakete auswählen. Prüfsummen, Datensicherungen und das Rücksetzen bei Installationsfehlern bleiben erhalten.",
+        "Der Windows-Build bietet getrennte Profile für Testprogramme, Updates und vollständige Releases. Unveränderte native Builds werden geprüft wiederverwendet; Webdateien, Dokumentation und Ressourcen werden frisch zusammengestellt."
+      ]
+    },
+    "en": {
+      "title": "Citizen Tools – reworked foundations and smaller updates",
+      "changes": [
+        "The visible application name is now Citizen Tools. Tray text, loading messages, the installer and Windows shortcuts have been updated. Existing executable names and data paths are retained for compatibility.",
+        "The Companion and manual screenshot import now share the same mission recognition pipeline. Local calendar date calculations for forms, ledger entries and statistics have also been unified.",
+        "Persistence and device synchronization have been separated internally and tested with concurrent changes, lost connections and delayed responses. The PC remains the shared data source for all connected devices.",
+        "Mission and cargo views have been split into smaller modules. Expensive views refresh when needed, while form drafts survive page navigation.",
+        "Smaller installer and portable packages are available for future updates: they include the complete application and OCR, but omit the additional WebView2 installer. First-install packages still include it.",
+        "When upgrading from 0.3.0 to 0.4.0, the existing updater still downloads the full package. After this upgrade, the app can select smaller packages for later releases. Checksums, data backups and rollback on installation failure remain in place.",
+        "The Windows build provides separate profiles for test applications, updates and complete releases. Unchanged native builds are verified and reused; web files, documentation and resources are assembled fresh."
+      ]
+    }
+  },
+  {
     "version": "0.3.0",
     "de": {
       "title": "Updates direkt in Citizen Tools",
