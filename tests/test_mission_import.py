@@ -13,11 +13,29 @@ from runtime import SoloRuntime
 from server import app as backend
 from shared.mission_import import ocr, service
 from shared.mission_import.parser import parse_mission_objectives
+from shared.mission_import.text import parse_max_container_scu
 
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/mission-texts.json").read_text(encoding="utf-8"))
+CONTAINER_FIXTURES = json.loads((Path(__file__).parent / "fixtures/container-texts.json").read_text(encoding="utf-8"))
 
 
 class MissionTextTests(unittest.TestCase):
+    def test_all_four_german_container_formats(self):
+        for size in (1, 2, 4, 8, 16, 24, 32):
+            for text in (
+                f"Max. Containergröße: {size} SCU",
+                f"Schiffskapazität: {size} SCU SCU",
+                f"Maximal {size} SCU Frachtcontainer",
+                f"Ein Schiff, das {size} SCU Frachtcontainer transportieren kann",
+            ):
+                with self.subTest(text=text):
+                    self.assertEqual(parse_max_container_scu(text), size)
+
+    def test_container_size_labels_and_unrelated_scu_values(self):
+        for fixture in CONTAINER_FIXTURES:
+            with self.subTest(fixture=fixture["name"]):
+                self.assertEqual(parse_max_container_scu(fixture["text"]), fixture["expected"])
+
     def test_existing_german_english_and_service_contracts(self):
         for fixture in FIXTURES:
             with self.subTest(fixture=fixture["name"]):
@@ -78,6 +96,18 @@ class ScreenshotPipelineTests(unittest.TestCase):
         self.assertIsNone(failure)
         self.assertEqual(draft["routes"][0]["targetScu"], 8)
         self.assert_crops_cleaned()
+
+    def test_container_size_survives_screenshot_pipeline(self):
+        for fixture in CONTAINER_FIXTURES:
+            with self.subTest(fixture=fixture["name"]):
+                draft, failure = self.recognize({
+                    "objectives": FIXTURES[0]["text"], "details": fixture["text"],
+                    "title": "Cargo contract", "reward": "Reward: 12,500 aUEC",
+                })
+                self.assertIsNone(failure)
+                self.assertEqual(draft.get("maxContainerScu"), fixture["expected"])
+                self.assertEqual(draft["consignments"][0]["totalScu"], 8)
+                self.assert_crops_cleaned()
 
     def test_service_found_in_details_and_enriched_from_title(self):
         draft, failure = self.recognize({
@@ -202,6 +232,35 @@ class RecognitionApiTests(unittest.TestCase):
                 self.assertEqual(len(imports), before + 1)
                 self.assertEqual(imports[0]["draft"], preview["draft"])
                 self.assertTrue(state.contains(companion.file_signature(self.image)))
+
+    def test_container_size_reaches_manual_preview_and_companion_inbox(self):
+        for index, details in enumerate((
+            "Max. Containergröße: 16 SCU",
+            "Schiffskapazitat: 16 SCU SCU",
+            "Maximal 16 SCU Frachtcontainer",
+            "Ein Schiff, das 16 SCU Frachtcontainer transportieren kann",
+        )):
+            texts = {"objectives": FIXTURES[0]["text"], "details": details, "title": "Cargo", "reward": ""}
+
+            def crop(_image, region):
+                path = self.root / (region + ".png")
+                path.touch()
+                return path
+
+            with self.subTest(details=details), patch.object(ocr, "resolve_tesseract", return_value="tesseract"), patch.object(
+                ocr, "prepare_ocr_crop", side_effect=crop
+            ), patch.object(ocr, "run_ocr", side_effect=lambda _exe, image: texts[image.stem]):
+                self.image.write_bytes(str(index).encode())
+                code, preview = self.recognize()
+                self.assertEqual(code, 200)
+                self.assertEqual(preview["draft"]["maxContainerScu"], 16)
+                args = argparse.Namespace(scope="solo", server=self.runtime.url, token="", user_token="",
+                                          device_id="test-pc", device_name="PC", settle_seconds=0)
+                state = companion.CompanionState(self.root / "capture-state.json")
+                companion.process_screenshot(args, state, "tesseract", self.image, lambda *_: None)
+                imports = self.api("/api/imports?status=pending")[1]["imports"]
+                self.assertEqual(len(imports), index + 1)
+                self.assertEqual(imports[0]["draft"], preview["draft"])
 
     def test_learned_location_alias_applies_to_preview(self):
         with backend.get_connection() as connection:

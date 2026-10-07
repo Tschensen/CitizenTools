@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.5.2 — Containergrößen-Erkennung
+
+### Deutsch
+
+- Die Auftragserkennung übernimmt Containergrößen auch aus „Schiffskapazität“ und „Maximal X SCU Frachtcontainer“. „Max. Containergröße“ und die Schiffsanforderung im Fließtext bleiben unterstützt, einschließlich Zeilenumbrüchen. Gesamtfrachtmengen werden nicht als Containergröße übernommen.
+
+### English
+
+- Mission recognition now also reads container sizes from the German labels “Schiffskapazität” and “Maximal X SCU Frachtcontainer”. Maximum-container labels and the ship requirement in running text remain supported, including line breaks. Total cargo quantities are not used as container sizes.
+
 ## 0.5.1 — Citizen Tools
 
 - Fehler behoben, durch den Screenshots nicht erstellt werden konnten.
