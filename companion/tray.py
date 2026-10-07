@@ -59,7 +59,7 @@ class TrayState:
 
 def build_tray_tooltip(state: TrayState) -> str:
     monitoring = "Hotkey-Erfassung aktiv" if state.monitoring else "Hotkey-Erfassung deaktiviert"
-    return f"Citizen Tools Solo | SOLO | {monitoring} | Server: {state.server_status}"[:127]
+    return f"Citizen Tools | {monitoring} | Server: {state.server_status}"[:127]
 
 
 def tray_icon_variant(state: TrayState) -> str:
@@ -264,7 +264,7 @@ class WindowsTrayIcon:
             self._hwnd = user32.CreateWindowExW(
                 0,
                 self._class_name,
-                "Citizen Tools Solo",
+                "Citizen Tools",
                 0,
                 0,
                 0,

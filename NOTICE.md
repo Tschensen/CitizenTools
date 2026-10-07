@@ -26,9 +26,11 @@ Einstellungen → Über Citizen Tools → Lizenzen sowie im Ordner licenses.
 Die OCR-Laufzeit besteht aus unveränderten, in packaging/ocr-lock.json
 festgehaltenen MSYS2-Paketen. Die zugehörigen Quellen, Patches und Build-Rezepte
 stehen im Release als CitizenTools-Solo-OCR-Sources.zip neben Installer und
-Portable-ZIP bereit. Dieses Archiv ergänzt CitizenTools-Solo-Source.zip mit
-dem eigenen Programmcode. Beim Weitergeben der Binärpakete beide Quellpakete
-nach den jeweiligen Lizenzbedingungen anbieten. Anleitung: docs/OCR-SOURCES.md.
+Portable-ZIP bereit. Der eigene Programmcode ist am zugehörigen GitHub-Release-Tag
+und im Programm als CitizenTools-Solo-Source.zip abrufbar. Ein separater
+Release-Anhang desselben Projektquellarchivs ist optional. Beim Weitergeben
+der Binärpakete Projekt- und OCR-Quellen nach den jeweiligen Lizenzbedingungen
+anbieten. Anleitung: docs/OCR-SOURCES.md.
 Downloads: https://github.com/Tschensen/CitizenTools/releases
 
 Star Citizen, Roberts Space Industries, Cloud Imperium Games und zugehörige
@@ -64,8 +66,10 @@ The separate OCR bundle contains GPL/LGPL libraries; Microsoft runtimes have
 their own terms. OCR binaries are unmodified files from the MSYS2 packages
 pinned in packaging/ocr-lock.json. Corresponding sources, patches and build
 recipes are provided as CitizenTools-Solo-OCR-Sources.zip alongside the Windows
-downloads. This supplements CitizenTools-Solo-Source.zip with our own code.
-When conveying binaries, provide both source archives under the applicable
+downloads. Our own code is available at the matching GitHub release tag and
+inside the program as CitizenTools-Solo-Source.zip. A separate release attachment
+of that project archive is optional. When conveying binaries, provide the
+project and OCR sources under the applicable
 licenses. See docs/OCR-SOURCES.md for details and rebuilding instructions.
 Downloads: https://github.com/Tschensen/CitizenTools/releases
 

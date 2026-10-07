@@ -6,7 +6,7 @@
   panel.id = 'soloStartupStatus';
   panel.setAttribute('role', 'status');
   panel.style.cssText = 'position:fixed;inset:12px 12px auto;z-index:100000;padding:18px;color:#e8f3ff;background:#102234;border:1px solid #62b7e6;border-radius:8px;font:16px system-ui;box-shadow:0 8px 40px #0008';
-  panel.textContent = 'Citizen Tools Solo wird geladen …';
+  panel.textContent = 'Citizen Tools wird geladen …';
   document.body.append(panel);
 
   function loadOnce(source) {

@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--helper', type=Path, required=True)
     parser.add_argument('--data-dir', type=Path, required=True)
+    parser.add_argument('--update-package', action='store_true', help='Use the lean update package name')
     args = parser.parse_args()
     root = args.data_dir.resolve()
     if root.exists(): parser.error('Use a new test directory')
@@ -46,7 +47,7 @@ class App { static void Main(string[] args) {
     with closing(sqlite3.connect(data / 'data/cargo_planner.sqlite3')) as connection:
         connection.execute('create table example(value text)')
         connection.execute("insert into example values ('my contract')"); connection.commit()
-    package = folder / 'CitizenTools-Solo-Portable.zip'
+    package = folder / ('CitizenTools-Solo-Update.zip' if args.update_package else 'CitizenTools-Solo-Portable.zip')
     with zipfile.ZipFile(package, 'w') as archive:
         for file in fresh.iterdir(): archive.write(file, 'CitizenTools-Solo/' + file.name)
     copied_helper = folder / 'CitizenTools-Updater.exe'; shutil.copy2(args.helper, copied_helper)

@@ -28,7 +28,7 @@ Binäre OCR-Laufzeiten und der WebView2-Installer sind nicht im Repository entha
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_solo.py -v
-.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_build_windows.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_build*.py' -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_source_archive.py -v
 node tests\test_solo_connection.js
 node tests\test_solo_sync.js
@@ -183,47 +183,132 @@ aus dem vorigen Abschnitt zusätzlich ausführen, wenn ihre Module geändert wer
 
 ## Windows-Pakete
 
-Für einen Installer werden zusätzlich Inno Setup 6 unter seinem üblichen
-Installationspfad und der vollständige WebView2-Offline-Installer für x64 benötigt.
-Die festgehaltene OCR-Laufzeit und ihr Quellenarchiv einmal vorbereiten.
-Das Skript verwendet bei weiteren Aufrufen vorhandene Downloads aus dem Cache;
-mit `--offline` ist keinerlei Netzwerkzugriff möglich.
+`tools/build_windows.py` bleibt der gemeinsame Einstieg. Die Arbeit ist aufgeteilt:
+
+- `build_pipeline.py`: Argumente, Eingabeprüfungen und Ablauf.
+- `build_cache.py`: Fingerabdrücke und getrennte native Builds von App und Updater.
+- `build_packages.py`: aktuelle Ressourcen, Paketvarianten und Prüfsummen.
+- `build_publish.py`: gemeinsamer Austausch der Ausgabe mit Rücksetzen bei Fehlern.
+- `update_contract.py`: Paketnamen und Format-/Plattformkompatibilität für Build und Updater.
+
+Es gibt drei Profile. `--installer` ergänzt die passenden Inno-Setup-Dateien;
+ohne diese Option werden nur ZIP-Pakete gebaut.
+
+| Profil | Ergebnis | WebView2-Installer benötigt? |
+| --- | --- | --- |
+| `app` | Programmordner zum lokalen Testen; keine Release-Dateien | Nein; WebView2 muss auf dem Test-PC installiert sein |
+| `updates` | Programmordner und Update-Pakete ohne WebView2-Installer | Nein |
+| `release` (Standard) | Erstinstallationspakete **und** Update-Pakete | Ja, vollständiger Offline-Installer für x64 |
+
+Für Installer wird Inno Setup 6 unter seinem üblichen Installationspfad benötigt.
+Die festgehaltene OCR-Laufzeit und ihr Quellenarchiv einmal vorbereiten. Vorhandene
+Downloads werden wiederverwendet; `prepare_ocr.py --offline` verhindert dabei
+Netzwerkzugriffe. Der eigentliche Build lädt keine Komponenten herunter.
 
 ```powershell
 .\.venv\Scripts\python.exe tools\prepare_ocr.py
-.\.venv\Scripts\python.exe tools\build_windows.py --tesseract-dir .build\ocr --ocr-sources .build\CitizenTools-Solo-OCR-Sources.zip --webview-installer "Pfad\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" --installer
+.\.venv\Scripts\python.exe tools\build_windows.py --profile release --tesseract-dir .build\ocr --ocr-sources .build\CitizenTools-Solo-OCR-Sources.zip --webview-installer "Pfad\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" --installer
 ```
 
-Ergebnisse unter `dist/`:
+Für einen schnellen Testbuild oder ausschließlich kleine Update-Pakete:
+
+```powershell
+.\.venv\Scripts\python.exe tools\build_windows.py --profile app --output .build\preview --tesseract-dir .build\ocr --ocr-sources .build\CitizenTools-Solo-OCR-Sources.zip
+.\.venv\Scripts\python.exe tools\build_windows.py --profile updates --output .build\update-preview --tesseract-dir .build\ocr --ocr-sources .build\CitizenTools-Solo-OCR-Sources.zip --installer
+```
+
+Für öffentliche Releases immer `release` verwenden: Ältere App-Versionen benötigen
+noch die vollständigen Paketnamen. Das Profil `updates` dient insbesondere der
+Paketprüfung und ersetzt kein vollständiges öffentliches Release.
+
+Ergebnisse des vollständigen Builds unter `dist/`:
 
 - `CitizenTools-Solo/`: vollständiger Programmordner.
 - `CitizenTools-Solo/CitizenTools-Updater.exe`: separater Updater, der außerhalb des Programmordners auf das Ende der App wartet.
 - `CitizenTools-Solo/installation.json`: Versions- und Dateiliste für die überprüfte portable Aktualisierung.
-- `CitizenTools-Solo-Setup.exe`: Installer.
-- `CitizenTools-Solo-Portable.zip`: vollständige portable Ausgabe.
-- `CitizenTools-Solo-Source.zip`: zugehöriger Projektquellcode.
+- `CitizenTools-Solo-Setup.exe`: Erstinstallation mit WebView2-Offline-Installer.
+- `CitizenTools-Solo-Portable.zip`: portable Erstinstallation einschließlich WebView2-Offline-Installer.
+- `CitizenTools-Solo-Update.exe`: Installer-Update ohne WebView2-Installer (mit `--installer`).
+- `CitizenTools-Solo-Update.zip`: portables Update ohne WebView2-Installer.
 - `CitizenTools-Solo-OCR-Sources.zip`: Quellen, Patches und Build-Rezepte der OCR-Komponenten.
-- `release.json`, `SHA256SUMS.txt`: Version, Größen und SHA-256 der vier Download-Dateien.
+- `release.json`, `SHA256SUMS.txt`: Version, Größen und SHA-256 aller erzeugten Download-Dateien sowie Update-Kompatibilität.
 - `RELEASE-NOTES.md`: Versionsverlauf.
+
+Die Update-Pakete enthalten weiterhin das vollständige Programm, Python und OCR.
+Sie sind keine Differenz-Patches und benötigen keinen bestimmten früheren
+Programmstand. WebView2 muss bereits installiert sein; der Update-Installer
+prüft dies vor Änderungen und verweist bei fehlender Laufzeit auf das volle Setup.
+
+### Was wird neu gebaut?
+
+Der native Cache liegt unter `.build/windows-cache` (mit `--cache-dir` änderbar).
+Python-Code, Python-/Paketversionen und Paketmetadaten, Build-Rezept sowie das
+EXE-Icon bestimmen den Fingerabdruck. Der App-Build berücksichtigt zusätzlich
+alle Python-Dateien in `companion`, `server` und `shared`; der Updater nur seine
+eigenen Module. Vor Wiederverwendung werden alle Cache-Dateien per SHA-256 geprüft.
+Unvollständige, beschädigte oder nicht passende Ergebnisse werden neu kompiliert.
+
+HTML, CSS, JavaScript, Grafiken, Töne, OCR-Ressourcen, Lizenzen, Dokumentation und
+Quellarchiv werden in jedem Build frisch zusammengestellt. Entfernte Dateien
+bleiben dadurch nicht aus einem früheren Paket liegen. Bei reinen Änderungen
+dieser Ressourcen entfällt PyInstaller, während ZIP/Setup erneut erzeugt werden.
+Python-Änderungen lösen den passenden nativen Build aus. Eine neue Versionsnummer
+in `runtime.py` benötigt weiterhin einen neuen App-Build.
+
+`--force-rebuild` erzwingt beide nativen Builds, etwa nach manuellen Änderungen
+an der Python-Installation oder an installierten Paketen. Ein fehlgeschlagener
+Neubau ersetzt keinen vorhandenen gültigen Cache. Ältere Cache-/Build-Verzeichnisse
+bleiben zur Diagnose erhalten und können bei geschlossener App entfernt werden.
+Der jeweilige Staging-Ordner enthält `build-report.json` mit Cache-Nutzung,
+Paketliste und Dauer; sein Pfad wird am Ende ausgegeben.
 
 Versionen werden in `runtime.py`, `release-notes.json`, den Cache-Versionen
 in `web/index.html` und `packaging/CitizenTools-Solo.iss` gepflegt.
 Der Build aktualisiert den festen Zielordner und bewahrt dessen vorherigen
-Stand unter `.build` auf. Die bisherige App vor dem Ersetzen schließen.
+Stand unter `.build` auf. Beim Profilwechsel werden nicht mehr erzeugte Pakete
+ebenfalls dort gesichert, damit keine veralteten Release-Dateien übrig bleiben.
+Für Testbuilds einen eigenen `--output`-Ordner verwenden; vor dem Austausch eines
+benutzten Programmordners die bisherige App schließen.
 Die erstellten Pakete sind nicht codesigniert.
+
+Der sichtbare Produktname in App, Tray und Windows-Installer ist **Citizen Tools**.
+EXE- und Paketnamen, Installationskennung und Datenpfade behalten ihre bisherigen
+technischen Bezeichnungen, damit vorhandene Installationen, Updates und
+Firewall-Regeln weiterhin zusammenpassen. Der Installer ersetzt die früheren
+Standardverknüpfungen durch Einträge mit dem Namen „Citizen Tools“.
 
 ## Veröffentlichung
 
-Installer, Portable-ZIP und **beide** Quellpakete zusammen in dasselbe GitHub-Release
-hochladen; Prüfsummen und Versionshinweise ebenfalls beilegen. Die großen
-Binär- und OCR-Quellpakete sind Release-Anhänge und gehören nicht ins Git-Repository.
-Den aktuellen Projektcode vor dem Anlegen des Release-Tags committen und pushen.
+Vollständigen Installer, Portable-ZIP, **beide Update-Pakete** und OCR-Quellpaket
+zusammen in dasselbe GitHub-Release hochladen; `release.json`, Prüfsummen und
+Versionshinweise ebenfalls beilegen. Binär- und OCR-Quellpakete gehören nicht ins
+Git-Repository. Den aktuellen Projektcode vor dem Anlegen des Release-Tags
+committen und pushen; der Tag muss genau zum ausgelieferten Code passen.
+
+Ein zusätzlicher Projektquellcode-Anhang ist standardmäßig ausgeschaltet:
+GitHub stellt den Code des Tags als Quellarchiv bereit. Der exakte Projektquellcode
+bleibt außerdem im Programm enthalten und dort abrufbar. Bei Bedarf erzeugt
+`--source-artifact` zusätzlich `CitizenTools-Solo-Source.zip` als Release-Anhang.
+Das OCR-Quellpaket bleibt davon unabhängig Bestandteil der Release-Ausgabe.
 
 Der Updater fragt ausschließlich das neueste öffentliche stabile Release von `Tschensen/CitizenTools` ab. Verwende einen Tag wie `v0.3.0`, passend zu `runtime.py`. Entwürfe und Vorabversionen werden nicht installiert. Alle Dateien erst an einen Entwurf anhängen und danach veröffentlichen, damit niemand ein unvollständiges Update angeboten bekommt.
 
 Die Dateinamen müssen unverändert bleiben. `release.json` enthält zusätzlich den zweisprachigen Versionsverlauf; daraus zeigt der Updater alle Änderungen seit der installierten Version. Für alte Manifeste verwendet er den GitHub-Release-Text. Kein GitHub-Token wird benötigt oder mitgeliefert. Prüfsummen werden vor der Übergabe an den separaten Updater und dort erneut geprüft.
 
+Neue Updater bevorzugen die kleinen Pakete, wenn `updates.format` und
+`updates.platform` unterstützt werden. Bei älteren Manifesten oder unbekannter
+Kompatibilität wählen sie das vollständige Paket. Ein angekündigtes, aber fehlendes
+oder beschädigtes Update-Paket wird als fehlerhaftes Release zurückgewiesen.
+Bereits veröffentlichte ältere Updater verwenden weiterhin Setup/Portable.
+Bestehende Nutzer erhalten die neue Auswahl daher mit dem ersten vollständigen
+Update; erst danach profitieren ihre nächsten Updates von den kleineren Downloads.
+
 `tools/verify_updates.py --data-dir <leerer-Testordner>` prüft die Oberfläche mit lokalen Test-Releases ohne Netzwerk oder Installation. `tools/verify_update_helper.py --helper <CitizenTools-Updater.exe> --data-dir <leerer-Testordner>` prüft den gebauten Updater mit getrennten Miniaturpaketen einschließlich Warten auf das Programmende und Neustart.
+
+Für denselben nativen Test mit dem neuen Paketnamen zusätzlich
+`--update-package` übergeben. `test_build_pipeline.py` prüft Cache-Invalidierung,
+frische Ressourcen, Paketmanifeste und Profilwechsel. `test_updates.py` prüft
+Paketwahl, Kompatibilität, Prüfsummen und Rücksetzen bei Fehlern.
 
 ## Drittanbieter
 

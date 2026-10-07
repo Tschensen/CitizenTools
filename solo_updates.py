@@ -14,11 +14,12 @@ import threading
 import time
 from urllib import error, parse, request
 import uuid
+from update_contract import FULL_ASSETS, UPDATE_ASSETS, compatible_update
 
 REPOSITORY = 'Tschensen/CitizenTools'
 RELEASES_URL = f'https://github.com/{REPOSITORY}/releases'
 LATEST_URL = f'https://api.github.com/repos/{REPOSITORY}/releases/latest'
-ASSETS = {'portable': 'CitizenTools-Solo-Portable.zip', 'installer': 'CitizenTools-Solo-Setup.exe'}
+ASSETS = FULL_ASSETS
 MAX_PACKAGE = 2 * 1024 ** 3
 CHECK_INTERVAL = 6 * 60 * 60
 
@@ -115,7 +116,11 @@ def read_candidate(client, current, mode):
     manifest = client.json(manifest_asset['url'], digest=manifest_asset['digest'])
     if not isinstance(manifest, dict) or manifest.get('version') != latest or not isinstance(manifest.get('files'), list):
         raise UpdateError('update_invalid_release')
-    name = ASSETS[mode if mode in ASSETS else 'portable']
+    mode = mode if mode in ASSETS else 'portable'
+    try:
+        name = compatible_update(manifest, mode) or ASSETS[mode]
+    except ValueError as exc:
+        raise UpdateError('update_invalid_release') from exc
     source = release_asset(release, name)
     files = [item for item in manifest['files'] if isinstance(item, dict) and item.get('name') == name]
     if len(files) != 1:
@@ -193,7 +198,7 @@ class UpdateManager:
                 job = json.loads((folder / 'job.json').read_text(encoding='utf-8'))
                 if result.get('ok') is not True or Path(job['dataRoot']).resolve() != self.data_root:
                     continue
-                for name in [*ASSETS.values(), 'CitizenTools-Updater.exe']:
+                for name in [*ASSETS.values(), *UPDATE_ASSETS.values(), 'CitizenTools-Updater.exe']:
                     try: (folder / name).unlink(missing_ok=True)
                     except OSError: pass
             except (OSError, ValueError, KeyError, TypeError):

@@ -16,6 +16,7 @@ import stat
 import subprocess
 import time
 import zipfile
+from update_contract import FULL_ASSETS, UPDATE_ASSETS, PLATFORM
 
 PRODUCT = 'CitizenTools'
 EXE = 'CitizenTools-Solo.exe'
@@ -43,6 +44,8 @@ def validate_program(program, version):
     data = json.loads((program / MANIFEST).read_text(encoding='utf-8'))
     if data.get('product') != PRODUCT or data.get('version') != version or not (program / EXE).is_file():
         raise ValueError('Program version does not match update')
+    if data.get('platform', PLATFORM) != PLATFORM:
+        raise ValueError('Package platform does not match this updater')
     files = data.get('files')
     if not isinstance(files, list) or EXE not in files or len(files) > 50000:
         raise ValueError('Invalid installation manifest')
@@ -145,7 +148,7 @@ def validate_job(path):
     if job.get('format') != 1 or not re.fullmatch(r'[a-f0-9]{32}', path.parent.name):
         raise ValueError('Invalid update job')
     data_root, program, package = (Path(job[name]).resolve() for name in ['dataRoot', 'program', 'package'])
-    if path.parent.parent != data_root / 'Updates' or package.parent != path.parent or package.name not in {'CitizenTools-Solo-Portable.zip', 'CitizenTools-Solo-Setup.exe'}:
+    if path.parent.parent != data_root / 'Updates' or package.parent != path.parent or package.name not in {*FULL_ASSETS.values(), *UPDATE_ASSETS.values()}:
         raise ValueError('Update paths do not belong to this job')
     if data_root.is_relative_to(program) or program.is_relative_to(data_root) or job['kind'] not in {'portable', 'installer'}:
         raise ValueError('Program and data folders must be separate')
@@ -157,8 +160,7 @@ def validate_job(path):
     validate_program(program, job['currentVersion'])
     if digest(program / EXE) != job['oldExeSha256'] or digest(package) != job['sha256']:
         raise ValueError('Update checksum does not match')
-    expected_name = 'CitizenTools-Solo-Portable.zip' if job['kind'] == 'portable' else 'CitizenTools-Solo-Setup.exe'
-    if package.name != expected_name:
+    if package.name not in {FULL_ASSETS[job['kind']], UPDATE_ASSETS[job['kind']]}:
         raise ValueError('Wrong package type')
     args = job.get('restartArgs')
     if not isinstance(args, list) or not all(isinstance(item, str) and '\x00' not in item for item in args):

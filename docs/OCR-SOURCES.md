@@ -7,9 +7,12 @@ Versionen, Downloadadressen und SHA-256-Prüfsummen sowie die Zuordnung aller
 ausgelieferten OCR-Dateien. Windows-Systembibliotheken sind nicht enthalten.
 
 `CitizenTools-Solo-OCR-Sources.zip` wird neben Installer, Portable-ZIP und
-`CitizenTools-Solo-Source.zip` im selben Release bereitgestellt:
+Update-Paketen im selben Release bereitgestellt:
 https://github.com/Tschensen/CitizenTools/releases
-Beim Weitergeben der Binärpakete auch diese beiden Quellpakete anbieten.
+Der eigene Projektcode steht am zugehörigen Release-Tag und im Programm als
+`CitizenTools-Solo-Source.zip` bereit; ein zusätzlicher Release-Anhang ist optional.
+Beim Weitergeben der Binärpakete Projekt- und OCR-Quellen nach den jeweiligen
+Lizenzbedingungen anbieten.
 Zum normalen Benutzen der App werden die Quellpakete nicht benötigt.
 
 ## Inhalt des OCR-Quellpakets
