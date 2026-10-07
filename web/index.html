@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      window.soloClientVersion = "0.4.0";
+      window.soloClientVersion = "0.5.0";
       window.soloErrors = [];
       window.soloLoadErrors = [];
       window.addEventListener('error', function (event) {
@@ -15,12 +15,12 @@
     </script>
     <title>Citizen Tools · Flight Deck</title>
     <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?solo=0.4.0" />
-    <link rel="stylesheet" href="solo.css?solo=0.4.0" />
-    <link rel="stylesheet" href="personal-transfer.css?solo=0.4.0" />
-    <link rel="stylesheet" href="solo-personalize.css?solo=0.4.0" />
-    <link rel="stylesheet" href="statistics-period.css?solo=0.4.0" />
-    <link rel="stylesheet" href="solo-updates.css?solo=0.4.0" />
+    <link rel="stylesheet" href="styles.css?solo=0.5.0" />
+    <link rel="stylesheet" href="solo.css?solo=0.5.0" />
+    <link rel="stylesheet" href="personal-transfer.css?solo=0.5.0" />
+    <link rel="stylesheet" href="solo-personalize.css?solo=0.5.0" />
+    <link rel="stylesheet" href="statistics-period.css?solo=0.5.0" />
+    <link rel="stylesheet" href="solo-updates.css?solo=0.5.0" />
   </head>
   <body>
     <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
@@ -90,7 +90,7 @@
           <button class="nav-tab is-active" type="button" data-page-target="overview" data-i18n="cargo.tabs.overview">Übersicht</button>
           
           <button class="nav-tab" type="button" data-page-target="create" data-i18n="cargo.tabs.create">Auftrag anlegen</button>
-          <button class="nav-tab" type="button" data-page-target="load" data-i18n="cargo.tabs.load">Verladen</button>
+          <button class="nav-tab" type="button" data-page-target="load" data-i18n="cargo.tabs.load">Frachtraum</button>
           
           
         </nav>
@@ -422,7 +422,7 @@
 
               <div class="ship-schematic is-static-preview">
                 <div class="ship-axis">
-                  <span>Vorne</span>
+                  <span data-i18n="contracts.load.front">Bug</span>
                   <span>Draufsicht</span>
                 </div>
                 <div class="ship-frame">
@@ -933,68 +933,6 @@
           </section>
 
           <section class="overview-layout">
-            <section class="panel panel-overview-ship panel-collapsible">
-              <div class="panel-header">
-                <button
-                  class="panel-toggle collapse-toggle"
-                  type="button"
-                  data-collapse-target="overviewShipBody"
-                  aria-expanded="true"
-                >
-                  <span class="panel-toggle-copy">
-                    <span class="panel-toggle-title" data-i18n="contracts.overview.currentShip">Aktuelles Schiff</span>
-                    <span id="overviewShipName" class="panel-toggle-text overview-ship-name"></span>
-                  </span>
-                  <span class="collapse-indicator" aria-hidden="true"></span>
-                </button>
-              </div>
-
-              <div id="overviewShipBody" class="collapsible-body">
-              <div class="iso-panel iso-panel-standalone">
-                <div class="ship-axis">
-                  <span data-i18n="contracts.overview.shipAxisIso">Isometrie</span>
-                  <div class="iso-axis-actions">
-                    <span id="isoStats" class="iso-axis-status" data-i18n="contracts.overview.noPlacedLoad">Noch keine platzierte Ladung</span>
-                    <div class="iso-zoom-controls" aria-label="Zoom">
-                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="out" aria-label="Verkleinern" data-tooltip="Verkleinern" data-i18n-aria-label="contracts.iso.zoomOut" data-i18n-tooltip="contracts.iso.zoomOut">
-                        <span aria-hidden="true">−</span>
-                      </button>
-                      <button class="iso-zoom-button iso-zoom-reset" type="button" data-iso-zoom-action="reset" aria-label="Zoom zurücksetzen" data-tooltip="Zoom zurücksetzen" data-i18n-aria-label="contracts.iso.zoomReset" data-i18n-tooltip="contracts.iso.zoomReset">
-                        <span data-iso-zoom-value>100 %</span>
-                      </button>
-                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="in" aria-label="Vergrößern" data-tooltip="Vergrößern" data-i18n-aria-label="contracts.iso.zoomIn" data-i18n-tooltip="contracts.iso.zoomIn">
-                        <span aria-hidden="true">+</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="iso-frame">
-                  <div id="isoEmpty" class="iso-empty" hidden></div>
-                  <svg id="overviewIsoView" class="iso-view" aria-label="Isometrische Vorschau des Cargo-Grids"></svg>
-                </div>
-                <div class="iso-detail-card" id="isoDetails">
-                  <strong id="isoDetailTitle" data-i18n="contracts.overview.noLoadSelected">Keine Ladung ausgewählt</strong>
-                  <p id="isoDetailRoute" data-i18n="contracts.overview.selectLoad">Wähle in der Vorschau oder in der Liste eine Ladung aus.</p>
-                  <p id="isoDetailMeta"></p>
-                  <div class="iso-detail-actions" id="overviewDetailActions" hidden>
-                    <button id="overviewDeselectButton" class="secondary-button" type="button" data-i18n="contracts.overview.deselect">Abwählen</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="manifest-panel">
-                <div class="panel-header panel-header-stack">
-                  <div>
-                      <h2 data-i18n="contracts.overview.manifest">Manifest</h2>
-                  </div>
-                </div>
-                <div id="manifestEmpty" class="empty-state" data-i18n="contracts.manifest.empty">Noch keine Ladungen im Schiff platziert.</div>
-                <div id="manifestList" class="manifest-list"></div>
-              </div>
-
-              </div>
-            </section>
-
             <section class="panel panel-overview-route panel-collapsible">
               <div class="panel-header">
                 <button
@@ -1126,14 +1064,14 @@
 
         <section class="page-section" data-page="load">
           <section class="load-layout">
-            <section class="panel panel-home-loads panel-load-queue">
-              <div class="panel-header panel-header-stack">
-                <div>
-                  <h2 data-i18n="contracts.load.title">Aktuelle Ladungen</h2>
-                  <p data-i18n="contracts.load.description">Wähle hier deine aktive Ladung, drehe sie bei Bedarf und platziere sie dann rechts im Schiff.</p>
-                </div>
+            <section class="panel cargo-shared-controls">
+              <div class="panel-header"><h2 data-i18n="warehouse.actions">Verladeaktionen</h2><button class="cargo-info-button" type="button" aria-label="Bedienhinweise" data-i18n-aria-label="warehouse.help" data-tooltip="" data-i18n-tooltip="warehouse.hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg></button></div>
+              <div class="cargo-shared-buttons">
+                <button class="secondary-button" type="button" id="cargoUndoButton" data-i18n="contracts.iso.undo" disabled>Rückgängig (Strg+Z)</button>
+                <button class="secondary-button" type="button" id="cargoUnloadAllButton" data-i18n="contracts.iso.unloadAll" disabled>Alles entladen</button>
+                <button id="warehouseAutoload" type="button" class="primary-button"></button>
+                <button id="warehouseRotate" type="button" class="secondary-button"></button>
               </div>
-              <div id="homeLoadSummary" class="home-load-summary"></div>
               <div id="loadAutoloadOptions" class="autoload-options" data-autoload-options>
                 <label class="autoload-strategy-field">
                   <span data-i18n="autoload.strategy.label">Strategie</span>
@@ -1153,83 +1091,76 @@
                 </label>
                 <p class="autoload-area-order" data-autoload-area-order></p>
               </div>
-              <div id="homeLoadList" class="home-load-list"></div>
+              <div id="homeLoadSummary" class="home-load-summary"></div>
+
+            </section>
+            <section class="panel panel-warehouse">
+              <div class="panel-header"><h2 data-i18n="warehouse.title">Lager</h2></div>
+              <label><span data-i18n="warehouse.filter">Auftrag</span><select id="warehouseMissionFilter"></select></label>
+              <div class="cargo-camera-controls warehouse-camera-controls">
+                <button type="button" class="secondary-button" data-warehouse-view="top"></button>
+                <button type="button" class="secondary-button" data-warehouse-view="reset"></button>
+              </div>
+              <div class="iso-frame cargo-camera-frame warehouse-frame"><svg id="warehouseView" tabindex="0" class="iso-view" aria-label="Lager"></svg></div>
+              <div class="ship-zoom-footer">
+                <div class="iso-zoom-controls" aria-label="Zoom">
+                  <button type="button" class="iso-zoom-button" data-warehouse-zoom="out">−</button>
+                  <button type="button" class="iso-zoom-button iso-zoom-reset" data-warehouse-zoom="reset"><span id="warehouseZoomValue">100 %</span></button>
+                  <button type="button" class="iso-zoom-button" data-warehouse-zoom="in">+</button>
+                </div>
+              </div>
+              <p id="warehouseStatus" role="status"></p>
             </section>
 
             <section class="load-view-column">
-              <section class="panel panel-load-iso panel-collapsible">
+              <section class="panel panel-load-iso">
                 <div class="panel-header">
-                  <button
-                    class="panel-toggle collapse-toggle"
-                    type="button"
-                    data-collapse-target="loadIsoBody"
-                    aria-expanded="false"
-                  >
-                    <span class="panel-toggle-copy">
-                      <span class="panel-toggle-title" data-i18n="contracts.load.isoTitle">Isometrische Ansicht</span>
-                      <span class="panel-toggle-text" data-i18n="contracts.load.isoDescription">Isometrische Ansicht zum Platzieren und Stapeln direkt im Schiff.</span>
-                    </span>
-                    <span class="collapse-indicator" aria-hidden="true"></span>
-                  </button>
+                  <div>
+                    <h2 data-i18n="contracts.load.isoTitle">Schiff</h2>
+                    <button class="cargo-info-button" type="button" aria-label="Bedienhinweise" data-i18n-aria-label="warehouse.help" data-tooltip="" data-i18n-tooltip="contracts.iso.cameraHint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg></button>
+                  </div>
                 </div>
-                <div id="loadIsoBody" class="collapsible-body" hidden>
-                  <div id="isoLevelFilter" class="level-filter" aria-label="Ebenenfilter isometrische Ansicht"></div>
+                <div id="loadIsoBody">
+                  <div id="isoLevelFilter" class="level-filter" aria-label="Ebenenfilter"></div>
                   <div class="iso-panel iso-panel-standalone">
-                    <div class="ship-axis">
-                      <span>Isometrie</span>
-                      <div class="iso-axis-actions">
-                        <span id="loadIsoStats" class="iso-axis-status" data-i18n="contracts.overview.noPlacedLoad">Noch keine platzierte Ladung</span>
-                        <div class="iso-zoom-controls" aria-label="Zoom">
-                          <button class="iso-zoom-button" type="button" data-iso-zoom-action="out" aria-label="Verkleinern" data-tooltip="Verkleinern" data-i18n-aria-label="contracts.iso.zoomOut" data-i18n-tooltip="contracts.iso.zoomOut">
-                            <span aria-hidden="true">−</span>
-                          </button>
-                          <button class="iso-zoom-button iso-zoom-reset" type="button" data-iso-zoom-action="reset" aria-label="Zoom zurücksetzen" data-tooltip="Zoom zurücksetzen" data-i18n-aria-label="contracts.iso.zoomReset" data-i18n-tooltip="contracts.iso.zoomReset">
-                            <span data-iso-zoom-value>100 %</span>
-                          </button>
-                          <button class="iso-zoom-button" type="button" data-iso-zoom-action="in" aria-label="Vergrößern" data-tooltip="Vergrößern" data-i18n-aria-label="contracts.iso.zoomIn" data-i18n-tooltip="contracts.iso.zoomIn">
-                            <span aria-hidden="true">+</span>
-                          </button>
-                        </div>
-                      </div>
+                    <div class="cargo-camera-controls" role="group" aria-label="Blickrichtung" data-i18n-aria-label="contracts.iso.camera">
+                      <button class="secondary-button" type="button" data-cargo-camera="front" data-i18n="contracts.iso.front">Bug</button>
+                      <button class="secondary-button" type="button" data-cargo-camera="rear" data-i18n="contracts.iso.rear">Heck</button>
+                      <button class="secondary-button" type="button" data-cargo-camera="left" data-i18n="contracts.iso.left">Links</button>
+                      <button class="secondary-button" type="button" data-cargo-camera="right" data-i18n="contracts.iso.right">Rechts</button>
+                      <button class="secondary-button" type="button" data-cargo-camera="top" data-i18n="contracts.iso.top">Oben</button>
+                      <button class="secondary-button" type="button" data-cargo-camera="reset" data-i18n="contracts.iso.resetView">Ansicht zurücksetzen</button>
+                      <button class="secondary-button" type="button" id="cargoCameraUnload" data-i18n="contracts.iso.unloadSelected" disabled>Ausgewählte Ladung entladen</button>
+                      <button class="secondary-button" type="button" id="cargoFixButton" aria-pressed="false" disabled>Fixieren</button>
+                      <button class="secondary-button" type="button" id="cargoStopFocusButton" aria-pressed="false" data-i18n="contracts.iso.stopFocus">Stopp hervorheben</button>
                     </div>
-                    <div class="iso-frame">
-                      <svg id="isoView" class="iso-view" aria-label="Interaktive isometrische Vorschau des Cargo-Grids"></svg>
+                    <div id="cargoStopFocusStatus" class="cargo-stop-status" role="status" hidden></div>
+
+                    <div class="iso-frame cargo-camera-frame">
+                      <svg id="isoView" class="iso-view" aria-label="Interaktive drehbare 3D-Ansicht des Cargo-Grids"></svg>
                     </div>
+                    <div class="ship-zoom-footer">
+                    <div class="iso-zoom-controls" aria-label="Zoom">
+                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="out" aria-label="Verkleinern" data-tooltip="Verkleinern" data-i18n-aria-label="contracts.iso.zoomOut" data-i18n-tooltip="contracts.iso.zoomOut">
+                        <span aria-hidden="true">−</span>
+                      </button>
+                      <button class="iso-zoom-button iso-zoom-reset" type="button" data-iso-zoom-action="reset" aria-label="Zoom zurücksetzen" data-tooltip="Zoom zurücksetzen" data-i18n-aria-label="contracts.iso.zoomReset" data-i18n-tooltip="contracts.iso.zoomReset">
+                        <span data-iso-zoom-value>100 %</span>
+                      </button>
+                      <button class="iso-zoom-button" type="button" data-iso-zoom-action="in" aria-label="Vergrößern" data-tooltip="Vergrößern" data-i18n-aria-label="contracts.iso.zoomIn" data-i18n-tooltip="contracts.iso.zoomIn">
+                        <span aria-hidden="true">+</span>
+                      </button>
+                    </div>
+                    </div>
+                    <p id="cargoPlacementStatus" class="cargo-placement-status" role="status" aria-live="polite"></p>
                   </div>
                 </div>
               </section>
 
-              <section class="panel panel-ship panel-collapsible">
-                <div class="panel-header">
-                  <button
-                    class="panel-toggle collapse-toggle"
-                    type="button"
-                    data-collapse-target="loadTopdownBody"
-                    aria-expanded="false"
-                  >
-                    <span class="panel-toggle-copy">
-                      <span class="panel-toggle-title" data-i18n="contracts.load.gridTitle">Rasteransicht</span>
-                    </span>
-                    <span class="collapse-indicator" aria-hidden="true"></span>
-                  </button>
-                </div>
-                <div id="loadTopdownBody" class="collapsible-body" hidden>
-                  <div id="topdownLevelFilter" class="level-filter" aria-label="Ebenenfilter Rasteransicht"></div>
-                  <div class="ship-schematic topdown-schematic">
-                    <div class="ship-axis">
-                      <span data-i18n="contracts.load.front">Vorne</span>
-                    </div>
-                    <div class="ship-frame">
-                      <div id="shipGrid" class="ship-grid" aria-live="polite"></div>
-                      <div id="cargoAreaLegend" class="cargo-area-legend"></div>
-                    </div>
-                    <div class="ship-axis">
-                      <span data-i18n="contracts.load.rear">Heck</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              <!-- Source for the ship-selection preview; loading uses the 3D top view. -->
+              <div hidden aria-hidden="true"><div id="shipGrid" class="ship-grid"></div></div>
             </section>
+            <details class="panel cargo-order-details"><summary data-i18n="warehouse.details">Aufträge und Frachtdetails</summary><div id="homeLoadList" class="home-load-list"></div></details>
           </section>
         </section>
 
@@ -2890,84 +2821,86 @@
 
     <datalist id="financeReferenceSuggestions"></datalist>
 
-    <script data-solo-src="scripts/calendar-date.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/config.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.4.0"></script>
+    <script data-solo-src="scripts/calendar-date.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/config.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.5.0"></script>
     
     
     
     
-    <script data-solo-src="scripts/state-storage.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-store.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-api.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-sync.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-normalization.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-status-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/state-persistence.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/presets.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-duplicates.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-domain.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-import-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-areas.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/autoload.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/unload-guidance.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/route-optimizer.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/route-run-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/run-view-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-cargo-edit.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-quality-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-service-form-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-form-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-submit-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-actions.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-assignment-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-service-view-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/mission-list-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-overview-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/run-route-state.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/run-mode-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-layout-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/location-picker-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/hub-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/view-renderer.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/app-render.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/app-navigation.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/cargo-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/route-order-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/fleet.js?solo=0.4.0"></script>
+    <script data-solo-src="scripts/state-storage.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-store.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-api.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-sync.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-normalization.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-status-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/state-persistence.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/presets.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-duplicates.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-domain.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-import-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-areas.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/unload-guidance.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/route-run-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/run-view-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-scene.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-warehouse-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-cargo-edit.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-quality-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-service-form-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-form-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-submit-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-actions.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-assignment-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-service-view-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/mission-list-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-overview-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/run-route-state.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/run-mode-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-layout-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/location-picker-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/hub-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/view-renderer.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/app-render.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/app-navigation.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/route-order-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/fleet.js?solo=0.5.0"></script>
     
-    <script data-solo-src="scripts/shipdb.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/finance.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/statistics-period.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/statistics-trend.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/statistics.js?solo=0.4.0"></script>
+    <script data-solo-src="scripts/shipdb.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/finance.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/statistics-period.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/statistics-trend.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.5.0"></script>
     
-    <script data-solo-src="scripts/systemdb.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/location-alias-learning.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/backup-ui.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/ledger-automation.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-merge.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-sync.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-connection.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-theme.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-effects.js?solo=0.4.0"></script>
-    <script data-solo-src="app.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/sound-presets.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-sounds.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.4.0"></script>
-  <script data-solo-src="scripts/solo-hotkey.js?solo=0.4.0"></script>
-  <script data-solo-src="scripts/solo-ui.js?solo=0.4.0"></script>
-  <script data-solo-src="scripts/solo-about.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/personal-transfer.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-dialog.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-updates.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-cockpit.js?solo=0.4.0"></script>
-    <script data-solo-src="scripts/solo-setup.js?solo=0.4.0"></script>
-    <script src="scripts/solo-loader.js?solo=0.4.0"></script>
+    <script data-solo-src="scripts/systemdb.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/location-alias-learning.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/backup-ui.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/ledger-automation.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-connection.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-theme.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-effects.js?solo=0.5.0"></script>
+    <script data-solo-src="app.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/sound-presets.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-sounds.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.5.0"></script>
+  <script data-solo-src="scripts/solo-hotkey.js?solo=0.5.0"></script>
+  <script data-solo-src="scripts/solo-ui.js?solo=0.5.0"></script>
+  <script data-solo-src="scripts/solo-about.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/personal-transfer.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-dialog.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-updates.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-cockpit.js?solo=0.5.0"></script>
+    <script data-solo-src="scripts/solo-setup.js?solo=0.5.0"></script>
+    <script src="scripts/solo-loader.js?solo=0.5.0"></script>
   </body>
 </html>

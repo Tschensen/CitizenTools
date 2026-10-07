@@ -384,7 +384,7 @@ async function submitCargoMission({formData, existingMission, draft, maxContaine
   state.selectionCleared = !state.selectedLoadId;
   state.selectedStopDropoff = "";
   lastUnloadPlan = null;
-  lastCargoPage = existingMission && isMissionCompleted(existingMission)
+  lastCargoPage = existingMission
     ? "overview"
     : loads.length > 0 && canUseLoadPage()
       ? "load"

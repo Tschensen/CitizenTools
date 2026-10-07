@@ -1,9 +1,35 @@
 // Cargo-grid rendering, placement, stacking, zoom, and autoload integration.
+function setCargoButtonIcon(button, icon, label) {
+  if (!button) return;
+  const paths = {
+    autoload: 'M3 4h6v6H3z M3 14h6v6H3z M15 3v12 M11 11l4 4 4-4 M12 20h9',
+    unload: 'M3 10h10v11H3z M8 10V6h12 M16 2l4 4-4 4',
+    unloadMission: 'M3 3h9v18H3z M6 7h3 M6 11h3 M14 12h8 M18 8l4 4-4 4',
+    unloadAll: 'M4 20V7 M1 10l3-3 3 3 M12 20V3 M9 6l3-3 3 3 M20 20V7 M17 10l3-3 3 3',
+    front: 'M9 14a3 4 0 1 0 6 0 3 4 0 1 0-6 0 M1 15l8-2 M15 13l8 2 M12 10V3 M9 12l3-2 3 2 M8 19v2 M16 19v2',
+    rear: 'M12 3v11 M1 14h22 M8 11l4 3 4-3 M6 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0 M14 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
+    left: 'M2 15l5-4h9l3-6h2l-1 8 2 3H5z M7 11l2 4 M10 15l5 5h3l-3-5',
+    right: 'M22 15l-5-4H8L5 5H3l1 8-2 3h17z M17 11l-2 4 M14 15l-5 5H6l3-5',
+    top: 'M12 2c-1 0-2 2-2 4v3l-8 5v2l8-2v4l-3 2v2l5-1 5 1v-2l-3-2v-4l8 2v-2l-8-5V6c0-2-1-4-2-4z',
+    rotate: 'M19 8a8 8 0 1 0 1 8 M19 2v6h-6',
+    undo: 'M9 5L3 11l6 6 M3 11h11a6 6 0 0 1 6 6',
+    fix: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4 M12 14v3',
+    unfix: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0 M12 14v3',
+    select: 'M3 3l6 18 3-8 8-3z',
+    deselect: 'M3 3l5 16 3-7 7-3z M16 16l6 6 M22 16l-6 6',
+    focus: 'M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5 M8 8h8v8H8z',
+    reset: 'M4 8a9 9 0 1 1-1 8 M4 2v6h6 M9 10l3-2 3 2v5l-3 2-3-2z',
+  };
+  button.classList.add('cargo-icon-button');
+  button.removeAttribute('data-i18n');
+  button.setAttribute('aria-label', label);
+  button.dataset.tooltip = label;
+  button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${paths[icon] || paths.select}"/></svg>`;
+}
+
 function renderShipGrid() {
   const { rows, cols } = state.layout;
   const cargoAreaContext = getAutoloadAreaContext();
-  const areaLegend = document.getElementById('cargoAreaLegend');
-  if (areaLegend) areaLegend.innerHTML = cargoAreaContext.areas.map(area => `<span><i style="background:${area.color}" aria-hidden="true"></i>${escapeHtml(cargoAreaName(area))}</span>`).join('');
   const selectedEntry = findLoadById(state.selectedLoadId);
   const selected = selectedEntry && canMissionUseCurrentCargoGrid(selectedEntry.mission) ? selectedEntry : null;
   const levelFilter = getEffectiveLevelFilter();
@@ -158,302 +184,465 @@ function renderShipGrid() {
   }
 }
 
+// Orthographic camera: cargo coordinates and placement rules remain unchanged.
+const cargoCamera = CargoScene.createCamera();
+let cargoScene = null;
+function getCargoScene() { return cargoScene ||= CargoScene.create(isoView, { camera: cargoCamera }); }
+let cargoCameraFrame = 0;
+let cargoContextMenu = null;
+let cargoContextReturnFocus = null;
+const cargoUndoHistory = [];
+let cargoPreviewKey = '';
+let cargoStopFocusEnabled = false;
+
+function toggleCargoFixed(load) {
+  const entry = findLoadById(load.id);
+  if (!entry || !load.placement || !canMissionUseCurrentCargoGrid(entry.mission) || isDispatcherMode()) return;
+  const before = captureCargoAction();
+  load.cargoFixed = !load.cargoFixed;
+  recordCargoAction(before);
+  persist(); render();
+}
+
+function unloadCargoBatch(missionId = null) {
+  if (isDispatcherMode()) return;
+  const placed = getPlacedLoadEntries();
+  const entries = placed.filter(({mission}) => missionId === null || mission.id === missionId);
+  if (!entries.length) return;
+  const analysis = analyzeUnloadEntries(entries, placed);
+  if (analysis.blockers.length) {
+    void showAppNotice(formatUnloadBlockerSummary(analysis.blockers));
+    return;
+  }
+  const before = captureCargoAction();
+  entries.forEach(({load}) => { load.placement = null; load.cargoFixed = false; });
+  state.selectedLoadId = entries[0].load.id;
+  state.selectionCleared = false;
+  lastAutoLoadResult = null;
+  lastUnloadPlan = null;
+  recordCargoAction(before);
+  persist(); render();
+}
+
+function getCargoStopFocus(loads) {
+  if (!cargoStopFocusEnabled) return null;
+  const dropoff = buildFlightRouteState().currentDropoff;
+  const targets = loads.filter(({mission, load}) => getLoadDropoff(load, mission) === dropoff);
+  const analysis = analyzeUnloadEntries(targets, loads);
+  return { dropoff, targets: new Set(targets.map(({load}) => load.id)),
+    blockers: new Set(analysis.blockers.map(({load}) => load.id)),
+    blocked: new Set(analysis.blockedEntries.map(({load}) => load.id)) };
+}
+
+function renderCargoStopFocus(focus) {
+  document.getElementById('cargoStopFocusButton')?.setAttribute('aria-pressed', String(cargoStopFocusEnabled));
+  const status = document.getElementById('cargoStopFocusStatus');
+  if (!status) return;
+  status.hidden = !focus;
+  status.replaceChildren();
+  if (!focus) return;
+  const heading = document.createElement('strong');
+  heading.textContent = focus.dropoff || t('contracts.iso.noStop');
+  status.appendChild(heading);
+  for (const [kind, count] of [['target', focus.targets.size], ['blocker', focus.blockers.size], ['blocked', focus.blocked.size]]) {
+    const label = document.createElement('span');
+    label.className = `cargo-stop-${kind}`;
+    label.textContent = `${t(`contracts.iso.stop.${kind}`)}: ${count}`;
+    status.appendChild(label);
+  }
+}
+
+function cargoUndoFingerprint() {
+  return JSON.stringify([state.missions, state.layout, state.activeFleetEntryId, isDispatcherMode()]);
+}
+
+function captureCargoAction() {
+  const fingerprint = cargoUndoFingerprint();
+  if (cargoUndoHistory.length && cargoUndoHistory.at(-1).after !== fingerprint) cargoUndoHistory.length = 0;
+  return { fingerprint, selectedLoadId: state.selectedLoadId, selectionCleared: state.selectionCleared,
+    loads: getAllLoads().map(({ load }) => ({ id: load.id, values: structuredClone({
+      placement: load.placement, rotated: load.rotated, loadedAt: load.loadedAt, loadedByFleetEntryId: load.loadedByFleetEntryId, cargoFixed: load.cargoFixed,
+    }) })) };
+}
+
+function recordCargoAction(before) {
+  const after = cargoUndoFingerprint();
+  if (after === before.fingerprint) return;
+  cargoUndoHistory.push({ before, after });
+  if (cargoUndoHistory.length > 30) cargoUndoHistory.shift();
+}
+
+function canUndoCargoAction() {
+  if (cargoUndoHistory.length && cargoUndoHistory.at(-1).after !== cargoUndoFingerprint()) cargoUndoHistory.length = 0;
+  return !isDispatcherMode() && cargoUndoHistory.length > 0;
+}
+
+function undoCargoAction() {
+  if (!canUndoCargoAction()) return;
+  const { before } = cargoUndoHistory.pop();
+  before.loads.forEach(({ id, values }) => {
+    const entry = findLoadById(id);
+    if (entry) Object.assign(entry.load, structuredClone(values));
+  });
+  state.selectedLoadId = before.selectedLoadId;
+  state.selectionCleared = before.selectionCleared;
+  lastAutoLoadResult = null;
+  lastUnloadPlan = null;
+  persist(); render();
+}
+
+function clearCargoPlacementPreview() {
+  cargoPreviewKey = '';
+  isoView.querySelector('.cargo-placement-preview')?.remove();
+  const status = document.getElementById('cargoPlacementStatus');
+  if (status) status.textContent = '';
+}
+
+function showCargoPlacementPreview(row, col) {
+  const key = `${state.selectedLoadId}:${row}:${col}`;
+  if (cargoPreviewKey === key) return;
+  clearCargoPlacementPreview();
+  const entry = findLoadById(state.selectedLoadId);
+  if (!entry || !canMissionUseCurrentCargoGrid(entry.mission)) return;
+  cargoPreviewKey = key;
+  const result = resolvePlacementTarget(entry.load, row, col, entry.load.id);
+  const dims = getLoadDimensions(entry.load);
+  const x = result.anchorCol ?? col, y = result.anchorRow ?? row;
+  const z = result.baseZ ?? getStackHeightAtCell(row, col, entry.load.id);
+  const group = getCargoScene().preview({x, y, z, ...dims}, `cargo-placement-preview ${result.valid ? 'is-valid' : 'is-invalid'}`);
+  group.dataset.row = y; group.dataset.col = x; group.dataset.z = z;
+  isoView.appendChild(group);
+  const status = document.getElementById('cargoPlacementStatus');
+  if (status) status.textContent = result.valid
+    ? `${t('contracts.iso.previewValid')} · ${createSlotId(y,x)} · z ${z}`
+    : `${t('contracts.iso.previewInvalid')} · ${result.reason}`;
+}
+
+function closeCargoContextMenu(restoreFocus = false) {
+  if (!cargoContextMenu) return;
+  cargoContextMenu.remove();
+  cargoContextMenu = null;
+  if (restoreFocus) (cargoContextReturnFocus || isoView).focus({ preventScroll: true });
+}
+
+function openCargoContextMenu(loadId, x, y, { warehouse = false } = {}) {
+  const entry = findLoadById(loadId);
+  if (!entry || Boolean(entry.load.placement) === warehouse || !canMissionUseCurrentCargoGrid(entry.mission)) return;
+  state.selectedLoadId = loadId;
+  state.selectionCleared = false;
+  persist();
+  render();
+  const menu = document.createElement('div');
+  cargoContextReturnFocus = warehouse ? document.getElementById('warehouseView') : isoView;
+  menu.dataset.surface = warehouse ? 'warehouse' : 'ship';
+  menu.className = 'cargo-context-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', entry.load.label);
+  const title = document.createElement('div');
+  title.className = 'cargo-context-title';
+  title.textContent = entry.load.label;
+  menu.appendChild(title);
+  const actions = warehouse ? [['rotate', 'common.rotate'], ['deselect', 'common.deselect']]
+    : [['unload', 'contracts.iso.contextUnload'], ['rotate', 'common.rotate'], ['deselect', 'common.deselect'], ['fix', entry.load.cargoFixed ? 'contracts.iso.unfix' : 'contracts.iso.fix']];
+  for (const [action, key] of actions) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('role', 'menuitem');
+    button.dataset.cargoAction = action;
+    button.textContent = t(key);
+    button.disabled = Boolean(entry.load.cargoFixed && ['unload', 'rotate'].includes(action));
+    button.addEventListener('click', () => {
+      closeCargoContextMenu(true);
+      const current = findLoadById(loadId);
+      if (!current || !canMissionUseCurrentCargoGrid(current.mission)) return;
+      if (action === 'unload') unloadLoad(current.load);
+      else if (action === 'rotate') rotateLoad(current.load);
+      else if (action === 'fix') toggleCargoFixed(current.load);
+      else {
+        state.selectedLoadId = null;
+        state.selectionCleared = true;
+        persist(); render();
+      }
+    });
+    menu.appendChild(button);
+  }
+  menu.addEventListener('keydown', event => {
+    const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
+    const index = buttons.indexOf(document.activeElement);
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length-1
+        : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next].focus();
+    } else if (event.key === 'Escape' || event.key === 'Tab') {
+      if (event.key === 'Escape') event.preventDefault();
+      closeCargoContextMenu(true);
+    }
+  });
+  document.body.appendChild(menu);
+  cargoContextMenu = menu;
+  const box = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(x, innerWidth-box.width-8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, innerHeight-box.height-8))}px`;
+  menu.querySelector('button:not(:disabled)').focus({ preventScroll: true });
+}
+
+function projectCargoPoint(x, y, z) {
+  return getCargoScene().project(x, y, z);
+}
+
+function requestCargoCameraRender() {
+  if (cargoCameraFrame) return;
+  cargoCameraFrame = requestAnimationFrame(() => {
+    cargoCameraFrame = 0;
+    renderIsometricView();
+    syncStaticPreviews();
+  });
+}
+
+function setupCargoCamera() {
+  if (isoView.dataset.cameraReady) return;
+  isoView.dataset.cameraReady = 'true';
+  isoView.setAttribute('tabindex', '0');
+  document.getElementById('cargoUndoButton')?.addEventListener('click', undoCargoAction);
+  document.getElementById('cargoUnloadAllButton')?.addEventListener('click', () => unloadCargoBatch());
+  document.getElementById('cargoFixButton')?.addEventListener('click', () => {
+    const entry = findLoadById(state.selectedLoadId);
+    if (entry) toggleCargoFixed(entry.load);
+  });
+  document.getElementById('cargoStopFocusButton')?.addEventListener('click', () => {
+    cargoStopFocusEnabled = !cargoStopFocusEnabled;
+    renderIsometricView(); syncStaticPreviews();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Control') clearCargoPlacementPreview();
+    if (activePage !== 'load' || !event.ctrlKey || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'z') return;
+    if (event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+    if (!canUndoCargoAction()) return;
+    event.preventDefault(); undoCargoAction();
+  });
+  isoView.addEventListener('pointerleave', clearCargoPlacementPreview);
+  isoView.addEventListener('contextmenu', event => {
+    const load = event.target.closest('.iso-load:not(.is-context-level)');
+    if (!load) { closeCargoContextMenu(); return; }
+    event.preventDefault();
+    openCargoContextMenu(load.dataset.loadId, event.clientX, event.clientY);
+  });
+  document.addEventListener('pointerdown', event => {
+    if (cargoContextMenu && !cargoContextMenu.contains(event.target)) closeCargoContextMenu();
+  }, true);
+  window.addEventListener('resize', () => closeCargoContextMenu());
+  window.addEventListener('scroll', () => closeCargoContextMenu(), true);
+  CargoScene.bindCamera(isoView, cargoCamera, {
+    onChange: requestCargoCameraRender,
+    onZoom: changeIsoZoom,
+    onReset: () => changeIsoZoom('reset'),
+    onHover: event => {
+      const target = event.target.closest('[data-cargo-row]');
+      if (!event.ctrlKey && target && !cargoContextMenu) showCargoPlacementPreview(Number(target.dataset.cargoRow), Number(target.dataset.cargoCol));
+      else clearCargoPlacementPreview();
+    },
+  });
+  isoView.addEventListener('keydown', event => {
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault();
+      const box = isoView.getBoundingClientRect();
+      openCargoContextMenu(state.selectedLoadId, box.x + box.width/2, box.y + box.height/2);
+      return;
+    }
+  });
+  document.querySelectorAll('[data-cargo-camera]').forEach(button => {
+    button.addEventListener('click', () => setCargoCamera(button.dataset.cargoCamera));
+  });
+  document.getElementById('cargoCameraUnload')?.addEventListener('click', () => {
+    const entry = findLoadById(state.selectedLoadId);
+    if (entry && canMissionUseCurrentCargoGrid(entry.mission)) unloadLoad(entry.load);
+  });
+}
+
+function setCargoCamera(view) {
+  if (!CargoScene.setView(cargoCamera, view)) return;
+  if (view === 'reset') changeIsoZoom('reset');
+  requestCargoCameraRender();
+}
+
+function getCargoCameraView() { return CargoScene.getView(cargoCamera); }
+
+function cargoSceneItems(loads) {
+  return loads.map(entry => {
+    const { load } = entry;
+    const dims = getLoadDimensions(load, placementRotation(load));
+    return { id: load.id, x: load.placement.col, y: load.placement.row, z: load.placement.z,
+      ...dims, data: entry };
+  });
+}
+
+function buildVisibleCargoCells() {
+  const cells = buildActiveCells();
+  if (getAutoloadSettings().allowOverload) return cells;
+  const profile = findShipLibraryEntryById(state.layout.shipId);
+  return cells.map(cell => {
+    const capacity = profile
+      ? Math.min(cell.capacity, Number(profile.gridHeights?.[cell.slotId]) || 0)
+      : cell.isOverload ? 0 : cell.capacity;
+    return { ...cell, capacity, isOverload: false };
+  }).filter(cell => cell.capacity > 0);
+}
+
+function getCargoViewGeometry() {
+  const cells = buildVisibleCargoCells();
+  const loads = getPlacedLoadEntries();
+  // Include retained overload cargo even when permission to add more is off.
+  return { cells, loads, bounds: CargoScene.bounds(cells, cargoSceneItems(loads)) };
+}
+
 function renderIsometricView() {
-  const rawSelectedEntry = findLoadById(state.selectedLoadId);
-  const selectedEntry = rawSelectedEntry && canMissionUseCurrentCargoGrid(rawSelectedEntry.mission) ? rawSelectedEntry : null;
-  const levelFilter = getEffectiveLevelFilter();
-  const placedLoads = getPlacedLoadEntries()
-    .filter(({ load }) => loadTouchesLevel(load, levelFilter))
-    .sort((left, right) => compareLoadDrawOrder(left.load, right.load));
-  const occupiedIsoCells = buildIsoOccupancyMap(placedLoads);
-
-  const activeCells = buildActiveCells();
-  const maxHeight = activeCells.reduce((best, cell) => Math.max(best, cell.capacity), 0);
-  const sizeScale = clamp(18 / Math.max(state.layout.rows, state.layout.cols, 10), 0.62, 1);
-  const tileWidth = 48 * sizeScale;
-  const tileHeight = 24 * sizeScale;
-  const levelHeight = 18 * sizeScale;
-  const originX = 0;
-  const originY = maxHeight * levelHeight + 26 * sizeScale;
-
-  const allPoints = [];
-
-  activeCells.forEach((cell) => {
-    allPoints.push(
-      projectIso(cell.col, cell.row, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(cell.col + 1, cell.row, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(cell.col + 1, cell.row + 1, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(cell.col, cell.row + 1, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-    );
-  });
-
-  placedLoads.forEach(({ load }) => {
-    const dims = getLoadDimensions(load, placementRotation(load));
-    const baseX = load.placement.col;
-    const baseY = load.placement.row;
-    const baseZ = load.placement.z;
-    allPoints.push(
-      projectIso(baseX, baseY, baseZ, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX + dims.width, baseY, baseZ, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX + dims.width, baseY + dims.depth, baseZ, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX, baseY + dims.depth, baseZ, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX, baseY, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX + dims.width, baseY, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX + dims.width, baseY + dims.depth, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-      projectIso(baseX, baseY + dims.depth, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-    );
-  });
-
-  const bugLabelPoint = projectIso(0, -1.8, 0, originX, originY, tileWidth, tileHeight, levelHeight);
-  const heckLabelPoint = projectIso(0, state.layout.rows + 1.15, 0, originX, originY, tileWidth, tileHeight, levelHeight);
-  allPoints.push(
-    { x: bugLabelPoint.x, y: bugLabelPoint.y - 30 * sizeScale },
-    { x: heckLabelPoint.x, y: heckLabelPoint.y + 18 * sizeScale },
-  );
-
-  const minX = Math.min(...allPoints.map((point) => point.x));
-  const maxX = Math.max(...allPoints.map((point) => point.x));
-  const minY = Math.min(...allPoints.map((point) => point.y));
-  const maxY = Math.max(...allPoints.map((point) => point.y));
-  const paddingX = 42 * sizeScale;
-  const paddingTop = 42 * sizeScale;
-  const paddingBottom = 56 * sizeScale;
-
-  isoView.setAttribute(
-    "viewBox",
-    `${minX - paddingX} ${minY - paddingTop} ${maxX - minX + paddingX * 2} ${maxY - minY + paddingTop + paddingBottom}`,
-  );
-  isoView.setAttribute("preserveAspectRatio", "xMidYMid meet");
-  isoView.innerHTML = "";
-
-  const isoStatusText =
-    placedLoads.length > 0
-      ? `${placedLoads.length} Ladung${placedLoads.length === 1 ? "" : "en"} · ${formatLevelMeta(levelFilter)}`
-      : `Grid bereit · ${formatLevelMeta(levelFilter)}`;
-  if (overviewIsoStats) {
-    overviewIsoStats.textContent = isoStatusText;
+  clearCargoPlacementPreview();
+  const undoButton = document.getElementById('cargoUndoButton');
+  if (undoButton) undoButton.disabled = !canUndoCargoAction();
+  closeCargoContextMenu();
+  setupCargoCamera();
+  const raw = findLoadById(state.selectedLoadId);
+  const selected = raw && canMissionUseCurrentCargoGrid(raw.mission) ? raw : null;
+  const unloadButton = document.getElementById('cargoCameraUnload');
+  if (unloadButton) unloadButton.disabled = !selected?.load.placement || selected.load.cargoFixed || isDispatcherMode();
+  const fixButton = document.getElementById('cargoFixButton');
+  if (fixButton) {
+    fixButton.disabled = !selected?.load.placement || isDispatcherMode();
+    fixButton.textContent = t(selected?.load.cargoFixed ? 'contracts.iso.unfix' : 'contracts.iso.fix');
+    fixButton.setAttribute('aria-pressed', String(Boolean(selected?.load.cargoFixed)));
   }
-  if (loadIsoStats) {
-    loadIsoStats.textContent = isoStatusText;
+  document.querySelectorAll('[data-cargo-camera]').forEach(button => setCargoButtonIcon(button, button.dataset.cargoCamera, t(`contracts.iso.${button.dataset.cargoCamera === 'reset' ? 'resetView' : button.dataset.cargoCamera}`)));
+  for (const [id, icon, key] of [
+    ['cargoCameraUnload','unload','unloadSelected'], ['cargoUndoButton','undo','undo'],
+    ['cargoFixButton',selected?.load.cargoFixed ? 'unfix' : 'fix',selected?.load.cargoFixed ? 'unfix' : 'fix'],
+    ['cargoUnloadAllButton','unloadAll','unloadAll'], ['cargoStopFocusButton','focus','stopFocus'],
+  ]) setCargoButtonIcon(document.getElementById(id), icon, t(`contracts.iso.${key}`));
+  const { cells: activeCells, loads, bounds } = getCargoViewGeometry();
+  const unloadAllButton = document.getElementById('cargoUnloadAllButton');
+  if (unloadAllButton) unloadAllButton.disabled = !loads.length || isDispatcherMode();
+  const stopFocus = getCargoStopFocus(loads);
+  renderCargoStopFocus(stopFocus);
+  const { minCol, minRow, maxCol, maxRow, maxHeight } = bounds;
+  const level = getEffectiveLevelFilter(maxHeight);
+  const cameraView = getCargoCameraView();
+  getCargoScene().frame(bounds);
+  document.querySelectorAll('[data-cargo-camera]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.cargoCamera === cameraView));
+  });
+  const namespace = 'http://www.w3.org/2000/svg';
+  const cameraNormal = CargoScene.normal(cargoCamera);
+  const scene = getCargoScene();
+  const makePolygon = scene.polygon;
+  scene.render({ cells: activeCells, items: cargoSceneItems(loads), level }, {
+    floor: (cell, face) => {
+      const candidate = selected ? resolvePlacementTarget(selected.load, cell.row, cell.col, selected.load.id) : null;
+      face.polygon.dataset.row = cell.row;
+      face.polygon.dataset.col = cell.col;
+      face.polygon.dataset.cargoRow = cell.row;
+      face.polygon.dataset.cargoCol = cell.col;
+      const title = document.createElementNS(namespace, 'title');
+      title.textContent = `${createSlotId(cell.row, cell.col)} · ${cell.capacity} SCU`;
+      face.polygon.appendChild(title);
+      if (cell.isOverload) face.polygon.classList.add('is-overload');
+      if (candidate?.valid) face.polygon.classList.add('placeable');
+      face.polygon.addEventListener('click', () => handleCellClick(cell.row, cell.col));
+      const group = document.createElementNS(namespace, 'g');
+      group.appendChild(face.polygon);
+      const center = averagePoint(face.projected);
+      group.appendChild(createSvgText(namespace, center.x, center.y + 4, 'iso-floor-label',
+        cameraView === 'top' ? createSlotId(cell.row, cell.col) : String(cell.capacity)));
+      return group;
+    },
+    face: ({item, x, y, z, definition, isContext, fragment: face}) => {
+      const { mission, load } = item.data;
+      const dims = item;
+      const base = load.placement;
+      face.polygon.setAttribute('fill', shadeColor(mission.color, definition.shade));
+      const group = document.createElementNS(namespace, 'g');
+      group.setAttribute('class', 'iso-load');
+      if (isContext) group.classList.add('is-context-level');
+      group.dataset.loadId = load.id;
+      if (load.cargoFixed) group.classList.add('is-fixed');
+      if (state.selectedLoadId === load.id) group.classList.add('selected');
+      if (stopFocus ? stopFocus.targets.has(load.id) : isLoadInSelectedStop(load, mission)) group.classList.add('stop-target');
+      let stopRole = '';
+      if (stopFocus?.targets.has(load.id)) stopRole = stopFocus.blocked.has(load.id) ? 'blocked' : 'target';
+      else if (stopFocus?.blockers.has(load.id)) stopRole = 'blocker';
+      else if (stopFocus?.targets.size) group.classList.add('is-stop-background');
+      if (stopRole) group.classList.add(`is-stop-${stopRole}`);
+      const title = document.createElementNS(namespace, 'title');
+      title.textContent = `${mission.title} | ${formatLoadRoute(load, mission)} | ${load.label} | ${formatDimensions(load, placementRotation(load))} | z ${base.z}–${base.z+dims.height}`;
+      if (load.cargoFixed) title.textContent += ` | ${t('contracts.iso.fixed')}`;
+      if (stopRole) title.textContent += ` | ${t(`contracts.iso.stop.${stopRole}`)}: ${stopFocus.dropoff}`;
+      group.append(title, face.polygon);
+      if (load.cargoFixed && x === base.col && y === base.row && z === base.z + dims.height - 1
+          && (definition.type === 'top' || cargoCamera.elevation < 1e-6)) {
+        const center = averagePoint(face.projected);
+        group.appendChild(createSvgText(namespace, center.x, center.y + 3, 'cargo-fixed-marker', '🔒'));
+      }
+      if (!isContext) {
+        group.addEventListener('mouseenter', () => renderIsoDetails({ mission, load }));
+        group.addEventListener('click', () => {
+          const deselect = state.selectedLoadId === load.id;
+          state.selectedLoadId = deselect ? null : load.id;
+          state.selectionCleared = deselect;
+          persist();
+          render();
+        });
+      }
+      if (!isContext && definition.type === 'top' && selected && selected.load.id !== load.id) {
+        const candidate = resolvePlacementTarget(selected.load, y, x, selected.load.id);
+        if (candidate.valid && candidate.baseZ === z+1) {
+          group.classList.add('stack-placeable');
+          const target = makePolygon(definition.corners(x,y,z), 'iso-stack-cell placeable').polygon;
+          target.dataset.cargoRow = y;
+          target.dataset.cargoCol = x;
+          target.addEventListener('click', event => { event.stopPropagation(); handleCellClick(y,x); });
+          group.appendChild(target);
+        }
+      }
+      return group;
+    },
+  });
+  const front = projectCargoPoint((minCol + maxCol) / 2, minRow - 1.5, 0);
+  const rear = projectCargoPoint((minCol + maxCol) / 2, maxRow + 1.5, 0);
+  if (cameraView !== 'free' && cameraView !== 'top') {
+    renderCargoCapacityGuide(activeCells, level, cameraView, namespace);
   }
-  isoEmpty.hidden = true;
+  if (Math.hypot(front.x-rear.x, front.y-rear.y) < 40) {
+    isoView.append(createSvgText(namespace, front.x, front.y + 24, 'iso-axis-label',
+      t(cameraNormal[1] < 0 ? 'contracts.iso.front' : 'contracts.iso.rear')));
+  } else {
+    isoView.append(createSvgText(namespace, front.x, front.y, 'iso-axis-label', t('contracts.iso.front')),
+      createSvgText(namespace, rear.x, rear.y, 'iso-axis-label', t('contracts.iso.rear')));
+  }
+  applyIsoZoomToView(isoView);
   isoView.hidden = false;
+  renderIsoDetails(selected);
+}
 
-  const svgNamespace = "http://www.w3.org/2000/svg";
-
-  const floorGroup = document.createElementNS(svgNamespace, "g");
-  floorGroup.setAttribute("class", "iso-floor-group");
-  activeCells
-    .sort((left, right) => left.row + left.col - (right.row + right.col))
-    .forEach((cell) => {
-      const candidate = selectedEntry ? resolvePlacementTarget(selectedEntry.load, cell.row, cell.col, selectedEntry.load.id) : null;
-      const corners = [
-        projectIso(cell.col, cell.row, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-        projectIso(cell.col + 1, cell.row, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-        projectIso(cell.col + 1, cell.row + 1, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-        projectIso(cell.col, cell.row + 1, 0, originX, originY, tileWidth, tileHeight, levelHeight),
-      ];
-      const polygon = document.createElementNS(svgNamespace, "polygon");
-      polygon.setAttribute("class", "iso-floor");
-      if (cell.isOverload) {
-        polygon.classList.add("is-overload");
-      }
-      if (candidate?.valid) {
-        polygon.classList.add("placeable");
-      }
-      polygon.setAttribute("points", pointsToString(corners));
-      polygon.addEventListener("click", () => handleCellClick(cell.row, cell.col));
-      floorGroup.appendChild(polygon);
-
-      const capacityLabel = document.createElementNS(svgNamespace, "text");
-      const center = averagePoint(corners);
-      capacityLabel.setAttribute("class", "iso-floor-label");
-      capacityLabel.setAttribute("x", String(center.x));
-      capacityLabel.setAttribute("y", String(center.y + 4));
-      capacityLabel.textContent = String(cell.capacity);
-      floorGroup.appendChild(capacityLabel);
-    });
-  isoView.appendChild(floorGroup);
-
-  placedLoads.forEach(({ mission, load }) => {
-    const dims = getLoadDimensions(load, placementRotation(load));
-    const baseX = load.placement.col;
-    const baseY = load.placement.row;
-    const baseZ = load.placement.z;
-    const stackCandidate =
-      selectedEntry && selectedEntry.load.id !== load.id
-        ? resolvePlacementTarget(selectedEntry.load, baseY, baseX, selectedEntry.load.id)
-        : null;
-
-    const loadGroup = document.createElementNS(svgNamespace, "g");
-    loadGroup.setAttribute("class", "iso-load");
-    loadGroup.dataset.loadId = load.id;
-    if (state.selectedLoadId === load.id) {
-      loadGroup.classList.add("selected");
-    }
-    if (isLoadInSelectedStop(load, mission)) {
-      loadGroup.classList.add("stop-target");
-    }
-    if (stackCandidate?.valid) {
-      loadGroup.classList.add("stack-placeable");
-    }
-    loadGroup.addEventListener("mouseenter", () => {
-      renderIsoDetails({ mission, load });
-    });
-    loadGroup.addEventListener("click", () => {
-      state.selectedLoadId = load.id;
-      state.selectionCleared = false;
-      persist();
-      render();
-    });
-
-    const title = document.createElementNS(svgNamespace, "title");
-    title.textContent = `${mission.title} | ${formatLoadRoute(load, mission)} | ${load.label} | ${formatDimensions(load, placementRotation(load))} | z ${baseZ}–${baseZ + dims.height}`;
-
-    loadGroup.appendChild(title);
-
-    const faceFragments = [];
-    const faceOrder = { left: 0, right: 1, front: 2, top: 3 };
-
-    const appendFace = (type, fill, points, cellX, cellY, cellZ) => {
-      const polygon = document.createElementNS(svgNamespace, "polygon");
-      polygon.setAttribute("class", `iso-face iso-face-${type}`);
-      polygon.setAttribute("fill", fill);
-      polygon.setAttribute("points", pointsToString(points));
-      faceFragments.push({
-        type,
-        polygon,
-        row: cellY,
-        col: cellX,
-        z: cellZ,
-        depth: cellY + cellX,
-      });
-    };
-
-    for (let heightOffset = 0; heightOffset < dims.height; heightOffset += 1) {
-      for (let rowOffset = 0; rowOffset < dims.depth; rowOffset += 1) {
-        for (let colOffset = 0; colOffset < dims.width; colOffset += 1) {
-          const cellX = baseX + colOffset;
-          const cellY = baseY + rowOffset;
-          const cellZ = baseZ + heightOffset;
-
-          if (!occupiedIsoCells.has(getIsoVoxelKey(cellX, cellY, cellZ + 1))) {
-            appendFace(
-              "top",
-              shadeColor(mission.color, 12),
-              [
-                projectIso(cellX, cellY, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-              ],
-              cellX,
-              cellY,
-              cellZ + 1,
-            );
-          }
-
-          if (!occupiedIsoCells.has(getIsoVoxelKey(cellX - 1, cellY, cellZ))) {
-            appendFace(
-              "left",
-              shadeColor(mission.color, -18),
-              [
-                projectIso(cellX, cellY, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX, cellY + 1, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX, cellY, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-              ],
-              cellX,
-              cellY,
-              cellZ,
-            );
-          }
-
-          if (!occupiedIsoCells.has(getIsoVoxelKey(cellX + 1, cellY, cellZ))) {
-            appendFace(
-              "right",
-              shadeColor(mission.color, -8),
-              [
-                projectIso(cellX + 1, cellY, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY + 1, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-              ],
-              cellX,
-              cellY,
-              cellZ,
-            );
-          }
-
-          if (!occupiedIsoCells.has(getIsoVoxelKey(cellX, cellY + 1, cellZ))) {
-            appendFace(
-              "front",
-              shadeColor(mission.color, -12),
-              [
-                projectIso(cellX, cellY + 1, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY + 1, cellZ, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX + 1, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-                projectIso(cellX, cellY + 1, cellZ + 1, originX, originY, tileWidth, tileHeight, levelHeight),
-              ],
-              cellX,
-              cellY,
-              cellZ,
-            );
-          }
-        }
-      }
-    }
-
-    faceFragments
-      .sort((left, right) => {
-        if (left.depth !== right.depth) return left.depth - right.depth;
-        if (left.z !== right.z) return left.z - right.z;
-        if (left.row !== right.row) return left.row - right.row;
-        if (left.col !== right.col) return left.col - right.col;
-        return faceOrder[left.type] - faceOrder[right.type];
-      })
-      .forEach((fragment) => {
-        loadGroup.appendChild(fragment.polygon);
-      });
-
-    if (selectedEntry && selectedEntry.load.id !== load.id) {
-      for (let rowOffset = 0; rowOffset < dims.depth; rowOffset += 1) {
-        for (let colOffset = 0; colOffset < dims.width; colOffset += 1) {
-          const cellRow = baseY + rowOffset;
-          const cellCol = baseX + colOffset;
-          const cellCandidate = resolvePlacementTarget(selectedEntry.load, cellRow, cellCol, selectedEntry.load.id);
-          if (!cellCandidate.valid) continue;
-
-          const stackCellPolygon = document.createElementNS(svgNamespace, "polygon");
-          stackCellPolygon.setAttribute("class", "iso-stack-cell placeable");
-          stackCellPolygon.setAttribute(
-            "points",
-            pointsToString([
-              projectIso(cellCol, cellRow, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-              projectIso(cellCol + 1, cellRow, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-              projectIso(cellCol + 1, cellRow + 1, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-              projectIso(cellCol, cellRow + 1, baseZ + dims.height, originX, originY, tileWidth, tileHeight, levelHeight),
-            ]),
-          );
-          stackCellPolygon.addEventListener("click", (event) => {
-            event.stopPropagation();
-            handleCellClick(cellRow, cellCol);
-          });
-          loadGroup.appendChild(stackCellPolygon);
-        }
-      }
-    }
-
-    isoView.appendChild(loadGroup);
+function renderCargoCapacityGuide(cells, level, view, namespace) {
+  const alongColumns = view === 'front' || view === 'rear';
+  const heights = new Map();
+  cells.forEach(cell => {
+    const index = alongColumns ? cell.col : cell.row;
+    heights.set(index, Math.max(heights.get(index) || 0, cell.capacity));
   });
-
-  const axisGroup = document.createElementNS(svgNamespace, "g");
-  axisGroup.setAttribute("class", "iso-axis-group");
-  axisGroup.appendChild(createSvgText(svgNamespace, bugLabelPoint.x, bugLabelPoint.y - 8, "iso-axis-label", "Vorne"));
-  axisGroup.appendChild(createSvgText(svgNamespace, heckLabelPoint.x, heckLabelPoint.y + 10, "iso-axis-label", "Heck"));
-  isoView.appendChild(axisGroup);
-
-  renderIsoDetails(selectedEntry ?? null);
+  const guide = document.createElementNS(namespace, 'g');
+  guide.setAttribute('class', 'cargo-capacity-guide');
+  heights.forEach((height, index) => {
+    for (let z = 0; z < height; z++) {
+      const corners = alongColumns
+        ? [[index,0,z], [index+1,0,z], [index+1,0,z+1], [index,0,z+1]]
+        : [[0,index,z], [0,index+1,z], [0,index+1,z+1], [0,index,z+1]];
+      const polygon = document.createElementNS(namespace, 'polygon');
+      if (level !== 'all' && z !== Number(level)) polygon.setAttribute('opacity', '0.15');
+      polygon.setAttribute('points', pointsToString(corners.map(point => projectCargoPoint(...point))));
+      guide.appendChild(polygon);
+    }
+  });
+  isoView.prepend(guide);
 }
 
 function syncStaticPreviews() {
@@ -468,7 +657,6 @@ function syncStaticPreviews() {
     stripSelectionShipPreview(selectionShipGrid);
   }
 
-  syncSvgPreview(isoView, overviewIsoView);
   syncSvgPreview(isoView, selectionIsoView);
   stripSelectionIsoPreview(selectionIsoView);
   applyIsoZoomToViews();
@@ -477,10 +665,12 @@ function syncStaticPreviews() {
 function syncSvgPreview(source, target) {
   if (!source || !target) return;
   target.innerHTML = source.innerHTML;
+  target.querySelector('.cargo-placement-preview')?.remove();
   target.querySelectorAll(".placeable, .stack-placeable").forEach((node) => {
     node.classList.remove("placeable", "stack-placeable");
   });
   const viewBox = source.getAttribute("viewBox");
+  target.dataset.cameraSpan = source.dataset.cameraSpan;
   const preserveAspectRatio = source.getAttribute("preserveAspectRatio");
   if (viewBox) {
     target.setAttribute("viewBox", viewBox);
@@ -490,30 +680,13 @@ function syncSvgPreview(source, target) {
   }
 }
 
-function getIsoZoomBaseHeight(view) {
-  if (view === isoView) return 232;
-  if (view === selectionIsoView) return 210;
-  return 280;
-}
-
-function applyIsoZoomToView(view, { center = false } = {}) {
+function applyIsoZoomToView(view) {
   if (!view) return;
   const frame = view.closest(".iso-frame");
-  const isZoomed = isoZoomLevel > 1;
-  if (isZoomed) {
-    view.style.width = `${isoZoomLevel * 100}%`;
-    view.style.minHeight = `${Math.round(getIsoZoomBaseHeight(view) * isoZoomLevel)}px`;
-  } else {
-    view.style.removeProperty("width");
-    view.style.removeProperty("min-height");
-  }
-  frame?.classList.toggle("is-zoomed", isZoomed);
-
-  if (center && frame) {
-    requestAnimationFrame(() => {
-      frame.scrollLeft = Math.max(0, (frame.scrollWidth - frame.clientWidth) / 2);
-    });
-  }
+  CargoScene.applyZoom(view, isoZoomLevel);
+  view.style.removeProperty('width');
+  view.style.removeProperty('min-height');
+  frame?.classList.remove('is-zoomed');
 }
 
 function updateIsoZoomControls() {
@@ -529,8 +702,8 @@ function updateIsoZoomControls() {
   });
 }
 
-function applyIsoZoomToViews(options = {}) {
-  [isoView, overviewIsoView, selectionIsoView].forEach((view) => applyIsoZoomToView(view, options));
+function applyIsoZoomToViews() {
+  [isoView, selectionIsoView].forEach((view) => applyIsoZoomToView(view));
   updateIsoZoomControls();
 }
 
@@ -543,7 +716,7 @@ function changeIsoZoom(action) {
   } else if (action === "out") {
     isoZoomLevel = ISO_ZOOM_LEVELS[Math.max(currentIndex - 1, 0)];
   }
-  applyIsoZoomToViews({ center: true });
+  applyIsoZoomToViews();
 }
 
 function stripSelectionShipPreview(container) {
@@ -585,6 +758,7 @@ function handleCellClick(row, col) {
     return;
   }
 
+  const before = captureCargoAction();
   selectedEntry.load.placement = {
     row: result.anchorRow,
     col: result.anchorCol,
@@ -593,18 +767,21 @@ function handleCellClick(row, col) {
     rotated: selectedEntry.load.rotated,
     fleetEntryId: getCurrentCargoGridFleetEntryId(),
   };
+  selectedEntry.load.cargoFixed = false;
   selectedEntry.load.loadedByFleetEntryId = getCurrentCargoGridFleetEntryId();
   selectedEntry.load.loadedAt = new Date().toISOString();
   state.selectedLoadId = getNextLoadIdAfterPlacement(selectedEntry.load);
   state.selectionCleared = false;
   lastAutoLoadResult = null;
   lastUnloadPlan = null;
+  recordCargoAction(before);
   persist();
   render();
 }
 
 function unloadLoad(load) {
   if (isDispatcherMode()) return;
+  if (load.cargoFixed && load.placement) { void showAppNotice(t('contracts.iso.fixedHint')); return; }
   const entry = findLoadById(load.id);
   if (!entry || !load.placement) return;
   if (!isLoadPlacementInCurrentLayout(load, entry.mission)) {
@@ -617,6 +794,7 @@ function unloadLoad(load) {
     return;
   }
 
+  const before = captureCargoAction();
   load.placement = null;
   if (state.selectedLoadId === load.id) {
     state.selectedLoadId = load.id;
@@ -624,16 +802,19 @@ function unloadLoad(load) {
   }
   lastAutoLoadResult = null;
   lastUnloadPlan = null;
+  recordCargoAction(before);
   persist();
   render();
 }
 
 function rotateLoad(load) {
   if (isDispatcherMode()) return;
+  if (load.cargoFixed && load.placement) { void showAppNotice(t('contracts.iso.fixedHint')); return; }
   const entry = findLoadById(load.id);
   if (load.placement && entry && !isLoadPlacementInCurrentLayout(load, entry.mission)) {
     return;
   }
+  const before = captureCargoAction();
   load.rotated = !load.rotated;
   if (load.placement) {
     const currentRow = load.placement.row;
@@ -648,13 +829,17 @@ function rotateLoad(load) {
   }
   lastAutoLoadResult = null;
   lastUnloadPlan = null;
+  recordCargoAction(before);
   persist();
   render();
 }
 
-function canPlaceLoadAt(load, anchorRow, anchorCol, ignoreLoadId = null) {
+function canPlaceLoadAt(load, anchorRow, anchorCol, ignoreLoadId = null, allowOverload = true) {
   const dimensions = getLoadDimensions(load);
   const footprint = buildFootprint(anchorRow, anchorCol, dimensions.width, dimensions.depth);
+  // Saved placements are validated independently of permission to add new
+  // overload cargo. Manual placement explicitly passes the current setting.
+  const profile = !allowOverload ? findShipLibraryEntryById(state.layout.shipId) : null;
 
   for (const cell of footprint) {
     if (!isCellInside(cell.row, cell.col) || isBlockedSlot(createSlotId(cell.row, cell.col))) {
@@ -671,8 +856,13 @@ function canPlaceLoadAt(load, anchorRow, anchorCol, ignoreLoadId = null) {
   const baseZ = baseHeights[0] ?? 0;
   for (const cell of footprint) {
     const slotId = createSlotId(cell.row, cell.col);
-    const capacity = getCellCapacityById(slotId);
+    const capacity = !allowOverload
+      ? profile ? Number(profile.gridHeights?.[slotId]) || 0 : isOverloadSlot(slotId) ? 0 : getCellCapacityById(slotId)
+      : getCellCapacityById(slotId);
     if (baseZ + dimensions.height > capacity) {
+      if (!allowOverload && baseZ + dimensions.height <= getCellCapacityById(slotId)) {
+        return { valid: false, reason: t('autoload.overload.manualDisabled') };
+      }
       return { valid: false, reason: "Die Ladung ist an dieser Stelle zu hoch für das Höhenprofil des Schiffs." };
     }
   }
@@ -739,6 +929,7 @@ function updateAutoloadSettings(nextValue) {
     ...getAutoloadSettings(),
     ...nextValue,
   });
+  prepareAutoloadLayout(state.autoload);
   lastAutoLoadResult = null;
   if (typeof lastRunAutoLoadResult !== "undefined") lastRunAutoLoadResult = null;
   persist();
@@ -783,7 +974,7 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings(), cargoA
     load.rotated = rotated;
     for (let row = 0; row < state.layout.rows; row += 1) {
       for (let col = 0; col < state.layout.cols; col += 1) {
-        const result = canPlaceLoadAt(load, row, col, load.id);
+        const result = canPlaceLoadAt(load, row, col, load.id, normalizedSettings.allowOverload);
         if (!result.valid) continue;
         const area = Autoload.placementArea(result.footprint, state.layout.cols);
         if (Autoload.normalizeCargoArea(cargoArea) !== 'all' && area !== cargoArea) continue;
@@ -791,7 +982,11 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings(), cargoA
         if (region === null) continue;
         if (selection.id && region !== (selection.id === '__remaining__' ? '' : selection.id)) continue;
         const overloadCellCount = result.footprint.reduce(
-          (count, cell) => count + (overloadSlotIds.has(createSlotId(cell.row, cell.col)) ? 1 : 0),
+          (count, cell) => {
+            const slotId = createSlotId(cell.row, cell.col);
+            const officialHeight = Number(areaContext.profile?.gridHeights?.[slotId]) || 0;
+            return count + (overloadSlotIds.has(slotId) && result.baseZ + load.height > officialHeight ? 1 : 0);
+          },
           0,
         );
         if (!normalizedSettings.allowOverload && overloadCellCount > 0) continue;
@@ -849,6 +1044,7 @@ function autoLoadEntries(entries, {
   }
 
   prepareAutoloadLayout(normalizedSettings);
+  const before = captureCargoAction();
   const routeRanks = buildAutoloadRouteRanks();
   const segmentOrders = new Map(uniqueEntries.map(({ mission }) => [
     mission.id,
@@ -875,6 +1071,7 @@ function autoLoadEntries(entries, {
       return;
     }
     load.rotated = placement.rotated;
+    load.cargoFixed = false;
     load.placement = {
       row: placement.row,
       col: placement.col,
@@ -900,6 +1097,7 @@ function autoLoadEntries(entries, {
   state.selectedLoadId = skippedLoadIds[0] || null;
   state.selectionCleared = skippedLoadIds.length === 0;
   lastUnloadPlan = null;
+  recordCargoAction(before);
   if (persistAfter) persist();
   if (renderAfter) render();
   return { ...result };
@@ -932,7 +1130,9 @@ function autoLoadMission(mission, {
 }
 
 function resolvePlacementTarget(load, clickedRow, clickedCol, ignoreLoadId = null) {
-  const direct = canPlaceLoadAt(load, clickedRow, clickedCol, ignoreLoadId);
+  if (load.cargoFixed && load.placement) return {valid:false, reason:t('contracts.iso.fixedHint')};
+  const allowOverload = getAutoloadSettings().allowOverload;
+  const direct = canPlaceLoadAt(load, clickedRow, clickedCol, ignoreLoadId, allowOverload);
   if (direct.valid) {
     return { ...direct, anchorRow: clickedRow, anchorCol: clickedCol };
   }
@@ -942,7 +1142,7 @@ function resolvePlacementTarget(load, clickedRow, clickedCol, ignoreLoadId = nul
 
   for (let anchorRow = clickedRow - dimensions.depth + 1; anchorRow <= clickedRow; anchorRow += 1) {
     for (let anchorCol = clickedCol - dimensions.width + 1; anchorCol <= clickedCol; anchorCol += 1) {
-      const result = canPlaceLoadAt(load, anchorRow, anchorCol, ignoreLoadId);
+      const result = canPlaceLoadAt(load, anchorRow, anchorCol, ignoreLoadId, allowOverload);
       if (!result.valid) continue;
 
       const footprint = result.footprint;
@@ -1291,27 +1491,6 @@ function pointsToString(points) {
 
 function getIsoVoxelKey(x, y, z) {
   return `${x}|${y}|${z}`;
-}
-
-function buildIsoOccupancyMap(entries) {
-  const occupied = new Set();
-
-  entries.forEach(({ load }) => {
-    if (!load.placement) return;
-    const dims = getLoadDimensions(load, placementRotation(load));
-
-    for (let heightOffset = 0; heightOffset < dims.height; heightOffset += 1) {
-      for (let rowOffset = 0; rowOffset < dims.depth; rowOffset += 1) {
-        for (let colOffset = 0; colOffset < dims.width; colOffset += 1) {
-          occupied.add(
-            getIsoVoxelKey(load.placement.col + colOffset, load.placement.row + rowOffset, load.placement.z + heightOffset),
-          );
-        }
-      }
-    }
-  });
-
-  return occupied;
 }
 
 function averagePoint(points) {

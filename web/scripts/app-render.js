@@ -7,13 +7,13 @@ function getAppViewRenderer() {
       {id:'hub', pages:['hub'], render: () => renderHub()},
       {id:'run', pages:['run'], render: () => renderRunMode()},
       {id:'create', pages:['create'], render: () => renderCreateShipIndicator()},
-      // The home/overview previews copy the interactive grid and SVG in load.
-      {id:'cargo-grid', pages:['home','overview','load'], render: () => {
+      // The ship-selection preview copies the interactive cargo grid.
+      {id:'cargo-grid', pages:['home','load'], render: () => {
         renderLevelFilters(); renderShipGrid(); renderIsometricView(); syncStaticPreviews();
       }},
       {id:'cargo-loads', pages:['load'], render: () => renderHomeLoads()},
       {id:'cargo-overview', pages:['overview'], render: () => {
-        renderSummary(); renderManifest(); renderStopList(); renderCurrentLocationControl();
+        renderSummary(); renderStopList(); renderCurrentLocationControl();
         renderRouteProgress(); renderMissions();
       }},
       {id:'fleet', pages:['fleet'], render: () => renderFleet()},

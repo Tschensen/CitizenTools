@@ -7,7 +7,8 @@ async function syncLayoutToActiveFleetShip({ confirmChange = false, persistChang
     return true;
   }
 
-  const shipDefinition = getShipGridDefinition(shipProfile, state.layout.overloadMode);
+  const overloadMode = state.layout.overloadMode || getAutoloadSettings().allowOverload;
+  const shipDefinition = getShipGridDefinition(shipProfile, overloadMode);
   if (doesLayoutMatchDefinition(shipDefinition, activeEntry.id, activeEntry.shipId)) {
     return true;
   }
@@ -26,7 +27,7 @@ async function syncLayoutToActiveFleetShip({ confirmChange = false, persistChang
     return false;
   }
 
-  applyLayoutDefinition(shipDefinition, activeEntry.id, activeEntry.shipId, state.layout.overloadMode);
+  applyLayoutDefinition(shipDefinition, activeEntry.id, activeEntry.shipId, overloadMode);
   state = pruneInvalidPlacements(state);
   if (persistChanges) persist();
   return true;
@@ -70,8 +71,7 @@ function renderLevelFilters() {
   const targets = [topdownLevelFilter, isoLevelFilter].filter(Boolean);
   if (targets.length === 0) return;
 
-  const activeCells = buildActiveCells();
-  const maxHeight = activeCells.reduce((best, cell) => Math.max(best, cell.capacity), 0);
+  const { bounds: { maxHeight } } = getCargoViewGeometry();
   const options = ["all", ...Array.from({ length: maxHeight }, (_, index) => index)];
   const current = getEffectiveLevelFilter(maxHeight);
   const markup = options

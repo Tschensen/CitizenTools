@@ -192,6 +192,7 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
             segmentId: entry.segmentId || null,
             loadedByFleetEntryId: entry.loadedByFleetEntryId || entry.placement?.fleetEntryId || "",
             loadedAt: entry.loadedAt || null,
+            cargoFixed: Boolean(entry.cargoFixed && placement),
             deliveredByFleetEntryId: entry.deliveredByFleetEntryId || "",
             deliveredAt: entry.deliveredAt || null,
           });
