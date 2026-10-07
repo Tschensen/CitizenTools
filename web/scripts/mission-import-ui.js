@@ -1577,3 +1577,103 @@ function fillQuickMissionCapture(parsed) {
   ensureQuickMissionRows();
   syncQuickMissionHint();
 }
+
+function registerMissionImportEvents() {
+  openMissionImportDialogButton?.addEventListener("click", openMissionImportDialog);
+  missionImportCancel?.addEventListener("click", closeMissionImportDialog);
+  missionImportApply?.addEventListener("click", () => {
+    void applyMissionImportPreview();
+  });
+  missionImportRefresh?.addEventListener("click", () => {
+    void loadMissionImportInbox();
+  });
+  missionImportInboxList?.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-import-action]");
+    const item = actionButton?.closest("[data-import-id]");
+    const importId = item?.dataset.importId || "";
+    if (!actionButton || !importId) return;
+    if (actionButton.dataset.importAction === "preview") {
+      previewMissionImportInboxItem(importId);
+      return;
+    }
+    if (actionButton.dataset.importAction === "dismiss") {
+      void dismissMissionImportInboxItem(importId);
+    }
+  });
+  missionImportClipboardButton?.addEventListener("click", (event) => {
+    void importMissionFromClipboard(event);
+  });
+
+  missionImportFileInput?.addEventListener("change", (event) => {
+    const file = missionImportFileInput.files?.[0];
+    if (!file) return;
+    void importMissionScreenshot(file, event);
+    missionImportFileInput.value = "";
+  });
+
+  missionImportDropzone?.addEventListener("click", (event) => {
+    if (event.target.closest("button, label, input")) return;
+    missionImportFileInput?.click();
+  });
+
+  missionImportDropzone?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    missionImportFileInput?.click();
+  });
+
+  missionImportDropzone?.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    missionImportDropzone.classList.add("is-dragging");
+  });
+
+  missionImportDropzone?.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget && missionImportDropzone.contains(event.relatedTarget)) return;
+    missionImportDropzone.classList.remove("is-dragging");
+  });
+
+  missionImportDropzone?.addEventListener("drop", (event) => {
+    event.preventDefault();
+    missionImportDropzone.classList.remove("is-dragging");
+    const file = Array.from(event.dataTransfer?.files || []).find((candidate) => candidate.type.startsWith("image/"));
+    if (file) void importMissionScreenshot(file, event);
+  });
+
+  missionImportPreview?.addEventListener("input", syncMissionImportPreview);
+  missionImportConsignmentList?.addEventListener("click", (event) => {
+    const addButton = event.target.closest(".mission-import-route-add");
+    if (addButton) {
+      const item = addButton.closest(".mission-import-consignment");
+      const defaultDropoff = item?.querySelector('[data-field="importDropoff"]')?.value || "";
+      addMissionImportRouteRow(item, { dropoff: defaultDropoff });
+      syncMissionImportPreview();
+      return;
+    }
+    const removeButton = event.target.closest(".mission-import-route-remove");
+    const item = removeButton?.closest(".mission-import-consignment");
+    const routeList = item?.querySelector(".mission-import-route-list");
+    if (!removeButton || !routeList || routeList.children.length <= 1) return;
+    removeButton.closest(".mission-import-route-row")?.remove();
+    syncMissionImportPreview();
+  });
+
+  missionImportDialog?.addEventListener("click", (event) => {
+    if (event.target === missionImportDialog) closeMissionImportDialog();
+  });
+
+  document.addEventListener("paste", (event) => {
+    if (!missionImportDialog || missionImportDialog.hidden) return;
+    const file = Array.from(event.clipboardData?.items || [])
+      .find((item) => item.type.startsWith("image/"))
+      ?.getAsFile();
+    if (!file) return;
+    event.preventDefault();
+    void importMissionScreenshot(file, event);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && missionImportDialog && !missionImportDialog.hidden) {
+      closeMissionImportDialog();
+    }
+  });
+}

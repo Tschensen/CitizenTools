@@ -486,3 +486,224 @@ function getPlannedConsignmentScu(consignments) {
   return [...cargoTotals.values()].reduce((sum, cargo) => sum + Math.max(cargo.actual, cargo.expected), 0);
 }
 
+function registerMissionCargoFormEvents() {
+  consignmentList.addEventListener("input", (event) => {
+    const item = event.target.closest(".consignment-item");
+    if (!item) return;
+    const group = event.target.closest(".container-group-row");
+    if (group) {
+      renderContainerShortcutButtons(group);
+      syncContainerGroupHint(group);
+    }
+    const route = event.target.closest(".route-group-row");
+    syncRouteGroupTitle(route);
+    syncRouteGroupHint(route);
+    syncConsignmentHint(item);
+    refreshConsignmentTitles();
+    updateDimensionHint();
+    renderLocationSuggestions();
+  });
+
+  consignmentList.addEventListener("click", async (event) => {
+    const toggleButton = event.target.closest(".consignment-toggle");
+    if (toggleButton) {
+      const item = toggleButton.closest(".consignment-item");
+      if (!item) return;
+      item.classList.toggle("is-collapsed");
+      const expanded = !item.classList.contains("is-collapsed");
+      toggleButton.setAttribute("aria-expanded", String(expanded));
+      toggleButton.setAttribute("title", expanded ? "Fracht einklappen" : "Fracht ausklappen");
+      return;
+    }
+
+    const removeButton = event.target.closest(".consignment-remove");
+    if (removeButton) {
+      if (consignmentList.children.length <= 1) return;
+      removeButton.closest(".consignment-item")?.remove();
+      refreshConsignmentTitles();
+      updateDimensionHint();
+      renderLocationSuggestions();
+      return;
+    }
+
+    const addRouteButton = event.target.closest(".consignment-route-add");
+    if (addRouteButton) {
+      const item = addRouteButton.closest(".consignment-item");
+      if (!item) return;
+      addRouteGroupRow(item, { groups: [] });
+      syncConsignmentHint(item);
+      refreshConsignmentTitles();
+      updateDimensionHint();
+      renderLocationSuggestions();
+      return;
+    }
+
+    const removeRouteButton = event.target.closest(".route-group-remove");
+    if (removeRouteButton) {
+      const item = removeRouteButton.closest(".consignment-item");
+      const routeList = item?.querySelector('[data-role="route-group-list"]');
+      if (!item || !routeList || routeList.children.length <= 1) return;
+      removeRouteButton.closest(".route-group-row")?.remove();
+      refreshRouteGroupTitles(item);
+      syncConsignmentHint(item);
+      updateDimensionHint();
+      renderLocationSuggestions();
+      return;
+    }
+
+    const addGroupButton = event.target.closest(".consignment-group-add");
+    if (addGroupButton) {
+      const route = addGroupButton.closest(".route-group-row");
+      const item = addGroupButton.closest(".consignment-item");
+      if (!route || !item) return;
+      const defaultContainerSize = typeof getDefaultCargoContainerSizeKey === "function" ? getDefaultCargoContainerSizeKey() : "8";
+      addContainerGroupRow(route, { quantity: 1, containerSize: defaultContainerSize });
+      syncConsignmentHint(item);
+      updateDimensionHint();
+      return;
+    }
+
+    const splitRouteButton = event.target.closest(".route-auto-split");
+    if (splitRouteButton) {
+      const route = splitRouteButton.closest(".route-group-row");
+      const item = splitRouteButton.closest(".consignment-item");
+      if (!route || !item) return;
+      const targetScu = readRouteTargetScu(route);
+      if (!Number.isInteger(targetScu) || targetScu <= 0) {
+        await showAppNotice("Bitte trage eine volle SCU-Zielmenge ein, z. B. 121.");
+        return;
+      }
+      const suggestedGroups = buildContainerGroupsForScu(targetScu, getMissionFormMaxContainerScu());
+      if (suggestedGroups.length === 0) {
+        await showAppNotice("Für diese Zielmenge konnte keine Containeraufteilung erstellt werden.");
+        return;
+      }
+      const groupList = route.querySelector('[data-role="container-group-list"]');
+      if (!groupList) return;
+      groupList.innerHTML = "";
+      suggestedGroups.forEach((group) => addContainerGroupRow(route, group));
+      syncRouteGroupHint(route);
+      syncConsignmentHint(item);
+      refreshConsignmentTitles();
+      updateDimensionHint();
+      return;
+    }
+
+    const removeGroupButton = event.target.closest(".container-group-remove");
+    if (removeGroupButton) {
+      const route = removeGroupButton.closest(".route-group-row");
+      const item = removeGroupButton.closest(".consignment-item");
+      const groupList = route?.querySelector('[data-role="container-group-list"]');
+      if (!route || !item || !groupList || groupList.children.length <= 1) return;
+      removeGroupButton.closest(".container-group-row")?.remove();
+      refreshContainerGroupActions(route);
+      syncRouteGroupHint(route);
+      syncConsignmentHint(item);
+      updateDimensionHint();
+      return;
+    }
+
+    const shortcutButton = event.target.closest("[data-container-size-value]");
+    if (!shortcutButton) return;
+    const item = shortcutButton.closest(".consignment-item");
+    const group = shortcutButton.closest(".container-group-row");
+    const input = group?.querySelector('[data-field="containerSize"]');
+    if (!item || !group || !input) return;
+    input.value = shortcutButton.dataset.containerSizeValue || input.value;
+    renderContainerShortcutButtons(group);
+    syncContainerGroupHint(group);
+    syncRouteGroupHint(group.closest(".route-group-row"));
+    syncConsignmentHint(item);
+    refreshConsignmentTitles();
+    updateDimensionHint();
+  });
+
+  quickCargoTitle?.addEventListener("input", syncQuickMissionHint);
+  quickPickup?.addEventListener("input", () => {
+    syncQuickPickupFallbacks();
+    syncQuickMissionHint();
+    renderLocationSuggestions();
+  });
+
+  quickDestinationList?.addEventListener("input", () => {
+    syncQuickMissionHint();
+    renderLocationSuggestions();
+  });
+
+  quickDestinationList?.addEventListener("click", (event) => {
+    const removeButton = event.target.closest(".quick-destination-remove");
+    if (!removeButton) return;
+    if (quickDestinationList.children.length <= 1) return;
+    removeButton.closest(".quick-destination-row")?.remove();
+    refreshQuickDestinationActions();
+    syncQuickMissionHint();
+    renderLocationSuggestions();
+  });
+
+  addQuickDestinationButton?.addEventListener("click", () => {
+    addQuickDestinationRow();
+    syncQuickMissionHint();
+    renderLocationSuggestions();
+  });
+
+  applyQuickMissionButton?.addEventListener("click", () => {
+    void applyQuickMissionCapture();
+  });
+
+  addConsignmentButton.addEventListener("click", () => {
+    addConsignmentRow();
+    setCollapsibleExpanded("consignmentBuilderBody", true);
+    updateDimensionHint();
+    renderLocationSuggestions();
+  });
+}
+
+function ensureConsignmentRows() {
+  if (consignmentList.children.length > 0) {
+    Array.from(consignmentList.children).forEach((node) => {
+      if (node.querySelectorAll(".route-group-row").length === 0) {
+        addRouteGroupRow(node, {
+          pickup: node.querySelector('[data-field="pickup"]')?.value || "",
+          dropoff: node.querySelector('[data-field="dropoff"]')?.value || "",
+          groups: [],
+        });
+      }
+      Array.from(node.querySelectorAll(".route-group-row")).forEach((routeNode) => {
+        refreshContainerGroupActions(routeNode);
+        refreshRouteGroupTitles(node);
+      });
+      syncConsignmentHint(node);
+    });
+    refreshConsignmentTitles();
+    updateDimensionHint();
+    return;
+  }
+  addConsignmentRow({
+    title: "",
+    routes: [
+      {
+        pickup: "",
+        dropoff: "",
+        groups: [],
+      },
+    ],
+  });
+}
+
+function ensureQuickMissionRows() {
+  if (!quickDestinationList) return;
+  if (quickDestinationList.children.length === 0) {
+    addQuickDestinationRow();
+  }
+  refreshQuickDestinationActions();
+  syncQuickMissionHint();
+}
+
+function resetQuickMissionCapture() {
+  if (quickCargoTitle) quickCargoTitle.value = "";
+  if (quickPickup) quickPickup.value = "";
+  if (quickDestinationList) {
+    quickDestinationList.innerHTML = "";
+  }
+  ensureQuickMissionRows();
+}

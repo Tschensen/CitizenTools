@@ -86,7 +86,7 @@ def main():
                 result['checks'].append(f'import-{number}-stored-once')
 
             # Keep a real edit form open on the tablet while the PC imports.
-            tablet.evaluate_js("setActivePage('missions');window.editId=state.missions.find(m=>m.type==='cargo'&&!m.sourceImportId&&isMissionActive(m)).id;document.querySelector('[data-mission-id=\"'+editId+'\"] .edit-mission').click();missionForm.elements.title.value='Vom Tablet bearbeitet';missionForm.elements.title.focus();")
+            tablet.evaluate_js("setActivePage('overview');window.editId=state.missions.find(m=>m.type==='cargo'&&!m.sourceImportId&&isMissionActive(m)).id;document.querySelector('[data-mission-id=\"'+editId+'\"] .edit-mission').click();missionForm.elements.title.value='Vom Tablet bearbeitet';missionForm.elements.title.focus();")
             add_import(4)
             start_import(pc)
             until(pc, "window.importDone && state.missions.some(m=>m.sourceImportId==='shared-4')")
@@ -98,7 +98,7 @@ def main():
 
             # Delete confirmation blocks polling; a new import must survive
             # the stale tablet's deletion and the removed mission stays gone.
-            tablet.evaluate_js("setActivePage('missions');window.deleteId=state.missions.find(m=>m.sourceImportId==='shared-2').id;document.querySelector('[data-mission-id=\"'+deleteId+'\"] .delete-mission').click();")
+            tablet.evaluate_js("setActivePage('overview');window.deleteId=state.missions.find(m=>m.sourceImportId==='shared-2').id;document.querySelector('[data-mission-id=\"'+deleteId+'\"] .delete-mission').click();")
             until(tablet, '!missionConfirmDialog.hidden')
             tablet.evaluate_js('missionConfirmDialogCancel.click()')
             expect(tablet, "state.missions.some(m=>m.id===deleteId)", 'cancel-delete-keeps-mission')
@@ -113,7 +113,7 @@ def main():
                 expect(window, "!document.querySelector('.solo-conflict')", f'tablet-delete-and-pc-import-retained-{window.uid}')
 
             # Completion uses the real card action and confirmation dialog.
-            tablet.evaluate_js("setActivePage('missions');window.completeId=state.missions.find(m=>m.sourceImportId==='shared-3').id;document.querySelector('[data-mission-id=\"'+completeId+'\"] .complete-mission').click();")
+            tablet.evaluate_js("setActivePage('overview');window.completeId=state.missions.find(m=>m.sourceImportId==='shared-3').id;document.querySelector('[data-mission-id=\"'+completeId+'\"] .complete-mission').click();")
             until(tablet, '!missionConfirmDialog.hidden')
             tablet.evaluate_js('missionConfirmDialogConfirm.click()')
             for window in [pc, tablet]:

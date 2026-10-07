@@ -111,7 +111,8 @@ test('existing contract editor stays in edit mode while imports use create mode'
     missionFormTitle:{textContent:''}, missionSubmitButton:{textContent:''}, missionCancelButton:{hidden:true},
     DEFAULT_COLOR:'#fff', cargoText:(_key, fallback) => fallback,
   });
-  vm.runInContext(read('cargo-ui'), f.c);
+  vm.runInContext(read('mission-quality-ui'), f.c);
+  vm.runInContext(read('mission-form-ui'), f.c);
   Object.assign(f.c, {
     resetMissionForm() {
       f.c.missionFormTitle.textContent = 'Create';
