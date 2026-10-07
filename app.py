@@ -1,4 +1,4 @@
-"""Citizen Tools Solo: one Windows window, server and capture process."""
+"""Citizen Tools: one Windows window, server and capture process."""
 from __future__ import annotations
 
 import argparse
@@ -44,7 +44,7 @@ class NativeUpdates:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Citizen Tools Solo")
+    parser = argparse.ArgumentParser(description="Citizen Tools")
     parser.add_argument("--headless", action="store_true", help="Server ohne App-Fenster (Diagnose)")
     parser.add_argument("--no-capture", action="store_true")
     parser.add_argument("--localhost", action="store_true")
@@ -214,7 +214,7 @@ def main():
     except Exception as error:
         logging.exception("Solo application failed")
         if not args.headless and not args.smoke_test and os.name == "nt":
-            ctypes.windll.user32.MessageBoxW(None, f"Citizen Tools Solo konnte nicht gestartet werden.\n\n{error}\n\nDiagnose: {root / 'solo.log'}", "Citizen Tools Solo", 0x10)
+            ctypes.windll.user32.MessageBoxW(None, f"Citizen Tools konnte nicht gestartet werden.\n\n{error}\n\nDiagnose: {root / 'solo.log'}", "Citizen Tools", 0x10)
         else:
             raise
         return 1

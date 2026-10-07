@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import solo_updates as updates
 import update_helper as helper
 from app import NativeUpdates
+from update_contract import UPDATE_ASSETS, update_manifest
 
 
 def fixture(version='0.4.0'):
@@ -52,6 +53,45 @@ def portable(path, version='0.4.0', extra=None):
 
 
 class ReleaseTests(unittest.TestCase):
+    def add_update_packages(self, release, manifest):
+        manifest['updates'] = update_manifest(['portable', 'installer'])
+        for mode, name in UPDATE_ASSETS.items():
+            file = next(item for item in manifest['files'] if item['name'] == updates.ASSETS[mode])
+            manifest['files'].append({**file, 'name': name})
+            asset = next(item for item in release['assets'] if item['name'] == updates.ASSETS[mode])
+            release['assets'].append({**asset, 'name': name,
+                'browser_download_url': asset['browser_download_url'].replace(updates.ASSETS[mode], name)})
+
+    def test_compatible_lean_packages_preferred_for_both_editions(self):
+        for mode, name in UPDATE_ASSETS.items():
+            client, release, manifest, _ = fixture()
+            self.add_update_packages(release, manifest)
+            candidate, _ = updates.read_candidate(client, '0.3.0', mode)
+            self.assertEqual(candidate['asset']['name'], name)
+            self.assertEqual(candidate['notes'][0]['de']['title'], 'Neu')
+
+    def test_unknown_format_platform_or_mode_falls_back_to_full_package(self):
+        for change in ['format', 'platform', 'mode']:
+            client, release, manifest, _ = fixture()
+            self.add_update_packages(release, manifest)
+            if change == 'format': manifest['updates']['format'] = 2
+            elif change == 'platform': manifest['updates']['platform'] = 'windows-arm64'
+            else: del manifest['updates']['assets']['portable']
+            candidate, _ = updates.read_candidate(client, '0.3.0', 'portable')
+            self.assertEqual(candidate['asset']['name'], updates.ASSETS['portable'])
+
+    def test_advertised_update_must_be_complete_and_verified(self):
+        for change in ['name', 'missing', 'digest', 'size']:
+            client, release, manifest, _ = fixture()
+            self.add_update_packages(release, manifest)
+            file = next(item for item in manifest['files'] if item['name'] == UPDATE_ASSETS['portable'])
+            if change == 'name': manifest['updates']['assets']['portable'] = 'arbitrary.exe'
+            elif change == 'missing': release['assets'] = [item for item in release['assets'] if item['name'] != file['name']]
+            elif change == 'digest': file['sha256'] = 'a' * 64
+            else: file['bytes'] += 1
+            with self.subTest(change=change), self.assertRaises(updates.UpdateError):
+                updates.read_candidate(client, '0.3.0', 'portable')
+
     def test_numeric_versions_and_cumulative_bilingual_notes(self):
         client, _, manifest, _ = fixture('0.2.10')
         manifest['releases'] += [{'version': '0.2.9', 'de': {'title': 'Alt', 'changes': ['alt']}, 'en': {'title': 'Old', 'changes': ['old']}}]
@@ -149,9 +189,12 @@ class ReleaseTests(unittest.TestCase):
                 (folder / 'job.json').write_text(json.dumps({'dataRoot': str(root)}))
                 (folder / 'result.json').write_text(json.dumps({'ok': complete}))
                 (folder / updates.ASSETS['portable']).write_bytes(b'package')
+                (folder / UPDATE_ASSETS['portable']).write_bytes(b'lean package')
                 (folder / 'data-backup').mkdir(); (folder / 'data-backup/settings.json').write_text('personal')
             manager = updates.UpdateManager('0.4.0', root)
             self.assertFalse((root / 'Updates' / ('a' * 32) / updates.ASSETS['portable']).exists())
+            self.assertFalse((root / 'Updates' / ('a' * 32) / UPDATE_ASSETS['portable']).exists())
+            self.assertTrue((root / 'Updates' / ('b' * 32) / UPDATE_ASSETS['portable']).exists())
             self.assertTrue((root / 'Updates' / ('b' * 32) / updates.ASSETS['portable']).exists())
             self.assertEqual((root / 'Updates' / ('a' * 32) / 'data-backup/settings.json').read_text(), 'personal')
             (manager.root / 'preferences.json').write_text('[]')
@@ -170,6 +213,44 @@ class ReplacementTests(unittest.TestCase):
         self.job = {'currentVersion': '0.3.0', 'version': '0.4.0', 'kind': 'portable'}
 
     def tearDown(self): self.temp.cleanup()
+
+    def test_lean_update_removes_managed_prerequisite_and_retains_rollback_copy(self):
+        prerequisite = self.program / 'prerequisites/webview.exe'
+        prerequisite.parent.mkdir(); prerequisite.write_text('large installer')
+        path = self.program / helper.MANIFEST
+        manifest = json.loads(path.read_text())
+        manifest['files'].append('prerequisites/webview.exe')
+        path.write_text(json.dumps(manifest))
+        backup = helper.apply_update(self.job, self.program, self.package, self.folder)
+        self.assertFalse((self.program / 'prerequisites').exists())
+        self.assertEqual((backup / 'prerequisites/webview.exe').read_text(), 'large installer')
+
+    def test_job_accepts_both_package_families_but_rejects_wrong_kind(self):
+        data = self.root / 'user-data'
+        folder = data / 'Updates' / ('b' * 32); folder.mkdir(parents=True)
+        for assets in [updates.ASSETS, UPDATE_ASSETS]:
+            for kind, name in assets.items():
+                package = folder / name; package.write_bytes(b'package')
+                job = {**self.job, 'format': 1, 'kind': kind, 'program': str(self.program),
+                       'dataRoot': str(data), 'package': str(package), 'sha256': helper.digest(package),
+                       'oldExeSha256': helper.digest(self.program / helper.EXE), 'restartArgs': ['--data-dir', str(data)]}
+                path = folder / 'job.json'; path.write_text(json.dumps(job))
+                self.assertEqual(helper.validate_job(path)[3], package)
+                job['kind'] = 'installer' if kind == 'portable' else 'portable'
+                path.write_text(json.dumps(job))
+                with self.assertRaises(ValueError): helper.validate_job(path)
+
+    def test_incompatible_platform_rejected_before_replacement(self):
+        with zipfile.ZipFile(self.package, 'r') as archive:
+            files = {name: archive.read(name) for name in archive.namelist()}
+        path = 'CitizenTools-Solo/' + helper.MANIFEST
+        manifest = json.loads(files[path]); manifest['platform'] = 'windows-arm64'
+        files[path] = json.dumps(manifest).encode()
+        with zipfile.ZipFile(self.package, 'w') as archive:
+            for name, body in files.items(): archive.writestr(name, body)
+        with self.assertRaises(ValueError):
+            helper.apply_update(self.job, self.program, self.package, self.folder)
+        self.assertEqual((self.program / helper.EXE).read_text(), '0.3.0')
 
     def test_portable_keeps_path_unknown_files_and_previous_version(self):
         (self.program / 'personal.txt').write_text('keep')

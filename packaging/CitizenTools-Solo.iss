@@ -3,14 +3,19 @@
 #endif
 [Setup]
 AppId={{096EB0A4-E06C-4D53-BA74-BFC2D465FEC0}
-AppName=Citizen Tools Solo
+AppName=Citizen Tools
 AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\CitizenTools-Solo
-DefaultGroupName=Citizen Tools Solo
+DefaultGroupName=Citizen Tools
+UsePreviousGroup=no
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+#ifdef UpdateOnly
+OutputBaseFilename=CitizenTools-Solo-Update
+#else
 OutputBaseFilename=CitizenTools-Solo-Setup
+#endif
 Compression=lzma2
 SolidCompression=yes
 SetupIconFile={#SourceDir}\_internal\companion\assets\citizen-tools.ico
@@ -32,15 +37,24 @@ Source: "{#SourceDir}\prerequisites\MicrosoftEdgeWebView2RuntimeInstallerX64.exe
 #endif
 
 [Icons]
-Name: "{group}\Citizen Tools Solo"; Filename: "{app}\CitizenTools-Solo.exe"
+Name: "{group}\Citizen Tools"; Filename: "{app}\CitizenTools-Solo.exe"
 Name: "{group}\Anleitung"; Filename: "{app}\README.md"
-Name: "{autodesktop}\Citizen Tools Solo"; Filename: "{app}\CitizenTools-Solo.exe"; Tasks: desktopicon
+Name: "{autodesktop}\Citizen Tools"; Filename: "{app}\CitizenTools-Solo.exe"; Tasks: desktopicon
+
+[InstallDelete]
+; Replace only the shortcuts created by previous editions. Preserve all other
+; items in the old menu group and remove that group only if it becomes empty.
+Type: files; Name: "{group}\Citizen Tools Solo.lnk"
+Type: files; Name: "{autoprograms}\Citizen Tools Solo\Citizen Tools Solo.lnk"
+Type: files; Name: "{autoprograms}\Citizen Tools Solo\Anleitung.lnk"
+Type: dirifempty; Name: "{autoprograms}\Citizen Tools Solo"
+Type: files; Name: "{autodesktop}\Citizen Tools Solo.lnk"; Tasks: desktopicon
 
 [Run]
 #if FileExists(SourceDir + "\prerequisites\MicrosoftEdgeWebView2RuntimeInstallerX64.exe")
 Filename: "{tmp}\MicrosoftEdgeWebView2RuntimeInstallerX64.exe"; Parameters: "/silent /install"; StatusMsg: "Microsoft WebView2 wird eingerichtet ..."; Flags: waituntilterminated; Check: NeedsWebView
 #endif
-Filename: "{app}\CitizenTools-Solo.exe"; Description: "Citizen Tools Solo starten"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CitizenTools-Solo.exe"; Description: "Citizen Tools starten"; Flags: nowait postinstall skipifsilent
 
 [Code]
 function NeedsWebView: Boolean;
@@ -48,3 +62,13 @@ var Version: String;
 begin
   Result := not ((RegQueryStringValue(HKLM32, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0')) or (RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0')));
 end;
+
+#ifdef UpdateOnly
+function InitializeSetup: Boolean;
+begin
+  Result := not NeedsWebView;
+  if not Result then
+    MsgBox('Microsoft WebView2 fehlt. Bitte den vollständigen Citizen-Tools-Installer verwenden.' + #13#10 +
+      'Microsoft WebView2 is missing. Please use the complete Citizen Tools installer.', mbError, MB_OK);
+end;
+#endif

@@ -1,6 +1,6 @@
 # Citizen Tools · Flight Deck
 
-Eine Windows-App für Star-Citizen-Solospieler: Aufträge, Fracht, Routen und
+Eine Windows-App für Star Citizen: Aufträge, Fracht, Routen und
 Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
@@ -28,9 +28,11 @@ Eine EXE benötigt den zugehörigen Ordner `_internal`; für die portable Nutzun
 immer das vollständige ZIP entpacken.
 
 Für die Installation `CitizenTools-Solo-Setup.exe` verwenden; für die portable
-Nutzung `CitizenTools-Solo-Portable.zip`. Die beiden Quellpakete im Release
-enthalten den Projektcode und die zugehörigen OCR-Quellen. Zum Benutzen der App
-werden sie nicht benötigt. Details stehen in [NOTICE.md](NOTICE.md).
+Nutzung `CitizenTools-Solo-Portable.zip`. Dateien mit `Update` im Namen sind für
+die integrierte Aktualisierung vorgesehen. Der Projektquellcode ist am Release-Tag
+und im Programm abrufbar; die OCR-Quellen stehen als eigener Release-Anhang bereit.
+Zum Benutzen der App werden die Quellarchive nicht benötigt. Details stehen in
+[NOTICE.md](NOTICE.md).
 
 ## Updates
 
