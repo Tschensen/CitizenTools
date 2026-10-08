@@ -48,14 +48,21 @@ def parse_max_container_scu(text: str) -> int | None:
     patterns = (
         # Keep the number attached to its label, even when OCR wraps the value.
         # The suffix also covers OCR variants such as ContainergroBe/-grosse.
-        r"\bmax(?:imum|imal(?:e[rns]?)?)?\.?\s+(?:fracht)?container\w*"
+        r"\bmax(?:imum|imal(?:e[rns]?)?)?\.?\s+(?:(?:cargo\s+)|fracht)?container\w*"
         r"(?:\s+(?:size|gr\w+e))?\s*:?\s*" + amount_pattern,
-        r"\bmax(?:imum|imal)?\.?\s+" + amount_pattern + r"[\s-]+(?:fracht)?container\b",
+        r"\bmax(?:imum|imal)?\.?\s+" + amount_pattern + r"[\s-]+(?:(?:cargo\s+)|fracht)?containers?\b",
+        # English hauling contracts state the limit in running text.
+        r"\bat\s+most\s+(?:the\s+)?containers?\s+(?:will\s+be|are)\s+" + amount_pattern,
+        r"\bcontainers?\s+(?:no\s+(?:bigger|larger)\s+than|up\s+to)\s+" + amount_pattern,
+        r"\b(?:containers?|cargo)\s+" + amount_pattern + r"\s+or\s+smaller\b",
         # German Supply Haul contracts label the container size this way;
         # Tesseract commonly drops the umlaut, and some show 'SCU SCU'.
         r"\bschiffskapazit(?:ä|a|ae)t\s*:?\s*" + amount_pattern,
+        r"\bship\s+capacity\s*:?\s*" + amount_pattern,
         r"\bschiff\b[^.!?]*?\b" + amount_pattern
         + r"[\s-]+Frachtcontainer\b[^.!?]*?\btransportieren\b",
+        r"\bship\b[^.!?]*?\b(?:handle|carry|transport(?:ing)?)\s+" + amount_pattern
+        + r"[\s-]+(?:cargo\s+)?containers?\b",
     )
     # Prefer an explicit maximum over the alternative ship-capacity label.
     # Never infer a container size from a delivery's total SCU quantity.
@@ -82,7 +89,7 @@ def parse_max_package_scu(text: str) -> float | None:
 def parse_refuel_customer(text: str) -> str:
     for raw_line in str(text or "").splitlines():
         line = re.sub(r"\s+", " ", raw_line).strip()
-        match = re.search(r"(?:auftraggeber|contractor|employer)\s*:?\s*(.+)$", line, re.IGNORECASE)
+        match = re.search(r"^(?:auftraggeber|contractor|contracted\s+by|employer)\b\s*:?\s*(.+)$", line, re.IGNORECASE)
         if match:
             return clean_objective_text(match.group(1))[:200]
     return ""

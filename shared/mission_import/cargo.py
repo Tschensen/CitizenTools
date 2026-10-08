@@ -11,11 +11,12 @@ from .text import (
 )
 
 
-COLLECT_PATTERN = re.compile(r"Collect\s+(.+?)\s+from\s+(.+?)(?:\.|\n|$)", re.IGNORECASE)
+COLLECT_PATTERN = re.compile(r"Collect\s+(.+?)\s+from\s+(.+)$", re.IGNORECASE)
 
 
 DELIVER_PATTERN = re.compile(
-    r"Deliver\s+(?:0\s*/\s*)?(\d+(?:[.,]\d+)?)\s*SCU(?:\s+of\s+(.+?))?\s+to\s+(.+?)(?:\.|\n|$)",
+    r"Deliver\s+(?:[0-9OoSsIl|]+\s*/\s*)?([0-9OoSsIl|]+(?:[.,]\d+)?)\s*SCU"
+    r"(?:\s+(?:of\s+)?(.+?))?\s+to\s+(.+)$",
     re.IGNORECASE,
 )
 
@@ -101,6 +102,10 @@ def parse_german_mission_objectives(text: str) -> dict | None:
     if active:
         consignments.append(active)
 
+    return build_consignment_draft(consignments)
+
+
+def build_consignment_draft(consignments: list[dict]) -> dict | None:
     consignments = [item for item in consignments if item["title"] and item["totalScu"] > 0 and item["pickups"]]
     if not consignments:
         return None
@@ -159,67 +164,89 @@ def parse_german_mission_objectives(text: str) -> dict | None:
 
 
 def parse_english_mission_objectives(normalized: str) -> dict | None:
+    # English objectives put Deliver before its indented Collect objectives.
+    # Join wrapped locations before parsing; a newline is not a location end.
+    blocks = []
+    pending = ""
+    for raw_line in normalized.splitlines():
+        line = clean_objective_text(re.sub(r"^[^A-Za-z0-9]+", "", raw_line))
+        if re.match(r"^(?:PRIMARY OBJECTIVES|DETAILS|REWARD|CONTRACT(?:ED|S| AVAILABILITY)?|ACCEPT OFFER)\b", line, re.IGNORECASE):
+            if pending:
+                blocks.append(pending)
+            pending = ""
+        elif re.match(r"^(?:Deliver|Collect)\b", line, re.IGNORECASE):
+            if pending:
+                blocks.append(pending)
+            pending = line
+        elif pending and line:
+            pending = clean_objective_text(f"{pending} {line}")
+    if pending:
+        blocks.append(pending)
+
     events = []
+    for block in blocks:
+        collect = COLLECT_PATTERN.fullmatch(block)
+        delivery = DELIVER_PATTERN.fullmatch(block)
+        if collect:
+            events.append({"type": "collect", "cargo": collect[1], "pickup": clean_english_location(collect[2])})
+        elif delivery:
+            number = delivery[1].replace(",", ".")
+            amount = float(number) if re.fullmatch(r"\d+(?:\.\d+)?", number) else parse_ocr_integer(number)
+            total = int(amount) if amount is not None and amount > 0 and float(amount).is_integer() else 0
+            events.append({"type": "deliver", "cargo": delivery[2] or "", "totalScu": total,
+                           "dropoff": clean_english_location(delivery[3])})
 
-    for match in COLLECT_PATTERN.finditer(normalized):
-        events.append(
-            {
-                "type": "collect",
-                "index": match.start(),
-                "cargo": clean_objective_text(match.group(1)),
-                "pickup": clean_objective_text(match.group(2)),
-            }
-        )
-
-    for match in DELIVER_PATTERN.finditer(normalized):
-        events.append(
-            {
-                "type": "deliver",
-                "index": match.start(),
-                "targetScu": float(match.group(1).replace(",", ".")),
-                "cargo": clean_objective_text(match.group(2)),
-                "dropoff": clean_objective_text(match.group(3)),
-            }
-        )
-
-    events.sort(key=lambda event: event["index"])
-    active_cargo = ""
-    active_pickup = ""
-    cargo_names: list[str] = []
-    routes = []
-
-    for event in events:
-        if event["type"] == "collect":
-            active_cargo = event["cargo"] or active_cargo
-            active_pickup = event["pickup"] or active_pickup
-            if active_cargo and active_cargo not in cargo_names:
-                cargo_names.append(active_cargo)
-            continue
-
-        cargo = event["cargo"] or active_cargo
-        if cargo and cargo not in cargo_names:
-            cargo_names.append(cargo)
-        target_scu = event["targetScu"]
-        if not float(target_scu).is_integer():
-            continue
-        routes.append(
-            {
-                "pickup": active_pickup,
-                "dropoff": event["dropoff"],
-                "targetScu": int(target_scu),
-            }
-        )
-
-    complete_routes = [
-        route
-        for route in routes
-        if route["pickup"] and route["dropoff"] and route["targetScu"] > 0
-    ]
-    if not complete_routes:
+    if not events:
         return None
 
-    title = cargo_names[0] if len(cargo_names) == 1 else "Mixed cargo" if cargo_names else "Cargo"
-    pickup = complete_routes[0]["pickup"] if all(
-        route["pickup"] == complete_routes[0]["pickup"] for route in complete_routes
-    ) else ""
-    return {"title": title, "pickup": pickup, "routes": complete_routes}
+    delivery_first = events[0]["type"] == "deliver"
+    consignments = []
+    pickups = []
+    active = None
+    previous_type = ""
+    for event in events:
+        if event["type"] == "collect":
+            if delivery_first:
+                if active and cargo_names_match(active["title"], event["cargo"]):
+                    if not active["title"]:
+                        active["title"] = event["cargo"]
+                    if event["pickup"] not in active["pickups"]:
+                        active["pickups"].append(event["pickup"])
+            else:
+                if previous_type == "deliver":
+                    pickups = []
+                pickups.append(event)
+        else:
+            matching = [item for item in pickups if cargo_names_match(event["cargo"], item["cargo"])]
+            # Missing cargo names may inherit only an unambiguous commodity.
+            names = list(dict.fromkeys(item["cargo"] for item in matching))
+            title = event["cargo"] or (names[0] if len(names) == 1 else "")
+            active = {"title": title, "totalScu": event["totalScu"], "dropoff": event["dropoff"],
+                      "pickups": list(dict.fromkeys(item["pickup"] for item in matching)) if title else []}
+            consignments.append(active)
+        previous_type = event["type"]
+
+    complete = [item for item in consignments if item["title"] and item["totalScu"] > 0 and item["dropoff"] and item["pickups"]]
+    if not complete:
+        return None
+    # Keep the established simple-route shape for one commodity. Mixed cargo
+    # and unknown multi-pickup quantities use the same allocation as German.
+    if len({item["title"] for item in complete}) == 1 and all(len(item["pickups"]) == 1 for item in complete):
+        routes = [{"pickup": item["pickups"][0], "dropoff": item["dropoff"], "targetScu": item["totalScu"]}
+                  for item in complete]
+        origins = {route["pickup"] for route in routes}
+        return {"title": complete[0]["title"], "pickup": next(iter(origins)) if len(origins) == 1 else "", "routes": routes}
+    return build_consignment_draft(complete)
+
+
+def cargo_names_match(left: str, right: str) -> bool:
+    return not left or SequenceMatcher(None, left.casefold(), right.casefold()).ratio() >= 0.85
+
+
+def clean_english_location(value: str) -> str:
+    # A sentence-ending period can be followed by small OCR artifacts. Retain
+    # periods inside names such as HDMS-St. Martin.
+    value = re.sub(r"\.\s+(?:[^A-Za-z0-9]*|[a-z]{1,2})$", "", value)
+    value = re.sub(r"(?<!\S)[_~|]+(?!\S)", " ", value)
+    value = re.sub(r"\b(ARC|CRU|HUR|MIC)-L[Ss]5?\b", r"\1-L5", value)
+    return clean_objective_text(value).rstrip(" ._,;:!?~|>")

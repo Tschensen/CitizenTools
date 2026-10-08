@@ -2318,8 +2318,9 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
         if content_length <= 0:
             self.send_json(400, {"ok": False, "error": "MISSING_IMAGE", "message": "Es wurde kein Screenshot übertragen."})
             return
-        if content_length > 8 * 1024 * 1024:
-            self.send_json(413, {"ok": False, "error": "IMAGE_TOO_LARGE", "message": "Der Screenshot ist größer als 8 MB."})
+        max_image_mb = 16 if mission else 8
+        if content_length > max_image_mb * 1024 * 1024:
+            self.send_json(413, {"ok": False, "error": "IMAGE_TOO_LARGE", "message": f"Der Screenshot ist größer als {max_image_mb} MB."})
             return
 
         tesseract_path = ocr.resolve_tesseract(None)
