@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.5.3",
+    "de": {
+      "title": "Englische Texterkennung",
+      "changes": [
+        "Englische Texterkennung verbessert."
+      ]
+    },
+    "en": {
+      "title": "English text recognition",
+      "changes": [
+        "Improved English text recognition."
+      ]
+    }
+  },
+  {
     "version": "0.5.2",
     "de": {
       "title": "Containergrößen-Erkennung",

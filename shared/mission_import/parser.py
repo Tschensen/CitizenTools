@@ -17,7 +17,7 @@ from .services import (
 )
 
 
-PARSER_VERSION = 17
+PARSER_VERSION = 18
 
 
 def parse_mission_objectives(text: str) -> dict | None:

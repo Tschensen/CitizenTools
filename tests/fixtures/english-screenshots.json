@@ -1,0 +1,132 @@
+[
+  {
+    "source": "CitizenTools-20261008-185021-988.png",
+    "objectives": "PRIMARY OBJECTIVES\n\n© Deliver 0/3 SCU of Stims to Ambitious Dream Station at __\nCrusader's L1 Lagrange point.\n© Collect Stims from Seraphim Station. ~~.\n\n© Deliver 0/2 SCU of Stims to Beautiful ae at\nCrusader's L5 Lagrange point. ie\n© Collect Stims from Seraphim Station.\n\n© Deliver 0/3 SCU of Stims to Shallow Fields Station at\nCrusader's L4 Lagrange point.\n© Collect Stims from Seraphim Station.\n",
+    "details": "DETAILS\nHi,\nThere’s a load of stims at Seraphim Station above Crusader ready\nto be picked up from a freight elevator and delivered to a few\nspots. They will be packaged up in containers 4 SCU or smaller.\nAny chance you can knock this one out for me?\nDoesn’t matter what order you drop them off.\nDROP OFF LOCATIONS (ANY ORDER)\n- Freight elevator at Ambitious Dream Station at Crusader's L1\nLagrange point\n- Freight elevator at Beautiful Glen Station at Crusader's LS\nLagrange point\n- Freight elevator at Shallow Fields Station at Crusader's L4\nLagrange point\nGlad | never picked up the habit myself because | swear | get more\ndelivery update requests for “where are my stims?!?” than any\nother kind of shipment.\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\n",
+    "title": "Junior Rank - Small Cargo Haul [ BP |*\n",
+    "reward": "Reward & 67,500\nContract Availability 2h lm\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 4,
+      "routeCount": 3,
+      "totalScu": 8
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185136-854.png",
+    "objectives": "PRIMARY OBJECTIVES\n\n© Deliver 0/100 SCU of Titanium (Ore) to Ambitious Dream\nStation at Crusader's L1 Lagrange point.\n© Collect Titanium (Ore) from mY\n",
+    "details": "DETAILS\n\nHi,\n\nA freight elevator at Seraphim Station above Crusader has some\ncargo that needs to be delivered to a freight elevator at Ambitious\nDream Station at Crusader's L1 Lagrange point. Another hauler\nbacked out at the last minute because their ship couldn't handle 8\nSCU containers, so you'd be doing me a big favor if you could take\ncare of it.\n\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\n\nTalk to you soon,\n\nChase Hewitt\n\nJr. Logistics Coordinator\n\nCovalex Shipping\n\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Rookie Rank - Direct Medium Cargo Haul\n[BP }*\n",
+    "reward": "Reward © 50,750\nContract Availability 2h 3m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 1,
+      "totalScu": 100
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185220-548.png",
+    "objectives": "PRIMARY OBJECTIVES\n© Deliver 0/4 SCU of Pressurized Ice to Beautiful Glen\nStation at Crusader’s L5 Lagrange point.\n© Collect Pressurized Ice from Seraphim, Station.\n© Deliver 0/6 SCU of Pressurized Ice to Amb Dream\nStation at Crusader’s L1 Lagrange point. ~\n© Collect Pressurized Ice from Seraphim Station.\n© Deliver 0/7 SCU of Processed Food to Beautiful Glen\nStation at Crusader's LS Lagrange point.\n© Collect Processed Food from Seraphim Station.\n© Deliver 0/7 SCU of Processed Food to Ambitious Dream\nStation at Crusader's L1 Lagrange point.\n© Collect Processed Food from Seraphim Station.\n",
+    "details": "DETAILS\nHi,\nThere’s a few Crusader facilities that need to be restocked with\nprocessed food and pressurized ice. Don’t know why but I'm\nalways surprised when | see how much of this stuff they need\ndelivered.\nAnyways, there’s a haul of containers no bigger than 4 SCU\nwaiting at Seraphim Station above Crusader. Once you grab the\ngoods from a freight elevator, these are the facilities where it\nneeds to go:\nDROP OFF LOCATIONS (ANY ORDER)\n- Freight elevator at Beautiful Glen Station at Crusader's LS\nLagrange point\n- Freight elevator at Ambitious Dream Station at Crusader's L1\nLagrange point\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\nHappy travels and fly safe!\nChase Hewitt\n",
+    "title": "Junior Rank - Small Cargo Haul [ BP |*\n",
+    "reward": "Reward & 55,750\nContract Availability 2h 7m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 4,
+      "routeCount": 4,
+      "totalScu": 24
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185336-425.png",
+    "objectives": "PRIMARY OBJECTIVES\n\n© Deliver 0/111 SCU of Quartz to Everus Harbor above\nHurston.\n© Collect Quartz from MIC-L2 Long Ss\n",
+    "details": "DETAILS\n\n(!] Blueprints only available from Master rank\n\nHello,\n\nNeed a contractor for a simple cargo haul going from a freight\nelevator at Long Forest Station at microTech's L2 Lagrange point\nto a freight elevator at Everus Harbor above Hurston. At most the\ncontainers will be 8 SCU in size.\n\nAlso, we strongly encourage contractors to bring a handheld\ntractor beam along.\n\nAny chance you're available to take care of it for us?\n\nAnd as the poster on my wall says, ‘Bee Safe, Honey!’\n\nChase Hewitt\n\nJr. Logistics Coordinator\n\nCovalex Shipping\n\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Junior Rank - Direct Medium Cargo Haul | BP |*\n",
+    "reward": "Reward m 55,250\nContract Availability 2h Om\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 1,
+      "totalScu": 111
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185414-829.png",
+    "objectives": "PRIMARY OBJECTIVES\n© Deliver 0/13 SCU of Agricultural Supplies to Everus\nHarbor above Hurston.\n© Collect Agricultural Supplies from Sera\nStation. :\n© Collect Agricultural Supplies from Po sler.\n",
+    "details": "DETAILS\nHi there,\nI'm in a bind and hoping you can help. A trusted hauler signed up\nfor a run that needs to be delivered ASAP, but their ship junked\nout right when they were about to launch so | need someone to\ntake over this run right away.\nIt's all cargo 4 SCU or smaller that needs to go to a freight\nelevator at Everus Harbor above Hurston after being collected\nfrom a few locations, which I've listed below:\nPICK UP LOCATIONS (ANY ORDER)\n- Freight elevator at Seraphim Station above Crusader\n- Freight elevator at Port Tressler above microTech\nThe delay has already caused issues at some of the pick up\nlocations. They really need that cargo gone to free up space for\nnew deliveries. Any chance you can collect everything above and\ndeliver it as quick as possible?\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\nCan't wait to hear how evervthina aoes.\n",
+    "title": "Junior Rank - Small Cargo Haul\n",
+    "reward": "Reward & 57,000\nContract Availability 2h 7m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 4,
+      "routeCount": 2,
+      "totalScu": 13
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185453-701.png",
+    "objectives": "PRIMARY OBJECTIVES\n© Deliver 0/53 SCU of Aluminum to Baijini Point above\nArcCorp.\n© Collect Aluminum from ARC-L2 Lively Pathway\nStation. re\n© Deliver 0/47 SCU of Aluminum to Everus or above\nHurston.\n© Collect Aluminum from ARC-L2 Lively Pathway\nStation.\n",
+    "details": "DETAILS\nHi there,\nThe refinery at Lively Pathway Station at ArcCorp's L2 Lagrange\npoint has been busy. They‘ve processed a bunch of Aluminum into\ncontainers 8 SCU or smaller, and are looking to get it shipped out\nfrom a freight elevator. | just checked with the LEQs to see which\nones needed this stuff and was able to put together this run.\nDROP OFF LOCATIONS (ANY ORDER)\n- Freight elevator at Baijini Point above ArcCorp\n- Freight elevator at Everus Harbor above Hurston\nShould be an easy run for you, if you're free.\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\nCan't wait to hear how everything goes,\nChase Hewitt\nJr. Logistics Coordinator\nCovalex Shipping\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Junior Rank - Medium Cargo Haul | BP |*\n",
+    "reward": "Reward m0 64,250\nContract Availability lh 59m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 2,
+      "totalScu": 100
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185546-823.png",
+    "objectives": "PRIMARY OBJECTIVES\n\n© Deliver 0/55 SCU of Tungsten to Everus Harbor above\nHurston.\n© Collect Tungsten from ARC-LS Yellow Core Station.\n\n© Deliver 0/49 SCU of Tungsten to Baijini ve\nArcCorp.\n© Collect Tungsten from ARC-LS5 Yellow Core Station.\n",
+    "details": "DETAILS\nHi there,\nThe refinery at Yellow Core Station at ArcCorp's LS Lagrange\npoint has been busy. They've processed a bunch of Tungsten into\ncontainers 8 SCU or smaller, and are looking to get it shipped out\nfrom a freight elevator. | just checked with the LEQs to see which\nones needed this stuff and was able to put together this run.\nDROP OFF LOCATIONS (ANY ORDER)\n- Freight elevator at Everus Harbor above Hurston\n- Freight elevator at Baijini Point above ArcCorp\nShould be an easy run for you, if you're free.\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\nCan't wait to hear how everything goes,\nChase Hewitt\nJr. Logistics Coordinator\nCovalex Shipping\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Junior Rank - Medium Cargo Haul | BP |*\n",
+    "reward": "Reward\nContract Availability 2h 4m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 2,
+      "totalScu": 104
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185648-984.png",
+    "objectives": "PRIMARY OBJECTIVES\n© Deliver 0/89 SCU of Tungsten to Port Tressler above\nmicroTech.\n© Collect Tungsten from CRU-L4 Shallow Fields\nStation. >\n",
+    "details": "DETAILS\n\nHi,\n\nA freight elevator at Shallow Fields Station at Crusader's L4\nLagrange point has some cargo that needs to be delivered to a\nfreight elevator at Port Tressler above microTech. Another hauler\nbacked out at the last minute because their ship couldn't handle 8\nSCU containers, so you'd be doing me a big favor if you could take\ncare of it.\n\nBy the way, we strongly encourage contractors to bring a\nhandheld tractor beam along.\n\nHave a good one,\n\nChase Hewitt\n\nJr. Logistics Coordinator\n\nCovalex Shipping\n\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Junior Rank - Direct Medium Cargo Haul { BP |*\n",
+    "reward": "Reward om §5,750\nContract Availability 2h Om\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 1,
+      "totalScu": 89
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185804-109.png",
+    "objectives": "PRIMARY OBJECTIVES\n",
+    "details": "DETAILS\n\n(!] Blueprints only for 20.750 / 25.500 / 26.250 / 27.250 / 31.250\n/ 32.750 / 36.250 / 37.000 / 40.750 / 41.000 / 43.750 / 44.250 /\n46.250 / 49.750 / 54.000 / 64.250 / 67.250 / 80.750 / 86.000 /\n\n101.750 / 102.250 / 120.500 aUEC missions\n\n# Expected reputation points: 100 / 200 XP\n\n# Mission Cooldown: 1 minute\n\n# Can mission be shared? Yes\n\nHey again,\n\nI've got a beacon at a debris field above Daymar and this one's a\nbit more complicated than usual. Got small convoy of ships\nrequesting 7 SCU of Hydrogen Fuel. Impressive coordination and\nlack of planning to all need refueling at the same time.\n\nThe client will pay you at the rate of 950 aUEC per SCU of\nHydrogen, and as a United Wayfarers Club contractor, you will\nalso qualify for the UWC service fee listed above upon completion.\nHopefully since the area they're in is pretty safe, there shouldn't\nbe too much trouble lurking, but these days you never know.\nWouldn't hurt to get them back flying again as quick as you're able.\n",
+    "title": "URGENT CONVOY REFUEL | BP |\n",
+    "reward": "Reward oO 20,750\nContract Availability N/A\nContracted By United Wayfarers Club\n",
+    "expected": {
+      "type": "refuel",
+      "maxContainerScu": null,
+      "routeCount": 0,
+      "totalScu": null
+    }
+  },
+  {
+    "source": "CitizenTools-20261008-185955-811.png",
+    "objectives": "PRIMARY OBJECTIVES\n\n© Deliver 0/109 SCU of Aluminum (Ore) to Ambitious Dream _\nStation at Crusader's L1 Lagrange point.\n© Collect Aluminum (Ore) from ~~ 3\n",
+    "details": "DETAILS\n\n(!] Blueprints only available from Master rank\n\nHello,\n\nNeed a contractor for a simple cargo haul going from a freight\nelevator at Seraphim Station above Crusader to a freight elevator\nat Ambitious Dream Station at Crusader's L1 Lagrange point. At\nmost the containers will be 8 SCU in size.\n\nAlso, we strongly encourage contractors to bring a handheld\ntractor beam along.\n\nAny chance you're available to take care of it for us?\n\nAnd as the poster on my wall says, ‘Bee Safe, Honey!’\n\nChase Hewitt\n\nJr. Logistics Coordinator\n\nCovalex Shipping\n\n‘Anything you need, anywhere you need it.’\n",
+    "title": "Rookie Rank - Direct Medium Cargo Haul\n[BP ]*\n",
+    "reward": "Reward & 50,750\nContract Availability 1h 52m\nContracted By Covalex Independent Contractors\n",
+    "expected": {
+      "type": "cargo",
+      "maxContainerScu": 8,
+      "routeCount": 1,
+      "totalScu": 109
+    }
+  }
+]

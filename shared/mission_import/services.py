@@ -304,6 +304,7 @@ def parse_refuel_mission_details(text: str) -> dict | None:
     target_vehicle = ""
     hydrogen_rate = None
     quantum_rate = None
+    fuel_amounts = {"hydrogen": None, "quantum": None}
     bonus = ""
 
     for index, line in enumerate(lines):
@@ -336,6 +337,30 @@ def parse_refuel_mission_details(text: str) -> dict | None:
         if bonus_match:
             bonus = clean_objective_text(bonus_match.group(1))[:500]
 
+    # English convoy requests put the quantities, price and beacon in prose.
+    narrative = clean_objective_text(normalized)
+    for match in re.finditer(
+        r"\brequesting\s+(\d+(?:[.,]\d+)?)\s*SCU\s+of\s+(Hydrogen|Quantum)(?:\s+Fuel)?\b",
+        narrative, re.IGNORECASE,
+    ):
+        fuel_amounts[match[2].lower()] = float(match[1].replace(",", "."))
+    for match in re.finditer(
+        r"\brate\s+of\s+(\d+(?:[.,]\d+)?)\s*a?UEC\s+per\s+SCU\s+of\s+(Hydrogen|Quantum)\b",
+        narrative, re.IGNORECASE,
+    ):
+        rate = float(match[1].replace(",", "."))
+        if match[2].lower() == "hydrogen":
+            hydrogen_rate = rate
+        else:
+            quantum_rate = rate
+    if (any(amount is not None for amount in fuel_amounts.values())
+            and (hydrogen_rate is not None or quantum_rate is not None)
+            and re.search(r"\brefuel(?:ing|ling)?\b", narrative, re.IGNORECASE)):
+        recognized_type = True
+        beacon = re.search(r"\bbeacon\s+at\s+(.+?)(?=\s+and\b|[.!?]|$)", narrative, re.IGNORECASE)
+        if beacon and not location:
+            location = clean_objective_text(beacon[1])
+
     if not recognized_type and not (target_vehicle and (hydrogen_rate is not None or quantum_rate is not None)):
         return None
 
@@ -358,8 +383,8 @@ def parse_refuel_mission_details(text: str) -> dict | None:
             "customer": parse_refuel_customer(normalized),
             "location": location[:200],
             "serviceType": service_type,
-            "hydrogenAmount": None,
-            "quantumAmount": None,
+            "hydrogenAmount": fuel_amounts["hydrogen"],
+            "quantumAmount": fuel_amounts["quantum"],
             "targetVehicle": target_vehicle,
             "hydrogenRate": hydrogen_rate,
             "quantumRate": quantum_rate,

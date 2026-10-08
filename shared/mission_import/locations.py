@@ -75,17 +75,38 @@ def locations_share_identity(left: object, right: object) -> bool:
 def extract_details_locations(text: str) -> list[str]:
     locations = []
     seen = set()
-    for raw_line in str(text or "").splitlines():
+    lines = str(text or "").splitlines()
+    for index, raw_line in enumerate(lines):
+        english = re.match(r"^\s*[-•]\s*Freight\s+elevator\s+at\s+(.+)$", raw_line, re.IGNORECASE)
         match = DETAIL_LOCATION_PATTERN.match(raw_line)
-        if not match:
+        if not match and not english:
             continue
-        location = clean_objective_text(match.group(1))
+        location = clean_objective_text((english or match).group(1))
+        # English station descriptions wrap immediately before 'Lagrange point'.
+        if english and index + 1 < len(lines) and re.match(r"^\s*Lagrange\s+point\b", lines[index + 1], re.IGNORECASE):
+            location = clean_objective_text(f"{location} {lines[index + 1]}")
         key = location.casefold()
         if len(location) < 3 or key in seen:
             continue
         seen.add(key)
         locations.append(location)
     return locations
+
+
+def extract_english_direct_route(text: str) -> tuple[str, str] | None:
+    narrative = clean_objective_text(text)
+    elevator = r"(?:a\s+)?freight\s+elevator\s+at\s+"
+    sentence_end = r"(?<!\bSt)[.!?](?=\s|$)"
+    patterns = (
+        r"\bcargo\s+haul\s+going\s+from\s+" + elevator + r"(.+?)\s+to\s+" + elevator + r"(.+?)" + sentence_end,
+        r"\b" + elevator + r"(.+?)\s+has\s+some\s+cargo\s+that\s+needs\s+to\s+be\s+delivered\s+to\s+"
+        + elevator + r"(.+?)" + sentence_end,
+    )
+    for pattern in patterns:
+        match = re.search(pattern, narrative, re.IGNORECASE)
+        if match:
+            return clean_objective_text(match[1]), clean_objective_text(match[2])
+    return None
 
 
 def normalize_location_observation(value: object) -> str:
@@ -153,7 +174,7 @@ def merge_location_observations(primary: str, corroborating: str) -> str:
     corroborating_lagrange = extract_lagrange_number(corroborating)
     if primary_lagrange and not corroborating_lagrange:
         resolved = re.sub(
-            r"(?i)L[Ss](?=\s*-\s*Lagrangepunkt)",
+            r"(?i)L[Ss](?=\s*(?:-\s*Lagrangepunkt|Lagrange\s+point))",
             f"L{primary_lagrange}",
             resolved,
         )
@@ -166,6 +187,20 @@ def reconcile_draft_locations(draft: dict, details_text: str) -> tuple[dict, dic
     cache: dict[str, tuple[str, bool]] = {}
     matched_sources = set()
     corrected_sources = set()
+
+    # Direct-haul prose explicitly names both endpoints. It can recover a
+    # completely obscured objective location without guessing from a list.
+    direct_route = extract_english_direct_route(details_text)
+    routes = reconciled.get("routes", [])
+    if direct_route and len(routes) == 1 and not reconciled.get("consignments"):
+        for field, endpoint in zip(("pickup", "dropoff"), direct_route):
+            primary = clean_objective_text(routes[0].get(field))
+            resolved = merge_location_observations(primary, endpoint)
+            routes[0][field] = resolved
+            matched_sources.add(primary)
+            if normalize_location_observation(primary) != normalize_location_observation(resolved):
+                corrected_sources.add(primary)
+        reconciled["pickup"] = routes[0]["pickup"]
 
     def resolve(value: object) -> str:
         primary = clean_objective_text(value)

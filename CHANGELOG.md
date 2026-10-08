@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.5.3 — Englische Texterkennung
+
+### Deutsch
+
+- Englische Texterkennung verbessert.
+
+### English
+
+- Improved English text recognition.
+
 ## 0.5.2 — Containergrößen-Erkennung
 
 ### Deutsch

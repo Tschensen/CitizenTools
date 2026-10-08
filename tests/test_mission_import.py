@@ -239,6 +239,9 @@ class RecognitionApiTests(unittest.TestCase):
             "Schiffskapazitat: 16 SCU SCU",
             "Maximal 16 SCU Frachtcontainer",
             "Ein Schiff, das 16 SCU Frachtcontainer transportieren kann",
+            "At most the containers will be 16 SCU in size.",
+            "They will be packaged up in containers 16 SCU or smaller.",
+            "Their ship couldn't handle 16 SCU containers.",
         )):
             texts = {"objectives": FIXTURES[0]["text"], "details": details, "title": "Cargo", "reward": ""}
 
@@ -261,6 +264,33 @@ class RecognitionApiTests(unittest.TestCase):
                 imports = self.api("/api/imports?status=pending")[1]["imports"]
                 self.assertEqual(len(imports), index + 1)
                 self.assertEqual(imports[0]["draft"], preview["draft"])
+
+    def test_real_english_screenshots_reach_both_import_entry_points(self):
+        samples = json.loads((Path(__file__).parent / "fixtures/english-screenshots.json").read_text(encoding="utf-8"))
+
+        def crop(_image, region):
+            path = self.root / (region + ".png")
+            path.touch()
+            return path
+
+        for index, sample in enumerate(samples):
+            with self.subTest(source=sample["source"]), patch.object(ocr, "resolve_tesseract", return_value="tesseract"), patch.object(
+                ocr, "prepare_ocr_crop", side_effect=crop
+            ), patch.object(ocr, "run_ocr", side_effect=lambda _exe, image: sample[image.stem]):
+                self.image.write_bytes(str(index).encode())
+                code, preview = self.recognize()
+                self.assertEqual(code, 200)
+                self.assertIsNotNone(preview.get("draft"))
+                self.assertEqual(preview["draft"]["type"], sample["expected"]["type"])
+                self.assertEqual(preview["draft"].get("maxContainerScu"), sample["expected"]["maxContainerScu"])
+                args = argparse.Namespace(scope="solo", server=self.runtime.url, token="", user_token="",
+                                          device_id="test-pc", device_name="PC", settle_seconds=0)
+                state = companion.CompanionState(self.root / "capture-state.json")
+                companion.process_screenshot(args, state, "tesseract", self.image, lambda *_: None)
+                imports = self.api("/api/imports?status=pending")[1]["imports"]
+                self.assertEqual(len(imports), index + 1)
+                self.assertEqual(imports[0]["draft"], preview["draft"])
+                self.assertIsNone(self.api("/api/state")[1]["state"])
 
     def test_learned_location_alias_applies_to_preview(self):
         with backend.get_connection() as connection:
@@ -310,8 +340,28 @@ class RecognitionApiTests(unittest.TestCase):
             self.assertEqual(self.recognize()[0], 501)
         self.assertEqual(self.api("/api/imports/recognize", b"", {"Content-Type": "image/png"})[0], 400)
         self.assertEqual(self.api("/api/imports/recognize", b"x", {
-            "Content-Type": "image/png", "Content-Length": str(9 * 1024 * 1024),
+            "Content-Type": "image/png", "Content-Length": str(16 * 1024 * 1024 + 1),
         })[0], 413)
+
+    def test_large_mission_screenshots_reach_ocr_up_to_the_upload_limit(self):
+        for size in (9 * 1024 * 1024, 16 * 1024 * 1024):
+            def recognize(_exe, path, *_args, **_kwargs):
+                self.assertEqual(path.stat().st_size, size)
+                return parse_mission_objectives(FIXTURES[0]["text"]), None
+
+            with self.subTest(size=size), patch.object(ocr, "resolve_tesseract", return_value="tesseract"), patch.object(
+                service, "read_mission_screenshot", side_effect=recognize
+            ):
+                code, payload = self.api("/api/imports/recognize", b"x" * size, {"Content-Type": "image/png"})
+                self.assertEqual(code, 200)
+                self.assertEqual(payload["draft"]["consignments"][0]["totalScu"], 8)
+
+    def test_generic_ocr_keeps_its_existing_upload_limit(self):
+        code, payload = self.api("/api/ocr", b"x", {
+            "Content-Type": "image/png", "Content-Length": str(8 * 1024 * 1024 + 1),
+        })
+        self.assertEqual(code, 413)
+        self.assertEqual(payload["error"], "IMAGE_TOO_LARGE")
 
 
 if __name__ == "__main__":
