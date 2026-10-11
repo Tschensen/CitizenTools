@@ -24,9 +24,10 @@ from server import app as backend
 import transfer
 import solo_sounds
 import solo_about
+import solo_shortcuts
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.5.3"
+VERSION = "0.6.0"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -78,10 +79,13 @@ class SoloRuntime:
             "captureHotkey": capture.DEFAULT_HOTKEY, "captureMode": "active-monitor",
             "captureRetention": capture.DEFAULT_CAPTURE_RETENTION, "pilotName": "",
             "setupCompleted": False,
+            **dict.fromkeys(solo_shortcuts.SHORTCUTS, ""),
+            "routeHomeLocation": "",
         }
         if self.config_path.is_file():
             # A damaged config is reported instead of silently overwritten.
             self.settings.update(self.validate_settings(json.loads(self.config_path.read_text(encoding="utf-8"))))
+        solo_shortcuts.validate_shortcuts(self.settings)
         if port is not None: self.settings["port"] = port
         if lan is not None: self.settings["lanEnabled"] = lan
         self.lock = threading.RLock()
@@ -92,6 +96,7 @@ class SoloRuntime:
         self.capture_error = ""
         self.capture_ready = False
         self.hotkey_recording_gate = capture.HotkeyRecordingGate()
+        self.shortcuts = solo_shortcuts.RouteShortcuts(self)
         self.httpd: ThreadingHTTPServer | None = None
         self.http_thread: threading.Thread | None = None
         self.window = None
@@ -124,6 +129,12 @@ class SoloRuntime:
             if type(value) is not int or not 1 <= value <= 1000: raise ValueError("Aufbewahrung: 1 bis 1000 Bilder.")
             result["captureRetention"] = value
         if "pilotName" in payload: result["pilotName"] = str(payload["pilotName"]).strip()[:80]
+        result.update(solo_shortcuts.normalize_shortcuts(payload))
+        if "routeHomeLocation" in payload:
+            location = payload["routeHomeLocation"]
+            if not isinstance(location, str) or len(location) > 160:
+                raise ValueError("Heimatort muss ein Text mit höchstens 160 Zeichen sein.")
+            result["routeHomeLocation"] = location.strip()
         return result
 
     def start(self, *, capture_enabled=True):
@@ -157,6 +168,7 @@ class SoloRuntime:
         return f"{self.url}/?desktop=1&v={VERSION}"
 
     def status(self):
+        shortcuts = self.shortcuts.status()
         with self.lock:
             return {
                 "ok": True, "edition": "solo", "version": VERSION,
@@ -166,6 +178,7 @@ class SoloRuntime:
                 "restartRequired": bool(self.httpd and (self.settings["lanEnabled"] != self.active_lan or self.settings["port"] != self.httpd.server_port)),
                 "captureRunning": bool(self.worker and self.worker.is_alive()),
                 "captureReady": self.capture_ready, "captureError": self.capture_error,
+                "shortcuts": shortcuts,
                 "message": self.last_message, "ocrAvailable": bool(ocr.resolve_tesseract(None)),
             }
 
@@ -173,6 +186,7 @@ class SoloRuntime:
         updates = self.validate_settings(payload)
         with self.lock:
             settings = {**self.settings, **updates}
+            solo_shortcuts.validate_shortcuts(settings)
             if "port" in updates and self.httpd and settings["port"] != self.httpd.server_port:
                 try:
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
@@ -189,6 +203,7 @@ class SoloRuntime:
         if capture_changed:
             self.stop_capture()
             if settings["captureEnabled"]: self.start_capture()
+        self.shortcuts.configure()
         return self.status()
 
     def emit(self, message, error=False):
@@ -243,6 +258,7 @@ class SoloRuntime:
 
     def stop(self):
         self.closing = True
+        self.shortcuts.stop()
         self.updates.stop()
         try: self.stop_capture()
         finally:
@@ -428,11 +444,7 @@ class SoloHandler(backend.CargoPlannerHandler):
                 if path.endswith("/hotkey-recording"):
                     if not isinstance(payload, dict) or type(payload.get("enabled")) is not bool or not re.fullmatch(r"[a-zA-Z0-9-]{8,80}", str(payload.get("session", ""))):
                         raise ValueError("Ungültige Tastenkürzel-Aufnahme.")
-                    gate = self.runtime.hotkey_recording_gate
-                    gate.update(payload["session"], payload["enabled"])
-                    if payload["enabled"] and self.runtime.worker and self.runtime.worker.is_alive() and not gate.released.wait(1):
-                        gate.update(payload["session"], False)
-                        raise RuntimeError("Tastenkürzel noch belegt. Bitte erneut versuchen.")
+                    self.runtime.shortcuts.record(payload["session"], payload["enabled"])
                     return self.send_json(200, {"ok": True})
                 if path.endswith("/settings"):
                     return self.send_json(200, self.runtime.save_settings(payload))

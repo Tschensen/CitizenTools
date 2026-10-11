@@ -5,13 +5,14 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.5.3 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.6.0 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
 - Aufträge verwalten und aus Screenshots übernehmen.
 - Fracht in einer 3D-Ansicht planen und verladen.
 - Routen und Auftragsfortschritt verfolgen.
+- Routen per frei belegbaren globalen Tastenkürzeln bedienen und zur konfigurierbaren Heimatbasis zurückkehren.
 - Flotte, Finanzen und Statistiken im Blick behalten.
 - Auf PC und weiteren Geräten im Heimnetz zusammenarbeiten.
 - Persönliche Daten sichern, exportieren und importieren.

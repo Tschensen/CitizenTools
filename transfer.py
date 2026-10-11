@@ -11,7 +11,7 @@ FORMAT = "citizen-tools-personal-transfer"
 MAX_BYTES = 32 * 1024 * 1024
 COLLECTIONS = {"shipLibrary": 500, "fleet": 500, "missions": 500, "ledgerEntries": 1000, "contacts": 500}
 EXTRAS = ("layout", "pilots", "soloPilotId", "activeFleetEntryId", "autoload", "stopHistory", "currentLocation",
-          "selectedStopDropoff", "selectedRunRoutePointKey", "runPriorityRouteLocation", "runCompletedRoutePoints")
+          "selectedStopDropoff", "selectedRunRoutePointKey", "runPriorityRouteLocation", "runCompletedRoutePoints", "runHomeDestinations")
 PRIVATE = {"_onlineMeta", "organization", "pilotGroups", "organizationLink", "organizationOrigin", "organizationProgress",
            "participantAllocations", "participants", "participantProgress", "onlineAssigneeIds", "groupId", "workspaceId",
            "payoutSplit", "payoutSettlement", "permissions", "roles", "createdBy", "ownerUserId"}

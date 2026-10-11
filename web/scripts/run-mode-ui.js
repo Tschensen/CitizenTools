@@ -429,7 +429,7 @@ function renderRunMode() {
   }
   runTaskList.innerHTML = tasks.join("") || `<p class="empty-state">${escapeHtml(cargoText("run.tasks.none", "Für diesen Halt gibt es keine offene Aktion."))}</p>`;
 
-  runArriveButton.hidden = routeCompleted || runState.arrived;
+  runArriveButton.hidden = routeCompleted || (runState.arrived && !point?.isHome);
   runArriveButton.disabled = routeCompleted;
   runArriveButton.dataset.pointKey = point?.key || "";
   const unplacedPickupCount = runState.pickupEntries.length - runState.placedPickupEntries.length;
@@ -478,7 +478,7 @@ function renderRunMode() {
       && normalizeRunRouteLocation(runState.priorityLocation) === normalizeRunRouteLocation(routePoint.dropoff),
     );
     return `
-      <div class="run-route-row is-${status}${isPriority ? " is-priority" : ""}" ${!routePoint.completed ? `data-route-order-index="${runState.openPoints.indexOf(routePoint)}"` : ""}>
+      <div class="run-route-row is-${status}${isPriority ? " is-priority" : ""}" ${!routePoint.completed && !runState.homeDestination ? `data-route-order-index="${runState.openPoints.indexOf(routePoint)}"` : ""}>
         <button class="run-route-select" type="button" data-run-point-key="${escapeHtml(routePoint.key)}" ${routePoint.completed ? "disabled" : ""}>
           <span class="run-route-index">${routePoint.completed ? "✓" : runState.openPoints.indexOf(routePoint) + 1}</span>
           <span class="run-route-copy">
@@ -488,7 +488,7 @@ function renderRunMode() {
           </span>
         </button>
         ${!routePoint.completed ? `
-          ${renderRunRouteOrderControls(runState.openPoints, runState.openPoints.indexOf(routePoint))}
+          ${runState.homeDestination ? '' : renderRunRouteOrderControls(runState.openPoints, runState.openPoints.indexOf(routePoint))}
         ` : routePoint.hasPickup && routePoint.missionIds.some((id) => runState.eligibleMissionIds.has(id)) ? `
           <button class="run-route-reopen icon-only-button tooltip-button" type="button" data-run-reopen-key="${escapeHtml(routePoint.key)}" data-run-reopen-task-keys="${escapeHtml((routePoint.pickupTaskKeys || []).join(","))}" data-run-reopen-location="${escapeHtml(routePoint.dropoff)}" data-run-reopen-mission-ids="${escapeHtml((routePoint.missionIds || []).join(","))}" aria-label="${escapeHtml(cargoText("run.actions.reopenPickup", "Abholung wieder öffnen"))}" data-tooltip="${escapeHtml(cargoText("run.actions.reopenPickup", "Abholung wieder öffnen"))}">
             <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M5 5v5h5M5.6 9A7 7 0 1 1 6 16l1.7-1A5 5 0 1 0 7 10.4L10 13H3V6l2.6 3Z" /></svg>
@@ -501,7 +501,9 @@ function renderRunMode() {
   bindRunRouteOrdering(runState);
   runRouteList.querySelectorAll("[data-run-point-key]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.runPointKey?.startsWith('home:')) return;
       state.selectedRunRoutePointKey = button.dataset.runPointKey || "";
+      if (!state.selectedRunRoutePointKey.startsWith('home:') && state.runHomeDestinations) state.runHomeDestinations[state.activeFleetEntryId] = '';
       const selected = buildRunRouteState().selectedPoint;
       if (selected && (selected.hasCargo || selected.hasService)) selectStopByDropoff(selected.dropoff);
       persist();
@@ -578,6 +580,93 @@ function renderRunMode() {
   normalizeAppTooltipTitles(runRouteList);
 }
 
+function confirmRunArrival() {
+  const runState = buildRunRouteState();
+  const point = runState.selectedPoint;
+  if (!currentActiveFleetEntry() || !point || (runState.arrived && !point.isHome) || !runState.openPoints.length) return false;
+  if (!point.isHome) state.selectedRunRoutePointKey = point.key;
+  state.currentLocation = point.dropoff;
+  consumeRunRoutePriority(point.dropoff);
+  if (point.hasCargo || point.hasService) selectStopByDropoff(point.dropoff);
+  lastUnloadPlan = null;
+  persist();
+  render();
+  return true;
+}
+
+function autoLoadRunPickup() {
+  const runState = buildRunRouteState();
+  const point = runState.selectedPoint;
+  if (!currentActiveFleetEntry() || !canUseLoadPage() || !point?.hasPickup || !runState.arrived) return false;
+  const entries = runState.pickupEntries.filter(({ mission, load }) => (
+    !load.placement && getLoadPickup(load, mission) === point.dropoff
+  ));
+  if (!entries.length) return false;
+  const result = autoLoadEntries(entries, {
+    persistAfter: false,
+    renderAfter: false,
+    settings: getAutoloadSettings(),
+  });
+  lastRunAutoLoadResult = { ...result, pointKey: point.key };
+  persist();
+  render();
+  return result.placedCount > 0;
+}
+
+function returnRunHome(location) {
+  const fleetId = currentActiveFleetEntry()?.id;
+  const home = String(location || '').trim().slice(0, 160);
+  if (!fleetId || !home || normalizeRunRouteLocation(state.currentLocation) === normalizeRunRouteLocation(home)
+      || state.runHomeDestinations?.[fleetId] === home) return false;
+  state.runHomeDestinations ||= {};
+  state.runHomeDestinations[fleetId] = home;
+  lastUnloadPlan = null;
+  persist();
+  render();
+  return true;
+}
+
+async function autoUnloadRunStop() {
+  const runState = buildRunRouteState();
+  const point = runState.selectedPoint;
+  if (!currentActiveFleetEntry() || !runState.arrived || !point?.hasCargo) return false;
+  const missionIds = (point.missionIds || []).filter(id => runState.eligibleMissionIds.has(id));
+  const stop = buildUnloadStops({missionFilter: mission => missionIds.includes(mission.id)})
+    .find(candidate => candidate.dropoff === point.dropoff);
+  if (!stop || stop.placeableCount <= 0 || stop.analysis.status !== 'ready') return false;
+  // The explicitly assigned shortcut is the confirmation. Service missions
+  // never fall through to completion and blocked cargo remains untouched.
+  return completeStop(point.dropoff, {missionIds, confirm:false});
+}
+
+async function completeRunPickup({allowIncomplete = true} = {}) {
+  const runState = buildRunRouteState();
+  const point = runState.selectedPoint;
+  if (!point?.hasPickup || !runState.arrived || runState.pendingPickupSegments.length > 0) return false;
+  const incomplete = runState.pickupEntries.length === 0 || runState.placedPickupEntries.length < runState.pickupEntries.length;
+  if (incomplete) {
+    if (!allowIncomplete) return false;
+    const confirmed = await showMissionConfirmDialog({
+      kicker: cargoText("run.dialog.kicker", "Einsatzmodus"),
+      title: cargoText("run.dialog.pickupIncompleteTitle", "Abholung trotzdem abschließen?"),
+      message: runState.pickupEntries.length === 0
+        ? cargoText("run.dialog.pickupAmountOpen", "Für diese Abholung ist noch keine konkrete Frachtmenge hinterlegt.")
+        : cargoText("run.dialog.pickupIncomplete", "Erst {placed} von {total} Containern sind im aktuellen Schiff verladen.", {
+            placed: runState.placedPickupEntries.length,
+            total: runState.pickupEntries.length,
+          }),
+      confirmLabel: cargoText("run.actions.completePickup", "Abholung erledigt"),
+    });
+    if (!confirmed) return false;
+  }
+  const pickupTaskKeys = point.pickupTaskKeys?.length ? point.pickupTaskKeys : [point.key];
+  state.runCompletedRoutePoints = [...new Set([...(state.runCompletedRoutePoints || []), ...pickupTaskKeys])];
+  state.selectedRunRoutePointKey = "";
+  persist();
+  render();
+  return true;
+}
+
 function registerRunModeEvents() {
   runCurrentLocationSelect?.addEventListener("change", () => {
     state.currentLocation = String(runCurrentLocationSelect.value || "").trim();
@@ -593,18 +682,7 @@ function registerRunModeEvents() {
     setActivePage(runEmptyAction.dataset.target || "overview");
   });
 
-  runArriveButton?.addEventListener("click", () => {
-    const runState = buildRunRouteState();
-    const point = runState.selectedPoint;
-    if (!point) return;
-    state.selectedRunRoutePointKey = point.key;
-    state.currentLocation = point.dropoff;
-    consumeRunRoutePriority(point.dropoff);
-    if (point.hasCargo || point.hasService) selectStopByDropoff(point.dropoff);
-    lastUnloadPlan = null;
-    persist();
-    render();
-  });
+  runArriveButton?.addEventListener("click", confirmRunArrival);
 
   runOpenLoadButton?.addEventListener("click", () => {
     const runState = buildRunRouteState();
@@ -617,47 +695,9 @@ function registerRunModeEvents() {
     setActivePage("load");
   });
 
-  runAutoLoadButton?.addEventListener("click", () => {
-    const runState = buildRunRouteState();
-    const point = runState.selectedPoint;
-    if (!point?.hasPickup || !runState.arrived) return;
-    const result = autoLoadEntries(runState.pickupEntries.filter(({ mission, load }) => (
-      !load.placement && getLoadPickup(load, mission) === point.dropoff
-    )), {
-      persistAfter: false,
-      renderAfter: false,
-      settings: getAutoloadSettings(),
-    });
-    lastRunAutoLoadResult = { ...result, pointKey: point.key };
-    persist();
-    render();
-  });
+  runAutoLoadButton?.addEventListener("click", autoLoadRunPickup);
 
-  runCompletePickupButton?.addEventListener("click", async () => {
-    const runState = buildRunRouteState();
-    const point = runState.selectedPoint;
-    if (!point?.hasPickup || !runState.arrived || runState.pendingPickupSegments.length > 0) return;
-    const incomplete = runState.pickupEntries.length === 0 || runState.placedPickupEntries.length < runState.pickupEntries.length;
-    if (incomplete) {
-      const confirmed = await showMissionConfirmDialog({
-        kicker: cargoText("run.dialog.kicker", "Einsatzmodus"),
-        title: cargoText("run.dialog.pickupIncompleteTitle", "Abholung trotzdem abschließen?"),
-        message: runState.pickupEntries.length === 0
-          ? cargoText("run.dialog.pickupAmountOpen", "Für diese Abholung ist noch keine konkrete Frachtmenge hinterlegt.")
-          : cargoText("run.dialog.pickupIncomplete", "Erst {placed} von {total} Containern sind im aktuellen Schiff verladen.", {
-              placed: runState.placedPickupEntries.length,
-              total: runState.pickupEntries.length,
-            }),
-        confirmLabel: cargoText("run.actions.completePickup", "Abholung erledigt"),
-      });
-      if (!confirmed) return;
-    }
-    const pickupTaskKeys = point.pickupTaskKeys?.length ? point.pickupTaskKeys : [point.key];
-    state.runCompletedRoutePoints = [...new Set([...(state.runCompletedRoutePoints || []), ...pickupTaskKeys])];
-    state.selectedRunRoutePointKey = "";
-    persist();
-    render();
-  });
+  runCompletePickupButton?.addEventListener("click", () => completeRunPickup());
 
   runCompleteStopButton?.addEventListener("click", async () => {
     const dropoff = runCompleteStopButton.dataset.dropoff || "";

@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.6.0",
+    "de": {
+      "title": "Routen-Tastenkürzel und Heimatbasis",
+      "changes": [
+        "Frei belegbare globale Routen-Tastenkürzel und konfigurierbare Heimatbasis ergänzt."
+      ]
+    },
+    "en": {
+      "title": "Route shortcuts and home base",
+      "changes": [
+        "Added customizable global route shortcuts and a configurable home base."
+      ]
+    }
+  },
+  {
     "version": "0.5.3",
     "de": {
       "title": "Englische Texterkennung",

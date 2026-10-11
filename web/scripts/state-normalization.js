@@ -510,6 +510,9 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
     currentLocation: String(input?.currentLocation || "").trim(),
     selectedRunRoutePointKey: String(input?.selectedRunRoutePointKey || "").trim(),
     runPriorityRouteLocation: String(input?.runPriorityRouteLocation || "").trim(),
+    runHomeDestinations: Object.fromEntries(fleet.map(entry => [entry.id,
+      typeof input?.runHomeDestinations?.[entry.id] === 'string' ? input.runHomeDestinations[entry.id].trim().slice(0, 160) : '',
+    ])),
     runRouteOrder: Object.fromEntries(fleet.map(entry => [entry.id, [...new Set(
       (Array.isArray(input?.runRouteOrder?.[entry.id]) ? input.runRouteOrder[entry.id] : [])
         .filter(id => typeof id === 'string' && id.length < 1000),

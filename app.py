@@ -104,6 +104,7 @@ def main():
         native_updates = NativeUpdates(runtime, restart_args, exit_for_update)
         window = webview.create_window(f"Citizen Tools · Flight Deck · {VERSION}", runtime.desktop_url, width=1440, height=960, min_size=(800, 600), background_color="#08111b", js_api=native_updates)
         runtime.window = window
+        window.events.loaded += runtime.shortcuts.configure
         def can_close():
             if close_state["confirmed"]: return True
             if close_state["checking"]: return False

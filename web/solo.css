@@ -349,6 +349,16 @@ body::before {
 .solo-hotkey-controls button { flex: 0 0 auto; }
 .solo-hotkey-controls input.is-recording { border-color: var(--flight-cyan); box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .25); }
 .solo-hotkey-field .form-hint { margin: 0; }
+.solo-route-shortcuts { grid-column: 1 / -1; min-width: 0; margin: 8px 0; padding: 16px; border: 1px solid rgba(var(--flight-rgb), .188); border-radius: 12px; }
+.solo-route-shortcuts legend { padding: 0 8px; font-weight: 600; }
+.solo-route-shortcuts .form-hint { padding: 0; border: 0; background: none; color: var(--muted); font-size: .78rem; font-weight: 400; line-height: 1.5; }
+.solo-route-shortcuts > label { display: block; margin: 4px 0 8px; }
+.solo-route-shortcuts [data-key-status] { color: var(--flight-cyan); }
+.solo-route-shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 20px; margin-top: 16px; }
+@media (max-width: 500px) {
+  .solo-route-shortcuts .solo-hotkey-controls { flex-wrap: wrap; }
+  .solo-route-shortcuts input { flex-basis: 100%; }
+}
 .solo-about-panel { min-width: 0; }
 .solo-about-panel .panel-header { align-items: center; flex-wrap: wrap; gap: 12px; }
 .solo-about-version { color: var(--flight-cyan); font: 700 1rem Consolas, monospace; padding: 8px 14px; border: 1px solid rgba(var(--accent-rgb), .35); border-radius: 8px; }

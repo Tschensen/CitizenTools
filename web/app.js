@@ -280,6 +280,7 @@ const defaultState = {
   runCompletedRoutePoints: [],
   runRouteProgress: {},
   runRouteOrder: {},
+  runHomeDestinations: {},
   stopHistory: [],
 };
 
