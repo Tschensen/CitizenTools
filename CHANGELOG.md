@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.6.0 — Routen-Tastenkürzel und Heimatbasis
+
+### Deutsch
+
+- Frei belegbare globale Routen-Tastenkürzel und konfigurierbare Heimatbasis ergänzt.
+
+### English
+
+- Added customizable global route shortcuts and a configurable home base.
+
 ## 0.5.3 — Englische Texterkennung
 
 ### Deutsch

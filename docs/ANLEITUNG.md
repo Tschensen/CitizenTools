@@ -1,8 +1,45 @@
-# Citizen Tools · Flight Deck · 0.5.1
+# Citizen Tools · Flight Deck · 0.6.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Routen-Tastenkürzel und Heimatbasis
+
+Unter **Einstellungen → Companion & Heimnetz → Routen-Tastenkürzel** den
+**Heimatort** eintragen, etwa `Orison` oder einen Ort aus den Vorschlägen.
+Bei der gewünschten Aktion das Feld oder **Aufnehmen** anklicken, die
+Tastenkombination drücken und **Einstellungen speichern** wählen. **Esc**
+bricht die Aufnahme ab. **Löschen** und anschließendes Speichern deaktiviert
+ein Kürzel. Neue Routen-Kürzel sind zunächst nicht belegt.
+
+| Aktion | Wirkung |
+| --- | --- |
+| Ankunft bestätigen | Setzt den Standort auf das aktuell ausgewählte Routenziel. |
+| Auto-Beladen | Verlädt verfügbare Fracht am erreichten Abholort mit den vorhandenen Verladeeinstellungen. |
+| Abholung erledigt | Schließt eine vollständig verladene Abholung ab und gibt den nächsten Routenpunkt frei. Offene Mengen oder fehlende Container verhindern die Aktion. |
+| Auto-Entladen | Bestätigt alle entladebereiten Lieferungen am erreichten Ziel direkt, ohne weiteren Dialog. Blockierte Fracht und reine Serviceaufträge bleiben unverändert. |
+| Zurück zur Heimatbasis | Setzt den gespeicherten Heimatort als nächstes Ziel für das aktive Schiff, auch ohne offene Aufträge. |
+
+Die Windows-App muss laufen; sie darf minimiert sein und die Screenshot-Erfassung
+darf pausieren. Die Kürzel funktionieren auch, während Star Citizen im Vordergrund
+ist. Sie ändern die Planung in Citizen Tools, nicht die Steuerung des Spiels.
+Heimatort und Belegungen werden direkt am PC gespeichert. Zusatztaste und Haupttaste
+sind erforderlich. Doppelte Kombinationen einschließlich des Screenshot-Kürzels
+werden abgewiesen; bei einer Windows-Belegung zeigt das betreffende Feld den Fehler.
+Gedrückt halten wiederholt die Aktion nicht. Während der Aufnahme werden alle
+Citizen-Tools-Kürzel vorübergehend freigegeben; die Texterkennung läuft weiter.
+
+Der Rückflug verändert weder offene Aufträge noch geladene Fracht oder die
+manuelle Routenreihenfolge. **Ankunft bestätigen** beendet den Rückflug; danach
+wird die übrige Route wieder aktiv. Ein anderes Routenziel auswählen oder die
+Routenautomatik zurücksetzen bricht den Rückflug ab. Der aktuelle Rückflug gehört
+zum jeweiligen Schiff und wird mit weiteren Geräten synchronisiert. Eine Änderung
+des eingestellten Heimatorts gilt für den nächsten Rückflug.
+
+Bei offenen Eingabefeldern, Dialogen, laufenden Importen oder fehlender Verbindung
+werden Aktionen nicht ausgeführt. Vor jeder Aktion wird der gemeinsame Spielstand
+abgeglichen. Ausgelassene Tastendrücke werden später nicht nachgeholt.
 
 ## Updates
 

@@ -31,8 +31,12 @@ function moveRunRouteStop(from, to) {
 
 function bindRunRouteOrdering(runState) {
   const reset = document.getElementById('runRouteOrderReset');
-  reset.disabled = !state.runRouteOrder?.[state.activeFleetEntryId]?.length && !state.runPriorityRouteLocation;
+  reset.disabled = !state.runRouteOrder?.[state.activeFleetEntryId]?.length && !state.runPriorityRouteLocation && !runState.homeDestination;
   reset.onclick = () => {
+    if (runState.homeDestination) {
+      state.runHomeDestinations[state.activeFleetEntryId] = '';
+      persist(); render(); return;
+    }
     if (state.runRouteOrder) delete state.runRouteOrder[state.activeFleetEntryId];
     state.runPriorityRouteLocation = '';
     state.selectedRunRoutePointKey = '';

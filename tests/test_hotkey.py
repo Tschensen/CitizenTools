@@ -105,6 +105,14 @@ class HotkeyTests(unittest.TestCase):
     def test_saved_keys_use_canonical_windows_notation(self):
         self.assertEqual(SoloRuntime.validate_settings({'captureHotkey': 'umschalt + strg + z'})['captureHotkey'], 'Ctrl+Shift+Z')
 
+    def test_capture_polling_does_not_match_a_route_key_with_extra_modifiers(self):
+        windows = WindowsKeys()
+        listener = GlobalHotkeyListener('Ctrl+Shift+A', lambda: None)
+        windows.keys = {0x11, 0x10, 0x41}
+        self.assertTrue(listener._combination_is_down(windows))
+        windows.keys.add(0x12)
+        self.assertFalse(listener._combination_is_down(windows))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -10,6 +10,9 @@
     hotkey:"Screenshot shortcut", mode:"Capture area", activeMonitor:"Active window's monitor", desktop:"Entire desktop", retention:"Screenshots to keep", pilot:"Pilot / handle for imports",
     autoCapture:"Enable screenshot capture at startup", allowLan:"Share on your home network",
     save:"Save settings", pcOnly:"Change network and screenshot settings directly on the PC.", restart:"Changes take effect after a restart.",
+    routeKeys:"Route shortcuts", routeKeysHint:"Work in the background while Citizen Tools is running, even with screenshot capture paused. Record a combination and save. Empty fields disable a shortcut. Auto-unload directly confirms all ready deliveries at the current stop.",
+    arriveKey:"Confirm arrival", loadKey:"Auto-load", pickupKey:"Pickup complete", unloadKey:"Auto-unload", homeKey:"Return home", clearKey:"Clear",
+    homeLocation:"Home location", homeLocationHint:"An in-game location, e.g. Area18. Return home sets it as the next destination for your active ship. Confirm arrival when you reach it; your contracts remain open.",
     welcomeKicker:"Your command center", welcomeTitle:"Your ship. Your course.", welcomeDescription:"From the first contract to the final jump. You have the command.", newMission:"Create contract", myFleet:"My fleet",
   };
   for (const element of document.querySelectorAll("[data-solo-text]")) element.dataset.soloGerman = element.textContent;
@@ -20,7 +23,20 @@
     if (lastStatus) document.querySelector("#soloNetworkHint").textContent = lastStatus.lanUrls.length
       ? (en ? "Access the tool on your home network, e.g. from a tablet." : "So erreichst du das Tool im eigenen Netz, z. B. per Tablet.")
       : (en ? "Currently accessible only on this PC." : "Aktuell nur auf diesem PC erreichbar.");
-    hotkeyRecorder.render();
+    hotkeyRecorders.forEach(recorder => recorder.render());
+    if (lastStatus) {
+      const shortcuts = lastStatus.shortcuts;
+      document.querySelectorAll('[data-route-hotkey]').forEach(row => {
+        const key = row.dataset.routeHotkey;
+        const configured = lastStatus.settings[key];
+        const info = shortcuts?.keys[key];
+        row.querySelector('[data-key-status]').textContent = !configured ? (en ? 'Disabled' : 'Nicht belegt')
+          : !shortcuts?.available ? (en ? 'Requires the Windows app.' : 'Benötigt die Windows-App.')
+          : info?.active ? (en ? 'Active' : 'Aktiv')
+          : info?.error ? (en ? 'Combination unavailable or already in use. Choose another and save.' : info.error)
+          : (en ? 'Temporarily unavailable. After recording, release the keys; otherwise save again.' : 'Vorübergehend nicht verfügbar. Nach der Aufnahme Tasten loslassen; sonst erneut speichern.');
+      });
+    }
   }
   if (!isPC) {
     for (const field of form.elements) field.disabled = true;
@@ -28,6 +44,7 @@
   }
   function renderStatus(data, fill=false) {
     lastStatus = data;
+    window.soloRouteShortcuts?.setHomeLocation(data.settings.routeHomeLocation || '');
     running = data.captureRunning;
     const addresses = document.querySelector("#soloLanUrls");
     addresses.replaceChildren();
@@ -60,16 +77,28 @@
     finally { refreshing = false; }
   }
   const hotkeyRecorder = window.createSoloHotkeyRecorder({form, enabled:() => isPC && loaded && !busy});
-  window.addEventListener('solo-settings-saved', event => { renderStatus(event.detail, true); hotkeyRecorder.saved(); });
+  const hotkeyRecorders = [hotkeyRecorder];
+  document.querySelectorAll('[data-route-hotkey]').forEach(row => {
+    const field = row.querySelector('input');
+    const recorder = window.createSoloHotkeyRecorder({form, field, enabled:() => isPC && loaded && !busy,
+      button:row.querySelector('[data-key-record]'), hint:row.querySelector('[data-key-hint]')});
+    hotkeyRecorders.push(recorder);
+    row.querySelector('[data-key-clear]').addEventListener('click', () => {
+      if (!isPC || !loaded || busy || hotkeyRecorders.some(item => item.recording)) return;
+      field.value = '';
+      field.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+  });
+  window.addEventListener('solo-settings-saved', event => { renderStatus(event.detail, true); hotkeyRecorders.forEach(recorder => recorder.saved()); });
   form.addEventListener("submit", async event => {
-    event.preventDefault(); if (busy || !isPC || hotkeyRecorder.recording) return; busy = true;
+    event.preventDefault(); if (busy || !isPC || hotkeyRecorders.some(recorder => recorder.recording)) return; busy = true;
     const sound = window.soloSound?.feedbackFor(event);
     const values = Object.fromEntries(new FormData(form));
     values.port = Number(values.port);
     values.captureRetention = Number(values.captureRetention);
     values.captureEnabled = form.elements.captureEnabled.checked;
     values.lanEnabled = form.elements.lanEnabled.checked;
-    try { renderStatus(await api("./api/solo/settings", values), true); hotkeyRecorder.saved(); message.textContent = currentUiLanguage() === "en" ? "Settings saved." : "Einstellungen gespeichert."; sound?.('confirm'); }
+    try { renderStatus(await api("./api/solo/settings", values), true); hotkeyRecorders.forEach(recorder => recorder.saved()); message.textContent = currentUiLanguage() === "en" ? "Settings saved." : "Einstellungen gespeichert."; sound?.('confirm'); }
     catch (error) { message.textContent = error.message; sound?.('error'); } finally { busy = false; }
   });
   toggle.addEventListener("click", async () => {

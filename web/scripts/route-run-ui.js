@@ -777,7 +777,7 @@ function unloadMissionLoadsForCompletion(mission, completedAt = new Date().toISO
   }
 }
 
-async function completeStop(dropoff, { missionIds = null } = {}) {
+async function completeStop(dropoff, { missionIds = null, confirm = true } = {}) {
   const allowedMissionIds = missionIds ? new Set(missionIds) : null;
   const stop = buildUnloadStops({
     missionFilter: allowedMissionIds ? (mission) => allowedMissionIds.has(mission.id) : null,
@@ -792,7 +792,7 @@ async function completeStop(dropoff, { missionIds = null } = {}) {
     return;
   }
 
-  const shouldComplete = await showMissionConfirmDialog({
+  const shouldComplete = !confirm || await showMissionConfirmDialog({
     kicker: t("contracts.dialog.cargoKicker"),
     title: t("contracts.route.completeStop"),
     message: t("contracts.confirm.unloadStop", { target: stop.dropoff, count: stop.placedLoads.length }),
@@ -847,6 +847,7 @@ async function completeStop(dropoff, { missionIds = null } = {}) {
   lastUnloadPlan = nextPlan;
   persist();
   render();
+  return true;
 }
 
 async function deliverStopCargoGroup(dropoff, groupKey) {

@@ -266,7 +266,7 @@ class HotkeyRecordingGate:
 
 
 class GlobalHotkeyListener:
-    def __init__(self, hotkey: str, callback: Callable[[], None], recording_gate: HotkeyRecordingGate | None = None):
+    def __init__(self, hotkey: str, callback: Callable[[], None], recording_gate: HotkeyRecordingGate | None = None, *, strict=False):
         self.hotkey, self.modifiers, self.virtual_key = parse_hotkey(hotkey)
         self.callback = callback
         self.thread: threading.Thread | None = None
@@ -276,6 +276,8 @@ class GlobalHotkeyListener:
         self.registration_warning: str | None = None
         self.last_trigger_at = 0.0
         self.recording_gate = recording_gate
+        self.strict = strict
+        self.registered = False
 
     def start(self) -> None:
         if os.name != "nt":
@@ -303,7 +305,12 @@ class GlobalHotkeyListener:
                 f"Der Aufnahme-Hotkey {self.hotkey} ist bereits belegt oder konnte nicht registriert werden"
                 f" (Windows-Fehler {error_code}). Die direkte Tastenerkennung bleibt aktiv."
             )
+            if self.strict:
+                self.error = RuntimeError(f"Tastenkürzel {self.hotkey} ist belegt oder nicht verfügbar (Windows-Fehler {error_code}).")
+                self.started.set()
+                return
 
+        self.registered = registered
         self.started.set()
         combination_was_down = False
         suspended = recording_at_start
@@ -319,6 +326,7 @@ class GlobalHotkeyListener:
                         registered = False
                 elif suspended and not suppress:
                     registered = bool(user32.RegisterHotKey(None, HOTKEY_ID, self.modifiers, self.virtual_key))
+                self.registered = registered
                 suspended = suppress
                 if recording:
                     self.recording_gate.released.set()
@@ -327,17 +335,18 @@ class GlobalHotkeyListener:
                     if message.message == WM_QUIT:
                         should_stop = True
                         break
-                    if not suspended and message.message == WM_HOTKEY and message.wParam == HOTKEY_ID:
+                    if not suspended and (registered or not self.strict) and message.message == WM_HOTKEY and message.wParam == HOTKEY_ID:
                         self._invoke_callback()
                 if should_stop:
                     break
 
                 combination_is_down = self._combination_is_down(user32)
-                if not suspended and combination_is_down and not combination_was_down:
+                if not self.strict and not suspended and combination_is_down and not combination_was_down:
                     self._invoke_callback()
                 combination_was_down = combination_is_down
                 time.sleep(0.02)
         finally:
+            self.registered = False
             if registered:
                 user32.UnregisterHotKey(None, HOTKEY_ID)
 
@@ -348,17 +357,12 @@ class GlobalHotkeyListener:
     def _combination_is_down(self, user32) -> bool:
         if not self._key_is_down(user32, self.virtual_key):
             return False
-        if self.modifiers & MOD_CONTROL and not self._key_is_down(user32, VK_CONTROL):
-            return False
-        if self.modifiers & MOD_SHIFT and not self._key_is_down(user32, VK_SHIFT):
-            return False
-        if self.modifiers & MOD_ALT and not self._key_is_down(user32, VK_ALT):
-            return False
-        if self.modifiers & MOD_WIN and not (
-            self._key_is_down(user32, VK_LWIN) or self._key_is_down(user32, VK_RWIN)
-        ):
-            return False
-        return True
+        actual = 0
+        for flag, keys in ((MOD_CONTROL, (VK_CONTROL,)), (MOD_SHIFT, (VK_SHIFT,)),
+                           (MOD_ALT, (VK_ALT,)), (MOD_WIN, (VK_LWIN, VK_RWIN))):
+            if any(self._key_is_down(user32, key) for key in keys):
+                actual |= flag
+        return actual == self.modifiers & (MOD_CONTROL | MOD_SHIFT | MOD_ALT | MOD_WIN)
 
     def _invoke_callback(self) -> None:
         if self.recording_gate and self.recording_gate.active():

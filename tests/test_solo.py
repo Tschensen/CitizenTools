@@ -176,9 +176,9 @@ class SoloIntegrationTests(unittest.TestCase):
         self.assertEqual(sorted(replies), [200, 409])
 
     def test_old_open_browser_cannot_erase_route_order_with_a_current_revision(self):
-        state = {'missions': [], 'runRouteOrder': {'ship': ['pickup:b', 'pickup:a']}}
+        state = {'missions': [], 'runRouteOrder': {'ship': ['pickup:b', 'pickup:a']}, 'runHomeDestinations': {'ship': 'Orison'}}
         _, saved = self.api('/api/state', {'state': state, 'baseUpdatedAt': None})
-        for client_version in [None, '0.1.25', '0.2.1']:
+        for client_version in [None, '0.1.25', '0.2.1', '0.5.3']:
             # Old clients know the latest revision, but drop fields absent
             # from their own normalizer before posting a passive refresh.
             code, rejected = self.api('/api/state', {'state': {'missions': []}, 'baseUpdatedAt': saved['updatedAt']}, client_version=client_version)

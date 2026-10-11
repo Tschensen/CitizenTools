@@ -15,6 +15,7 @@ function getRunRoutePointKey(point) {
 
 function getRunRoutePointTypeLabels(point) {
   return [
+    point?.isHome ? t('run.home.title') : '',
     point?.hasPickup ? cargoText("run.types.pickup", "Abholung") : "",
     point?.hasCargo ? cargoText("run.types.delivery", "Lieferung") : "",
     point?.hasCourierPickup ? cargoText("run.types.courierPickup", "Paketabholung") : "",
@@ -161,6 +162,11 @@ function normalizeRunRouteLocation(value) {
 }
 
 function consumeRunRoutePriority(location) {
+  const fleetId = state.activeFleetEntryId;
+  if (state.runHomeDestinations?.[fleetId]
+      && normalizeRunRouteLocation(state.runHomeDestinations[fleetId]) === normalizeRunRouteLocation(location)) {
+    state.runHomeDestinations[fleetId] = '';
+  }
   if (
     state.runPriorityRouteLocation
     && normalizeRunRouteLocation(state.runPriorityRouteLocation) === normalizeRunRouteLocation(location)
@@ -451,6 +457,12 @@ function buildRunRouteState() {
       completed: Boolean(point.completed),
     };
   });
+  const homeDestination = currentActiveFleetEntry() && state.runHomeDestinations?.[state.activeFleetEntryId];
+  const homePoint = homeDestination ? {
+    key: `home:${state.activeFleetEntryId}`, dropoff: homeDestination, isHome: true,
+    completed: false, missionIds: [], routeTaskIds: [], routeReasonCodes: [],
+  } : null;
+  if (homePoint) points.unshift(homePoint);
   const openPoints = points.filter((point) => !point.completed);
   // Several actions (or visits) at one location are one progress target.
   // Finishing only one package must not add an extra "completed stop" while
@@ -463,9 +475,9 @@ function buildRunRouteState() {
   const priorityLocation = optimizedRoute.priorityReachable
     ? String(state.runPriorityRouteLocation || "").trim()
     : "";
-  const selectedPoint = openPoints.find((point) => point.key === state.selectedRunRoutePointKey) || openPoints[0] || null;
+  const selectedPoint = homePoint || openPoints.find((point) => point.key === state.selectedRunRoutePointKey) || openPoints[0] || null;
   const selectedIndex = selectedPoint ? openPoints.findIndex((point) => point.key === selectedPoint.key) : -1;
-  const routeStop = selectedPoint ? stopByLocation.get(selectedPoint.dropoff) || null : null;
+  const routeStop = selectedPoint && !selectedPoint.isHome ? stopByLocation.get(selectedPoint.dropoff) || null : null;
   const cargoGroups = selectedPoint?.hasCargo
     ? buildStopCargoGroups(selectedPoint.dropoff).filter(({ mission }) => (
         eligibleMissionIds.has(mission.id)
@@ -529,6 +541,7 @@ function buildRunRouteState() {
     courierPickupEntries,
     courierDeliveryEntries,
     currentLocation,
+    homeDestination,
     arrived,
     progressTotal: progressLocations.size,
     completedCount: [...progressLocations.values()].filter(Boolean).length,
@@ -537,6 +550,7 @@ function buildRunRouteState() {
 
 function getRunStopStatus(runState) {
   const point = runState.selectedPoint;
+  if (point?.isHome) return {tone:'en-route', title:t('run.home.title'), text:t('run.home.hint')};
   if (!point) {
     return {
       tone: "complete",
