@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.7.0",
+    "de": {
+      "title": "Teillieferungen und Stoppübersicht",
+      "changes": [
+        "Mengen je Frachtposition: abzuholen, an Bord und geliefert. Übersicht je Stopp mit Auftragszuordnung.",
+        "Ausgewählte Container liefern und Restmengen auf weiteren Transportfahrten abholen.",
+        "Letzte Frachtübergaben mit Auftragsstatus und Historie zurücknehmen, solange keine betroffenen Daten geändert wurden."
+      ]
+    },
+    "en": {
+      "title": "Partial deliveries and stop overview",
+      "changes": [
+        "Cargo quantities per contract: to collect, on board and delivered. Stop overview with contract references.",
+        "Deliver selected containers and collect remaining cargo on subsequent trips.",
+        "Undo recent cargo deliveries with contract status and history, unless affected data has changed."
+      ]
+    }
+  },
+  {
     "version": "0.6.0",
     "de": {
       "title": "Routen-Tastenkürzel und Heimatbasis",

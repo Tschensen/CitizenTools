@@ -12,6 +12,17 @@ function soloEqual(left, right) {
 
 function soloMergeStates(base, local, remote) {
   const collections = new Set(["missions", "fleet", "pilots", "ledgerEntries", "shipLibrary", "contacts", "stopHistory"]);
+  // Undo restores occupied grid cells. Do not rebase it over a concurrent edit
+  // to another contract that could now occupy those cells.
+  function conflictsWithDeliveryUndo(before, ours, theirs) {
+    const removed = (before.stopHistory || []).some(entry => entry.deliveryUndo
+      && !(ours.stopHistory || []).some(item => item.id === entry.id));
+    return removed && ['missions', 'layout', 'fleet', 'activeFleetEntryId', 'ledgerEntries']
+      .some(key => !soloEqual(before[key], theirs[key]));
+  }
+  if (conflictsWithDeliveryUndo(base, local, remote) || conflictsWithDeliveryUndo(base, remote, local)) {
+    return { ok: false };
+  }
   function choose(before, ours, theirs) {
     if (soloEqual(ours, before)) return theirs;
     if (soloEqual(theirs, before) || soloEqual(ours, theirs)) return ours;

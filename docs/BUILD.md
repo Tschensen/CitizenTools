@@ -317,6 +317,18 @@ Für denselben nativen Test mit dem neuen Paketnamen zusätzlich
 frische Ressourcen, Paketmanifeste und Profilwechsel. `test_updates.py` prüft
 Paketwahl, Kompatibilität, Prüfsummen und Rücksetzen bei Fehlern.
 
+## Teillieferungen prüfen
+
+`node --test tests/test_delivery_progress.js` prüft Mengen, Teillieferungen,
+Routenabhängigkeiten, Rücknahme und Konflikte beim Geräteabgleich.
+
+`node tools/verify_delivery.cjs` benötigt Node.js 20 oder neuer, Playwright,
+Microsoft Edge und die Python-Abhängigkeiten dieses Projekts. Der Test startet
+einen lokalen Server mit einer eigenen SQLite-Datenbank, prüft Desktop und Tablet,
+zwei Transportfahrten und Rücknahme nach Neuladen. Ergebnisse und Bildschirmbilder
+liegen in `.delivery-verification/`; echte Benutzerdaten werden nicht verwendet.
+Ein abweichender Python-Pfad kann mit `CITIZENTOOLS_PYTHON` gesetzt werden.
+
 ## Drittanbieter
 
 `tools/prepare_licenses.py` übernimmt Lizenztexte der installierten Python-Pakete

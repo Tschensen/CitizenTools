@@ -365,8 +365,8 @@ function renderStopList() {
         : cargoText("contracts.stop.completeTitle", "Diesen Stop als abgeschlossen markieren und alle geladenen Container daraus in die Historie verschieben.");
       const cargoGroups = buildStopCargoGroups(stop.dropoff);
       const cargoGroupRows = cargoGroups.map((group) => {
-        const deliverDisabled = group.analysis.status !== "ready";
-        const deliverLabel = cargoText("contracts.actions.deliverCargo", "Abliefern");
+        const deliverDisabled = group.placedEntries.length === 0;
+        const deliverLabel = t('delivery.choose');
         const deliverTooltip = deliverDisabled
           ? getStopActionHint(group.analysis)
           : cargoText("contracts.stop.deliverCargo", "Nur diese Fracht am Ziel abliefern.");
@@ -449,7 +449,7 @@ function renderStopList() {
   });
   stopList.querySelectorAll(".stop-cargo-deliver").forEach((button) => {
     button.addEventListener("click", async () => {
-      await deliverStopCargoGroup(button.dataset.dropoff || "", button.dataset.groupKey || "");
+      await chooseDeliveryContainers(button.dataset.dropoff || "", button.dataset.groupKey || "", { requireArrival: false });
     });
   });
   bindUnloadGuidanceEvents(stopList);

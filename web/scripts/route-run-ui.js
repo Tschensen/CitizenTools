@@ -86,8 +86,6 @@ function buildStopCargoGroups(dropoff) {
     let status = "ready";
     if (groupPlacedEntries.length === 0) {
       status = "not-loaded";
-    } else if (groupPlacedEntries.length < group.entries.length) {
-      status = "incomplete";
     } else if (baseAnalysis.blockedEntries.length > 0) {
       status = baseAnalysis.freeEntries.length > 0 ? "partial" : "blocked";
     }
@@ -535,9 +533,6 @@ function analyzeStopUnloadability(stop, remainingEntries = getPlacedLoadEntries(
   }
 
   const analysis = analyzeUnloadEntries(targetEntries, remainingEntries);
-  if (targetEntries.length < stop.placeableCount) {
-    return { ...analysis, status: "incomplete" };
-  }
   if (analysis.blockedEntries.length === 0) {
     return { ...analysis, status: "ready" };
   }
@@ -792,6 +787,7 @@ async function completeStop(dropoff, { missionIds = null, confirm = true } = {})
     return;
   }
 
+  const beforeConfirmation = DeliveryProgress.fingerprint(stop.placedLoads);
   const shouldComplete = !confirm || await showMissionConfirmDialog({
     kicker: t("contracts.dialog.cargoKicker"),
     title: t("contracts.route.completeStop"),
@@ -799,7 +795,17 @@ async function completeStop(dropoff, { missionIds = null, confirm = true } = {})
     confirmLabel: t("contracts.route.completeStop"),
   });
   if (!shouldComplete) return;
+  if (confirm) {
+    if (!await refreshDeliveryState()) { await showAppNotice(t('delivery.syncRequired')); return false; }
+    const fresh = buildUnloadStops({ missionFilter: allowedMissionIds ? mission => allowedMissionIds.has(mission.id) : null })
+      .find(candidate => candidate.dropoff === dropoff);
+    if (!fresh || DeliveryProgress.fingerprint(fresh.placedLoads) !== beforeConfirmation) {
+      await showAppNotice(t('delivery.changed')); return false;
+    }
+    return completeStop(dropoff, { missionIds, confirm: false });
+  }
 
+  const deliveryBefore = captureDeliveryUndo(stop.placedLoads);
   const completedAt = new Date().toISOString();
   const unloadedIds = new Set(stop.placedLoads.map(({ load }) => load.id));
   stop.placedLoads.forEach(({ mission, load }) => {
@@ -828,6 +834,7 @@ async function completeStop(dropoff, { missionIds = null, confirm = true } = {})
     completedAt,
     note: "",
     order: state.stopHistory.length,
+    deliveryUndo: finishDeliveryUndo(deliveryBefore),
   });
 
   if (state.selectedLoadId && unloadedIds.has(state.selectedLoadId)) {
@@ -845,31 +852,41 @@ async function completeStop(dropoff, { missionIds = null, confirm = true } = {})
     state.selectedStopDropoff = "";
   }
   lastUnloadPlan = nextPlan;
+  if (!getPlacedLoadEntries().some(({ mission, load }) => getLoadDropoff(load, mission) === stop.dropoff)) {
+    state.selectedRunRoutePointKey = '';
+  }
   persist();
   render();
   return true;
 }
 
-async function deliverStopCargoGroup(dropoff, groupKey) {
+async function deliverStopCargoGroup(dropoff, groupKey, { loadIds = null, confirm = true, requireArrival = false } = {}) {
   const group = buildStopCargoGroups(dropoff).find((candidate) => candidate.key === groupKey);
-  if (!group || group.analysis.status !== "ready") return;
+  if (!group || !isMissionActive(group.mission)
+      || (requireArrival && normalizeRunRouteLocation(state.currentLocation) !== normalizeRunRouteLocation(dropoff))) return false;
+  const selectedIds = loadIds === null ? null : new Set(loadIds);
+  const entries = group.placedEntries.filter(({ load }) => !selectedIds || selectedIds.has(load.id));
+  if (!entries.length || (selectedIds && selectedIds.size !== entries.length)
+      || analyzeUnloadEntries(entries, getPlacedLoadEntries()).blockedEntries.length) return false;
+  const deliveredScu = entries.reduce((sum, { load }) => sum + (Number(load.scu) || 0), 0);
 
-  const shouldDeliver = await showMissionConfirmDialog({
+  const shouldDeliver = !confirm || await showMissionConfirmDialog({
     kicker: t("contracts.dialog.cargoKicker"),
     title: t("contracts.dialog.deliverCargoTitle"),
     message: t("contracts.confirm.deliverCargo", {
       cargo: group.label,
-      count: group.placedEntries.length,
-      scu: formatScuAmount(group.placedScu),
+      count: entries.length,
+      scu: formatScuAmount(deliveredScu),
       target: group.dropoff,
     }),
     confirmLabel: t("contracts.actions.deliverCargo"),
   });
   if (!shouldDeliver) return;
 
+  const deliveryBefore = captureDeliveryUndo(entries);
   const completedAt = new Date().toISOString();
-  const deliveredIds = new Set(group.placedEntries.map(({ load }) => load.id));
-  group.placedEntries.forEach(({ mission, load }) => {
+  const deliveredIds = new Set(entries.map(({ load }) => load.id));
+  entries.forEach(({ mission, load }) => {
     load.deliveredByFleetEntryId = getLoadPlacementFleetEntryId(load, mission);
     load.placement = null;
     load.deliveredAt = completedAt;
@@ -883,14 +900,15 @@ async function deliverStopCargoGroup(dropoff, groupKey) {
   state.stopHistory.unshift({
     id: createRuntimeId(),
     dropoff: group.dropoff,
-    pickups: [...new Set(group.placedEntries.map(({ mission, load }) => getLoadPickup(load, mission)).filter(Boolean))],
+    pickups: [...new Set(entries.map(({ mission, load }) => getLoadPickup(load, mission)).filter(Boolean))],
     missionIds: group.mission.id ? [group.mission.id] : [],
     missionTitles: group.mission.title ? [group.mission.title] : [],
-    loadCount: group.placedEntries.length,
-    scu: group.placedScu,
+    loadCount: entries.length,
+    scu: deliveredScu,
     completedAt,
     note: t("contracts.history.cargoDelivered", { cargo: group.label }),
     order: state.stopHistory.length,
+    deliveryUndo: finishDeliveryUndo(deliveryBefore),
   });
 
   if (state.selectedLoadId && deliveredIds.has(state.selectedLoadId)) {
@@ -908,8 +926,12 @@ async function deliverStopCargoGroup(dropoff, groupKey) {
     state.selectedStopDropoff = "";
   }
   lastUnloadPlan = nextPlan;
+  if (!getPlacedLoadEntries().some(({ mission, load }) => getLoadDropoff(load, mission) === group.dropoff)) {
+    state.selectedRunRoutePointKey = '';
+  }
   persist();
   render();
+  return true;
 }
 
 async function completeServiceStop(dropoff) {

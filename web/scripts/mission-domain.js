@@ -462,8 +462,7 @@ function canMissionRunWithCurrentActiveShip(mission) {
       cargoState.hasCargo
       && cargoState.totalCapacity > 0
       && (
-        (hasPendingAmount && requestedScu <= cargoState.totalCapacity)
-        || (requestedScu > 0 && requestedScu <= cargoState.totalCapacity)
+        hasPendingAmount || requestedScu > 0
       ),
     );
   }
