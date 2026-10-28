@@ -27,7 +27,7 @@ import solo_about
 import solo_shortcuts
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES

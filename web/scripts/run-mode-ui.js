@@ -250,6 +250,7 @@ function renderRunMode() {
   const noRoute = !noShip && totalPoints === 0;
   renderRunMissionState(runState, activeShip);
   renderRunManifest(runState, activeShip);
+  renderDeliveryOverview(runState);
   runEmptyState.hidden = !noShip && !noRoute;
   runContent.hidden = noShip;
   if (runFocusPanel) runFocusPanel.hidden = noRoute;
@@ -379,7 +380,7 @@ function renderRunMode() {
     }
   }
   runState.cargoGroups.forEach((group) => {
-    const ready = runState.arrived && group.analysis.status === "ready";
+    const ready = runState.arrived && group.placedEntries.length > 0;
     const statusKey = ["ready", "not-loaded", "incomplete", "partial", "blocked"].includes(group.analysis.status)
       ? group.analysis.status
       : "blocked";
@@ -388,13 +389,14 @@ function renderRunMode() {
         ${renderRunTaskIcon("delivery")}
         <div class="run-task-copy">
           <strong>${escapeHtml(group.label)}</strong>
+          <p>${escapeHtml(group.mission.title)}</p>
           <p>${escapeHtml(cargoText("run.tasks.deliveryDetail", "{placed}/{total} Container · {scu}", {
             placed: group.placedEntries.length,
             total: group.entries.length,
             scu: formatScuAmount(group.totalScu),
           }))}</p>
         </div>
-        <button class="secondary-button run-deliver-group" type="button" data-dropoff="${escapeHtml(group.dropoff)}" data-group-key="${escapeHtml(group.key)}" ${ready ? "" : "disabled"}>${escapeHtml(cargoText(`run.delivery.${statusKey}`, statusKey === "ready" ? "Entladen" : "Nicht bereit"))}</button>
+        <button class="secondary-button run-deliver-group" type="button" data-dropoff="${escapeHtml(group.dropoff)}" data-group-key="${escapeHtml(group.key)}" ${ready ? "" : "disabled"}>${escapeHtml(ready ? t('delivery.choose') : cargoText(`run.delivery.${statusKey}`, 'Nicht bereit'))}</button>
       </article>
     `);
   });
@@ -528,7 +530,7 @@ function renderRunMode() {
   });
   runTaskList.querySelectorAll(".run-deliver-group").forEach((button) => {
     button.addEventListener("click", async () => {
-      await deliverStopCargoGroup(button.dataset.dropoff || "", button.dataset.groupKey || "");
+      await chooseDeliveryContainers(button.dataset.dropoff || "", button.dataset.groupKey || "");
     });
   });
   runTaskList.querySelectorAll(".run-enter-quantity").forEach((button) => {
@@ -646,18 +648,25 @@ async function completeRunPickup({allowIncomplete = true} = {}) {
   const incomplete = runState.pickupEntries.length === 0 || runState.placedPickupEntries.length < runState.pickupEntries.length;
   if (incomplete) {
     if (!allowIncomplete) return false;
+    if (runState.placedPickupEntries.length === 0) return false;
     const confirmed = await showMissionConfirmDialog({
       kicker: cargoText("run.dialog.kicker", "Einsatzmodus"),
-      title: cargoText("run.dialog.pickupIncompleteTitle", "Abholung trotzdem abschließen?"),
+      title: t('delivery.departTitle'),
       message: runState.pickupEntries.length === 0
         ? cargoText("run.dialog.pickupAmountOpen", "Für diese Abholung ist noch keine konkrete Frachtmenge hinterlegt.")
-        : cargoText("run.dialog.pickupIncomplete", "Erst {placed} von {total} Containern sind im aktuellen Schiff verladen.", {
+        : t("delivery.departMessage", {
             placed: runState.placedPickupEntries.length,
             total: runState.pickupEntries.length,
           }),
-      confirmLabel: cargoText("run.actions.completePickup", "Abholung erledigt"),
+      confirmLabel: t('delivery.depart'),
     });
     if (!confirmed) return false;
+    const destination = runState.placedPickupEntries.map(({ mission, load }) => getLoadDropoff(load, mission)).find(Boolean);
+    state.runPriorityRouteLocation = destination || '';
+    state.selectedRunRoutePointKey = runState.openPoints?.find(candidate => candidate.hasCargo
+      && normalizeRunRouteLocation(candidate.dropoff) === normalizeRunRouteLocation(destination))?.key || '';
+    persist(); render();
+    return true;
   }
   const pickupTaskKeys = point.pickupTaskKeys?.length ? point.pickupTaskKeys : [point.key];
   state.runCompletedRoutePoints = [...new Set([...(state.runCompletedRoutePoints || []), ...pickupTaskKeys])];

@@ -444,6 +444,10 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
           scu: Math.max(0, Number(entry.scu) || 0),
           completedAt: entry.completedAt || new Date().toISOString(),
           note: String(entry.note || ""),
+          ...(entry.deliveryUndo?.version === 1 && Array.isArray(entry.deliveryUndo.missions)
+            && entry.deliveryUndo.missions.every(mission => mission && typeof mission.id === 'string')
+            && typeof entry.deliveryUndo.after === 'string'
+            ? { deliveryUndo: cloneData(entry.deliveryUndo) } : {}),
           order: Number.isInteger(entry.order) ? entry.order : index,
         }))
         .sort((left, right) => new Date(right.completedAt).getTime() - new Date(left.completedAt).getTime())

@@ -9,6 +9,7 @@ __pycache__/
 /build/
 /dist/
 /.build/
+/.delivery-verification/
 /github-upload/
 *.exe
 *.dll

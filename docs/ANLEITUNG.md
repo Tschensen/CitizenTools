@@ -1,8 +1,40 @@
-# Citizen Tools · Flight Deck · 0.6.0
+# Citizen Tools · Flight Deck · 0.7.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Teillieferungen und Rücknahme
+
+Die aktuelle Route zeigt für den ausgewählten Stopp **Hier entladen**, **Hier abholen**
+und **Bleibt an Bord**. Ware, Auftrag und Strecke bleiben getrennt, auch bei identischen
+Waren für verschiedene Ziele. Die Mengen stehen in SCU als **Gesamt**, **Abzuholen**,
+**An Bord** und **Geliefert**. Im Ladungsmanifest ist der Fortschritt aller Frachtpositionen
+der laufenden Route sichtbar, einschließlich bereits gelieferter Mengen.
+
+**Container übergeben** öffnet eine Auswahl der tatsächlich geladenen Container.
+Nur angekreuzte Container werden geliefert. Liegt andere Fracht darüber, muss sie
+zuerst entfernt oder ebenfalls ausgewählt werden. Am aktuellen Halt können mit der
+bestehenden Sammelaktion alle entladbaren geladenen Container gemeinsam geliefert werden;
+noch nicht abgeholte Mengen bleiben offen. Das globale Auto-Entladen-Kürzel verwendet
+ebenfalls die geladene Teilmenge und lässt blockierte Fracht unverändert.
+
+Aufträge dürfen größer als die Gesamtkapazität des Schiffs sein, sofern die einzelnen
+Container hineinpassen. Nach teilweiser Beladung öffnet **Abholung erledigt** die Aktion
+**Mit Teilmenge weiter**. Die Restabholung bleibt erhalten. Erst nachdem sämtliche Fracht
+geliefert wurde, wird der Auftrag abgeschlossen.
+
+Unter **Letzte Lieferungen** lassen sich bis zu zehn zuletzt protokollierte
+Frachtübergaben zurücknehmen. Container erhalten ihre vorherigen Ladeplätze zurück;
+Auftragsstatus und Lieferhistorie werden korrigiert. Dies funktioniert nach Neustart
+und auf weiteren Geräten. Bei zwischenzeitlichen Änderungen am betroffenen Auftrag,
+an seinen Buchungen, am Schiff oder an der Beladung ist die Rücknahme gesperrt.
+Eine bereits gebuchte Vergütung wird nicht automatisch rückgebucht. Ältere Lieferungen
+ohne Rücknahmedaten sowie manuelle Auftragsabschlüsse haben keine Rücknahmefunktion.
+
+Datensicherung und persönlicher Export enthalten die gespeicherten Liefermengen.
+Vor Wiederherstellung eines älteren Gesamtstands eine aktuelle Sicherung erstellen.
+Eigene Sounds und lokale Programmeinstellungen sind weiterhin separat zu sichern.
 
 ## Routen-Tastenkürzel und Heimatbasis
 
@@ -49,7 +81,7 @@ Bei einer neuen Version öffnet **Was ist neu?** zuerst die Änderungen. Danach 
 
 Offene Formulare vorher speichern. Der Updater wartet auf das vollständige Ende der App und erstellt eine Datenbanksicherung. Er startet anschließend die neue Ausgabe mit demselben Datenordner. Einstellungen, Aufträge und eigene Sounds werden nicht ersetzt. Portable Ausgaben behalten ihren bisherigen Programmordner; dieser muss beschreibbar sein. Programm- und Datenordner müssen getrennt sein.
 
-Die Sicherung der letzten Programmversion liegt neben dem Programmordner als `.CitizenTools-Solo.previous-…`. Datenbanksicherung und Protokolle liegen unter `%LOCALAPPDATA%\CitizenToolsSolo\Updates\<Vorgang>\` (bei eigenem `--data-dir` entsprechend dort). Bei einem fehlgeschlagenen Dateiaustausch versucht der Updater, den vorherigen Programmstand wiederherzustellen. Bei Problemen lässt sich das vollständige Release weiterhin manuell installieren oder entpacken.
+Die Sicherung der letzten Programmversion liegt unter `.CitizenTools-updates/previous-…` im Programmordner. Datenbanksicherung und Protokolle liegen unter `%LOCALAPPDATA%\CitizenToolsSolo\Updates\<Vorgang>\` (bei eigenem `--data-dir` entsprechend dort). Bei einem fehlgeschlagenen Dateiaustausch versucht der Updater, den vorherigen Programmstand wiederherzustellen. Bei Problemen lässt sich das vollständige Release weiterhin manuell installieren oder entpacken.
 
 **English:** Open **Settings → About Citizen Tools → Updates** to check manually or disable automatic GitHub checks. Read **What’s new?**, then choose **Download update** and **Install and restart**. Save open forms first. Both installed and portable editions are supported. Personal data stays in its existing location, and the updater backs up the database and previous program version before replacement. Additional devices show release information; installation is controlled from the Windows app. Install or extract version 0.3.0 once using the usual method to enable built-in updates for future releases.
 

@@ -1,5 +1,21 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.7.0 — Teillieferungen und Stoppübersicht
+
+### Deutsch
+
+- Mengen je Frachtposition und Stopp: abzuholen, an Bord und geliefert.
+- Einzelne Container oder geladene Teilmengen übergeben; Restabholungen bleiben im Flugplan.
+- Aufträge über mehrere Transportfahrten abarbeiten, auch bei kleinerem Schiff.
+- Bis zu zehn letzte Frachtübergaben mit Auftragsstatus und Lieferhistorie zurücknehmen; Schutz vor zwischenzeitlichen Änderungen auf anderen Geräten.
+
+### English
+
+- Cargo quantities per contract and stop: to collect, on board and delivered.
+- Deliver selected containers or loaded partial batches while keeping remaining pickups open.
+- Complete contracts over multiple trips, including with smaller ships.
+- Undo up to ten recent cargo deliveries, restoring contract status and history while guarding against newer changes on other devices.
+
 ## 0.6.0 — Routen-Tastenkürzel und Heimatbasis
 
 ### Deutsch

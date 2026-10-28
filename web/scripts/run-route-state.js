@@ -96,16 +96,6 @@ function getRunMissionReadiness(mission) {
 
     const activeLoads = getMissionActiveLoads(mission);
     const requestedScu = activeLoads.reduce((sum, load) => sum + (Number(load.scu) || 0), 0);
-    if (requestedScu > cargoState.totalCapacity) {
-      return {
-        status: "blocked",
-        routeEligible: false,
-        message: cargoText("run.warning.capacity", "{needed} benötigt, aber das aktive Schiff bietet nur {capacity}.", {
-          needed: formatScuAmount(requestedScu),
-          capacity: formatScuAmount(cargoState.totalCapacity),
-        }),
-      };
-    }
 
     const maxProfile = getCurrentShipMaxContainerProfile();
     const oversizedLoad = maxProfile
@@ -136,7 +126,8 @@ function getRunMissionReadiness(mission) {
         message: cargoText("run.warning.noCargo", "Für diesen Auftrag wurde keine verladefähige Fracht erzeugt."),
       };
     }
-    return { status: "ready", routeEligible: true, message: "" };
+    return { status: requestedScu > cargoState.totalCapacity ? "warning" : "ready", routeEligible: true,
+      message: requestedScu > cargoState.totalCapacity ? t('delivery.multipleTrips') : "" };
   }
 
   let readiness = { ok: true, message: "" };
@@ -317,7 +308,7 @@ function buildOptimizedRunRoutePoints(missionStates, completedPickupKeys) {
         ));
         const explicitlyCompleted = completedKeys.has(pickupTaskKey)
           || [...completedKeys].some((key) => isLegacyRunPickupCompletionKey(key, missionId, pickup));
-        const pickupCompleted = explicitlyCompleted
+        const pickupCompleted = (explicitlyCompleted && allPlacedOrDelivered)
           || allDelivered
           || (allPlacedOrDelivered && normalizeRunRouteLocation(pickup) !== normalizedCurrentLocation);
         const placedSegmentEntries = segmentLoads
@@ -352,7 +343,8 @@ function buildOptimizedRunRoutePoints(missionStates, completedPickupKeys) {
           missionId,
           missionTitle,
           firstOrder: Math.max(missionIndex, 0) * 10000 + segmentOrder * 2 + 1,
-          dependencies: [pickupTaskKey],
+          // Loaded cargo can be delivered before collecting the remainder.
+          dependencies: placedSegmentEntries.length > 0 ? [] : [pickupTaskKey],
           completed: allDelivered,
           onBoard: placedSegmentEntries.length > 0 && !allDelivered,
           unloadBlocked: Boolean(unloadAnalysis?.blockedEntries?.length),
@@ -569,7 +561,7 @@ function getRunStopStatus(runState) {
   const details = [];
   const pendingAmountCount = runState.pendingPickupSegments.length;
   const unplacedPickupCount = Math.max(runState.pickupEntries.length - runState.placedPickupEntries.length, 0);
-  const blockedDeliveryCount = runState.cargoGroups.filter((group) => group.analysis.status !== "ready").length;
+  const blockedDeliveryCount = runState.cargoGroups.filter((group) => group.analysis.freeEntries.length === 0).length;
   const readyDeliveryCount = runState.cargoGroups.length - blockedDeliveryCount;
   const courierPickupCount = runState.courierPickupEntries.length;
   const courierDeliveryCount = runState.courierDeliveryEntries.length;
