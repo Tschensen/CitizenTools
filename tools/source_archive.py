@@ -7,7 +7,7 @@ ROOT_FILES = ('app.py', 'runtime.py', 'solo_about.py', 'solo_sounds.py', 'solo_s
               'project.json', 'LICENSE', 'NOTICE.md', 'README.md', 'requirements.txt', 'release-notes.json')
 EXTRA_ROOT_FILES = ('.gitignore', '.gitattributes', 'CHANGELOG.md', 'requirements-build.txt')
 CODE_TREES = ('companion', 'server', 'shared', 'web', 'tools', 'tests', 'packaging', 'docs')
-SUFFIXES = {'.py', '.ps1', '.js', '.html', '.css', '.json', '.md', '.txt', '.iss', '.svg', '.png', '.ico', '.wav'}
+SUFFIXES = {'.py', '.ps1', '.js', '.cjs', '.html', '.css', '.json', '.md', '.txt', '.iss', '.svg', '.png', '.ico', '.wav'}
 
 
 def create_archive(destination: Path, root=ROOT):
