@@ -1581,7 +1581,7 @@ h2 {
 .systemdb-table-head,
 .systemdb-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1.35fr) minmax(170px, 1.05fr) minmax(180px, 1.2fr) 90px 100px 132px;
+  grid-template-columns: minmax(190px, 1.35fr) minmax(170px, 1.05fr) minmax(180px, 1.2fr) 90px 100px 162px;
   gap: 14px;
   align-items: center;
 }

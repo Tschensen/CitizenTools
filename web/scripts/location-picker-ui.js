@@ -42,7 +42,8 @@ function collectLocationSuggestions() {
     suggestions.add(quickDefaultPickup);
   }
 
-  return [...suggestions].sort((left, right) => left.localeCompare(right, "de", { sensitivity: "base" }));
+  const canonical = [...suggestions].map(value => window.systemDatabaseController?.resolveLocationName?.(value) || value);
+  return [...new Set(canonical)].sort((left, right) => left.localeCompare(right, "de", { sensitivity: "base" }));
 }
 
 let activeLocationPickerInput = null;

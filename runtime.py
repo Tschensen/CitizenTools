@@ -26,9 +26,10 @@ import transfer
 import solo_sounds
 import solo_about
 import solo_shortcuts
+import location_merge
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.8.0"
+VERSION = "0.8.1"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -175,11 +176,16 @@ class SoloRuntime:
     def status(self):
         shortcuts = self.shortcuts.status()
         with self.lock:
+            settings = dict(self.settings)
+        if self.httpd and settings.get('routeHomeLocation'):
+            with backend.get_connection() as connection:
+                settings['routeHomeLocation'] = location_merge.resolve_home_location(connection, settings['routeHomeLocation'])
+        with self.lock:
             return {
                 "ok": True, "edition": "solo", "version": VERSION,
                 "url": self.url,
                 "lanUrls": [f"http://{address}:{self.httpd.server_port}" for address in self.addresses] if self.httpd and self.active_lan else [],
-                "settings": dict(self.settings),
+                "settings": settings,
                 "restartRequired": bool(self.httpd and (self.settings["lanEnabled"] != self.active_lan or self.settings["port"] != self.httpd.server_port)),
                 "captureRunning": bool(self.worker and self.worker.is_alive()),
                 "captureReady": self.capture_ready, "captureError": self.capture_error,
@@ -415,6 +421,8 @@ class SoloHandler(backend.CargoPlannerHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == '/api/solo/locations/merge':
+            return self.handle_merge_locations()
         if path.startswith('/api/solo/updates/'):
             if not ipaddress.ip_address(self.client_address[0]).is_loopback:
                 return self.send_json(403, {'error': 'update_native_only'})
@@ -470,6 +478,23 @@ class SoloHandler(backend.CargoPlannerHandler):
             except (ValueError, RuntimeError) as error:
                 return self.send_json(400, {"error": str(error)})
         return super().do_POST()
+
+    def handle_merge_locations(self):
+        try:
+            payload = self.read_json_body(8192)
+            if not isinstance(payload, dict):
+                raise location_merge.MergeError('merge_invalid')
+            if payload.get('clientVersion') != VERSION:
+                return self.send_json(428, {'error': 'client_version_mismatch', 'version': VERSION})
+            with backend.get_connection() as connection:
+                connection.execute('BEGIN IMMEDIATE')
+                result = location_merge.merge(connection, payload)
+                connection.commit()
+            return self.send_json(200, result)
+        except location_merge.MergeError as error:
+            return self.send_json(409 if str(error) == 'merge_conflict' else 400, {'error': str(error)})
+        except (ValueError, backend.sqlite3.IntegrityError):
+            return self.send_json(400, {'error': 'merge_invalid'})
 
     def handle_personal_transfer(self, apply):
         try:

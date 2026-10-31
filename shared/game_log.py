@@ -8,9 +8,19 @@ from __future__ import annotations
 import hashlib
 import re
 import uuid
+from datetime import datetime
 
 STAMP = re.compile(r'^<([^>]+)>')
 UUID = r'[0-9a-fA-F-]{36}'
+AMOUNT = r'(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]{1,3}(?:\.[0-9]{3})+|[0-9]{1,12})'
+PAYMENT_WINDOW = 2
+
+
+def elapsed(later, earlier):
+    try:
+        return (datetime.fromisoformat(later) - datetime.fromisoformat(earlier)).total_seconds()
+    except (ValueError, TypeError):
+        return float('inf')
 
 
 def clean(value):
@@ -28,12 +38,43 @@ class GameLogParser:
         self.locations = {}
         self.location_id = ''
         self.notification = ''
+        self.completions = {}
+        self.payment_candidate = None
         self.session = uuid.uuid4().hex
 
     def event(self, kind, at, **data):
         identity = f'{kind}|{at}|{data}'
         return {'id': hashlib.sha256(identity.encode()).hexdigest(), 'kind': kind,
                 'at': at, 'player': self.player, 'session': self.session, 'location': self.location or '', **data}
+
+    def payment_notification(self, line, at):
+        """Correlate adjacent HUD notifications, never an arbitrary money message."""
+        notice = re.search(r'<SHUDEvent_OnNotification> Added notification "([^"]*)" \[(\d+)\].*?MissionId: \[(' + UUID + r')\]', line)
+        if not notice:
+            if 'MissionId: [' in line:
+                self.payment_candidate = None
+            return []
+        candidate = self.payment_candidate
+        self.payment_candidate = None
+        message, notification_id, mission_id = clean(notice[1]), int(notice[2]), notice[3].lower()
+        recent = {key:stamp for key, stamp in self.completions.items() if 0 <= elapsed(at, stamp) <= PAYMENT_WINDOW}
+        if re.match(r'^(?:Auftrag abgeschlossen|Contract completed|Contract complete):', message, re.I):
+            if len(recent) == 1 and mission_id in recent:
+                self.payment_candidate = {'missionId':mission_id, 'completedAt':recent[mission_id],
+                                          'notificationAt':at, 'notificationId':notification_id}
+            return []
+        reward = re.fullmatch(r'(' + AMOUNT + r') aUEC (?:erhalten|received)|Received (' + AMOUNT + r') aUEC', message, re.I)
+        if not reward or not candidate or notification_id != candidate['notificationId'] + 1:
+            return []
+        if mission_id not in ('00000000-0000-0000-0000-000000000000', candidate['missionId']):
+            return []
+        if set(recent) != {candidate['missionId']} or not 0 <= elapsed(at, candidate['notificationAt']) <= PAYMENT_WINDOW:
+            return []
+        amount = int((reward[1] or reward[2]).replace(',', '').replace('.', ''))
+        if not 0 < amount <= 999_999_999_999:
+            return []
+        return [self.event('payment', at, missionId=candidate['missionId'], amount=amount,
+                           completedAt=candidate['completedAt'], match='adjacent_notifications')]
 
     def feed(self, line):
         line = line.rstrip('\r\n')
@@ -52,8 +93,14 @@ class GameLogParser:
             self.connected = True
             self.contracts.clear()
             self.locations.clear()
+            self.completions.clear()
+            self.payment_candidate = None
+            self.notification = ''
         if '<Channel Disconnected>' in line and 'remoteAddr=<local>' not in line:
             self.connected = False
+            self.completions.clear()
+            self.payment_candidate = None
+            self.notification = ''
             return [self.event('disconnected', at)]
         found = re.search(r'<RequestLocationInventory> Player\[([^]]+)\] requested inventory for Location\[([^]]+)\]', line)
         if found and (not self.player or found[1] == self.player):
@@ -73,13 +120,20 @@ class GameLogParser:
         # Some localized notifications span two timestamped lines. Keep the
         # header until its MissionId/ObjectiveId footer arrives.
         if '<SHUDEvent_OnNotification> Added notification ' in line:
-            self.notification = line
+            if self.notification:
+                self.payment_candidate = None
+            self.notification = '' if 'MissionId: [' in line else line
         elif self.notification and 'MissionId: [' in line:
-            line = self.notification + ' ' + line
+            line = self.notification + ' ' + re.sub(r'^<[^>]+>\s*(?:\[(?:Notice|Info|Warning)\]\s*)?', '', line)
             self.notification = ''
         else:
+            if self.notification:
+                self.payment_candidate = None
             self.notification = ''
         if '<SHUDEvent_OnNotification> Added notification ' in line:
+            payment = self.payment_notification(line, at)
+            if payment:
+                return payment
             ship = re.search(r"(?:You have joined channel '([^']+)'|Du bist Kanal \[\s*([^]]+)\]\s*beigetreten)", line)
             if ship:
                 channel = (ship[1] or ship[2]).strip()
@@ -109,5 +163,10 @@ class GameLogParser:
             if mission_id in self.contracts:
                 self.contracts[mission_id]['status'] = ended[2]
             if ended[2] == 'MISSION_STATE_COMPLETED':
+                self.completions = {key:stamp for key, stamp in self.completions.items()
+                                    if 0 <= elapsed(at, stamp) <= PAYMENT_WINDOW}
+                self.completions[mission_id] = at
                 return [self.event('completed', at, missionId=mission_id)]
+            self.completions.pop(mission_id, None)
+            self.payment_candidate = None
         return []

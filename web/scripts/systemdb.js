@@ -42,6 +42,13 @@
       deleteDialogMessage: document.querySelector("#systemDbDeleteDialogMessage"),
       deleteDialogCancel: document.querySelector("#systemDbDeleteDialogCancel"),
       deleteDialogConfirm: document.querySelector("#systemDbDeleteDialogConfirm"),
+      mergeDialog: document.querySelector("#systemDbMergeDialog"),
+      mergeSource: document.querySelector("#systemDbMergeSource"),
+      mergeTarget: document.querySelector("#systemDbMergeTarget"),
+      mergePreview: document.querySelector("#systemDbMergePreview"),
+      mergeStatus: document.querySelector("#systemDbMergeStatus"),
+      mergeCancel: document.querySelector("#systemDbMergeCancel"),
+      mergeConfirm: document.querySelector("#systemDbMergeConfirm"),
     };
 
     let locations = [];
@@ -49,6 +56,7 @@
     let loaded = false;
     let busy = false;
     let pendingDelete = null;
+    let pendingMerge = null;
 
     const text = (key, fallback, params = {}) => {
       const translated = helpers.t(key, params);
@@ -376,6 +384,9 @@
               </div>
               <div><span class="status-badge status-${escape(entry.status)}">${escape(statusLabel(entry.status))}</span></div>
               <div class="systemdb-row-actions">
+                <button class="secondary-button icon-only-button tooltip-button systemdb-merge" type="button" aria-label="${escape(text("systemdb.action.merge", "Zusammenführen"))}" data-tooltip="${escape(text("systemdb.action.merge", "Zusammenführen"))}">
+                  <span class="button-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 20v-4c0-4 12-4 12-8V4m-4 4 4-4 4 4M6 4v4c0 2 2 3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+                </button>
                 <button class="secondary-button icon-only-button tooltip-button systemdb-edit" type="button" aria-label="${escape(text("common.edit", "Bearbeiten"))}" data-tooltip="${escape(text("common.edit", "Bearbeiten"))}">
                   <span class="button-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5 10.8-10.8 3.5 3.5L7.5 20H4v-3.5ZM16.2 4.3l1.3-1.3a1.4 1.4 0 0 1 2 0L21 4.5a1.4 1.4 0 0 1 0 2l-1.3 1.3-3.5-3.5Z" /></svg></span>
                 </button>
@@ -568,17 +579,83 @@
       }
     }
 
+    function renderMergePreview() {
+      const target = locations.find(entry => entry.id === dom.mergeTarget.value);
+      dom.mergeConfirm.disabled = busy || !pendingMerge || !target;
+      dom.mergePreview.textContent = target && pendingMerge
+        ? text('systemdb.merge.preview', '„{source}“ wird in „{target}“ zusammengeführt. Namen und Aliase bleiben beim Ziel erhalten. Aufträge, Routen, Verlauf und Log-Zuordnungen werden umgestellt; der bisherige Eintrag wird archiviert.', {source:pendingMerge.name, target:target.name})
+        : '';
+    }
+
+    function openMergeDialog(entry) {
+      if (busy) return;
+      pendingMerge = entry;
+      dom.mergeSource.textContent = entry.name;
+      dom.mergeTarget.innerHTML = `<option value="">${escape(text('systemdb.merge.choose', 'Zielort auswählen …'))}</option>`
+        + locations.filter(candidate => candidate.id !== entry.id && candidate.status === 'active')
+          .map(candidate => `<option value="${escape(candidate.id)}">${escape([candidate.name, candidate.starSystem, candidate.parentLocation].filter(Boolean).join(' · '))}</option>`).join('');
+      dom.mergeStatus.hidden = true;
+      dom.mergeDialog.hidden = false;
+      renderMergePreview();
+      dom.mergeTarget.focus();
+    }
+
+    function closeMergeDialog() {
+      if (busy) return;
+      pendingMerge = null;
+      dom.mergeDialog.hidden = true;
+    }
+
+    async function confirmMerge() {
+      const source = pendingMerge;
+      const target = locations.find(entry => entry.id === dom.mergeTarget.value);
+      if (busy || !source || !target) return;
+      busy = true;
+      dom.mergeConfirm.disabled = dom.mergeCancel.disabled = dom.mergeTarget.disabled = true;
+      dom.mergeStatus.hidden = true;
+      try {
+        await helpers.mergeLocations({sourceId:source.id, targetId:target.id,
+          sourceUpdatedAt:source.updatedAt, targetUpdatedAt:target.updatedAt});
+        busy = false;
+        closeMergeDialog();
+        await load();
+        helpers.renderApp?.();
+        setStatus(text('systemdb.merge.success', '„{source}“ wurde in „{target}“ zusammengeführt.', {source:source.name, target:target.name}), 'success');
+      } catch (error) {
+        const reason = error.code === 'merge_conflict' ? 'conflict'
+          : error.code === 'merge_alias_conflict' ? 'ambiguous'
+          : error.code === 'merge_alias_limit' ? 'aliasLimit'
+          : error.code === 'merge_unsaved' ? 'unsaved' : 'failed';
+        dom.mergeStatus.textContent = text(`systemdb.merge.${reason}`, 'Die Orte konnten nicht zusammengeführt werden.');
+        dom.mergeStatus.hidden = false;
+        if (error.code === 'merge_conflict') {
+          // Keep the reviewed choice unchanged; refresh data only after closing.
+          pendingMerge = null;
+        }
+      } finally {
+        busy = false;
+        dom.mergeCancel.disabled = dom.mergeTarget.disabled = false;
+        dom.mergeConfirm.disabled = !pendingMerge;
+      }
+    }
+
     function handleListClick(event) {
+      if (busy) return;
       const row = event.target.closest("[data-location-id]");
       if (!row) return;
       const entry = locations.find((candidate) => candidate.id === row.dataset.locationId);
       if (!entry) return;
+      if (event.target.closest(".systemdb-merge")) openMergeDialog(entry);
       if (event.target.closest(".systemdb-edit")) editLocation(entry);
       if (event.target.closest(".systemdb-archive")) void updateStatus(entry);
       if (event.target.closest(".systemdb-delete")) openDeleteDialog(entry);
     }
 
     function init() {
+      dom.mergeTarget?.addEventListener('change', renderMergePreview);
+      dom.mergeCancel?.addEventListener('click', () => { closeMergeDialog(); void load(); });
+      dom.mergeConfirm?.addEventListener('click', () => void confirmMerge());
+      dom.mergeDialog?.addEventListener('click', event => { if (event.target === dom.mergeDialog) closeMergeDialog(); });
       dom.viewTabs.forEach((button) => button.addEventListener("click", () => setView(button.dataset.systemdbViewTarget)));
       dom.form?.addEventListener("submit", submitForm);
       dom.cancelButton?.addEventListener("click", () => {
@@ -596,6 +673,7 @@
         if (event.target === dom.deleteDialog) closeDeleteDialog();
       });
       document.addEventListener("keydown", (event) => {
+        if (event.key === 'Escape' && dom.mergeDialog && !dom.mergeDialog.hidden) closeMergeDialog();
         if (event.key === "Escape" && dom.deleteDialog && !dom.deleteDialog.hidden) closeDeleteDialog();
       });
       resetForm();
@@ -608,6 +686,14 @@
         .filter((entry) => entry.status === "active")
         .map((entry) => entry.name)
         .filter(Boolean);
+    }
+
+    function resolveLocationName(name) {
+      const key = normalizeSearch(name);
+      const matches = locations.filter(entry => entry.status === 'active'
+        && [entry.name, ...(entry.aliases || [])].some(value => normalizeSearch(value) === key));
+      const names = [...new Set(matches.map(entry => entry.name))];
+      return names.length === 1 ? names[0] : name;
     }
 
     function getActiveLocations() {
@@ -625,6 +711,7 @@
       render,
       setView,
       getActiveLocationNames,
+      resolveLocationName,
       getActiveLocations,
       buildAliasSuggestions,
       addAlias,

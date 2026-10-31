@@ -2,6 +2,9 @@
 // before committing them with the event acknowledgement in one transaction.
 (function(root) {
   const key = value => String(value || '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Inventory name observed on arrival at Seraphim Station. Resolve against
+  // existing locations so archived or renamed entries are not recreated.
+  const inventoryLocations = {RR_CRU_LEO:'Seraphim Station'};
   function links(value) {
     const result = {};
     for (const name of ['ships', 'locations', 'missions', 'objectives']) {
@@ -15,8 +18,13 @@
     if (Object.hasOwn(saved, raw)) return saved[raw];
     const code = key(raw);
     const suffix = key(String(raw).split('_').at(-1));
-    const matches = choices.filter(place => [place.name, ...(place.aliases || [])]
+    let matches = choices.filter(place => [place.name, ...(place.aliases || [])]
       .some(name => key(name) === code || (suffix.length > 3 && key(name) === suffix)));
+    const knownName = inventoryLocations[String(raw).trim().toUpperCase()];
+    if (!matches.length && knownName) {
+      matches = choices.filter(place => [place.name, ...(place.aliases || [])]
+        .some(name => key(name) === key(knownName)));
+    }
     const names = [...new Set(matches.map(place => place.name))];
     return names.length === 1 ? names[0] : null;
   }
@@ -52,11 +60,27 @@
       const value = resolveLocation(event.value, choices, saved.locations);
       return value !== null ? {action:'location', value} : {reason:'location', bindingKey:event.value};
     }
-    if (!['objective', 'completed'].includes(event.kind)) return {action:'discard'};
-    if (event.kind === 'completed' ? !settings.logAutoComplete : !settings.logAutoRoute) return {reason:'disabled'};
+    if (!['objective', 'completed', 'payment'].includes(event.kind)) return {action:'discard'};
+    const enabled = event.kind === 'payment' ? settings.logAutoPayment
+      : event.kind === 'completed' ? settings.logAutoComplete : settings.logAutoRoute;
+    if (!enabled) return {reason:'disabled'};
     const missionId = saved.missions[event.missionId];
     const mission = state.missions.find(item => item.id === missionId);
     if (!mission) return {reason:'mission', bindingKey:event.missionId};
+    if (event.kind === 'payment') {
+      const delay = Date.parse(event.at) - Date.parse(event.completedAt);
+      if (!Number.isSafeInteger(event.amount) || event.amount <= 0 || event.amount > 999999999999
+          || event.match !== 'adjacent_notifications' || !Number.isFinite(delay) || delay < 0 || delay > 2000) {
+        return {action:'discard', reason:'invalid'};
+      }
+      if (['paid','cancelled'].includes(mission.status) || mission.paidAt
+          || (state.ledgerEntries || []).some(entry => entry.telemetryEventId === event.id
+            || (entry.missionId === missionId && entry.flow === 'income' && Number(entry.amountAuec) > 0))) {
+        return {action:'discard', reason:'already_paid'};
+      }
+      if (mission.status !== 'completed') return {reason:'payment_completion', missionId};
+      return {action:'payment', missionId, amount:event.amount};
+    }
     if (['completed', 'paid', 'cancelled'].includes(mission.status)) return {action:'discard'};
     if (event.kind === 'completed') return {action:'complete', missionId};
     const kind = event.objectiveId.startsWith('pickup_') ? 'pickup' : event.objectiveId.startsWith('dropoff_') ? 'dropoff' : '';

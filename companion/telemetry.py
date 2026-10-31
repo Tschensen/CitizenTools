@@ -13,7 +13,7 @@ from shared.game_log import GameLogParser
 
 CHANNELS = ('LIVE', 'PTU', 'EPTU', 'HOTFIX')
 DEFAULTS = {'logEnabled': False, 'gameDirectory': '', 'gameChannel': 'LIVE', 'logAutoShip': True,
-            'logAutoLocation': True, 'logAutoRoute': True, 'logAutoComplete': False,
+            'logAutoLocation': True, 'logAutoRoute': True, 'logAutoComplete': False, 'logAutoPayment': False,
             'balanceOcrEnabled': False}
 
 
@@ -175,7 +175,7 @@ class Telemetry:
                     continue
                 # Semantic objective IDs are stable even when the game repeats
                 # the same completed objective with a different timestamp.
-                if event['kind'] in ('objective', 'completed'):
+                if event['kind'] in ('objective', 'completed', 'payment'):
                     event['id'] = event['kind'] + ':' + event['missionId'] + ':' + event.get('objectiveId', '')
                 self.enqueue(event)
 

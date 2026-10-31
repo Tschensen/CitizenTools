@@ -39,6 +39,8 @@
     disabled:['Automatik ausgeschaltet', 'Automation disabled'],
     grid:['Fracht passt nicht vollständig ins aktive Schiff', 'Cargo does not fully fit the active ship'],
     expired:['Veraltetes Ereignis', 'Expired event'],
+    payment_completion:['Zahlung wartet auf den Auftragsabschluss', 'Payment is waiting for contract completion'],
+    payment_failed:['Zahlung konnte nicht verbucht werden – bitte prüfen', 'Payment could not be booked — please review'],
   };
   function renderStatus() {
     if (!latest) return;
@@ -47,7 +49,8 @@
       : latest.error ? say('Game.log im gewählten Ordner und Spielkanal nicht lesbar.', 'Cannot read Game.log in the selected folder and channel.')
       : latest.live ? say('Spiel verbunden', 'Game connected') : say('Kein aktuelles Spielsignal – letzte Erkennung:', 'No live game signal — last detection:'));
     const details = document.getElementById('soloTelemetryDetails');
-    details.textContent = [latest.player, latest.ship?.name, latest.location,
+    const location = D.resolveLocation(latest.location, places(), D.links(state.telemetryLinks).locations);
+    details.textContent = [latest.player, latest.ship?.name, location ?? latest.location,
       latest.at ? new Date(latest.at).toLocaleString() : '', latest.path].filter(Boolean).join(' · ');
     const badge = document.getElementById('runTelemetryStatus');
     badge.hidden = !latest.enabled;
@@ -89,7 +92,10 @@
     for (const event of latest.events.slice(-30)) {
       const plan = decision(event);
       if (plan.action) continue;
-      const label = `${say(...(reasons[plan.reason] || ['Zuordnung offen', 'Unmatched']))}: ${event.name || event.value || event.objectiveId || event.missionId || event.kind}`;
+      const description = event.kind === 'payment'
+        ? `${Number(event.amount).toLocaleString()} aUEC · ${state.missions.find(item => item.id === plan.missionId)?.title || event.missionId}`
+        : event.name || event.value || event.objectiveId || event.missionId || event.kind;
+      const label = `${say(...(reasons[plan.reason] || ['Zuordnung offen', 'Unmatched']))}: ${description}`;
       if (plan.reason === 'ship') selectRow(label, getActiveFleetEntries().map(entry => ({id:entry.id, name:formatFleetEntryDisplayName(entry)})), saved.ships[plan.bindingKey], 'ships', plan.bindingKey);
       else if (plan.reason === 'location') selectRow(label, places().map(place => ({id:place.name, name:place.name})), saved.locations[plan.bindingKey], 'locations', plan.bindingKey);
       else if (plan.reason === 'objective') {
@@ -127,7 +133,7 @@
           const superseded = ['ship', 'location'].includes(event.kind) && payload.events.some(other => other.kind === event.kind && other.at > event.at);
           const ticket = getSoloSync().checkpoint();
           const staged = stageTelemetryEvent(event, superseded ? {action:'discard'} : plan, latest.settings);
-          if (!staged) { issue = say(...reasons.grid); continue; }
+          if (!staged) { issue = say(...reasons[plan.action === 'payment' ? 'payment_failed' : 'grid']); continue; }
           if (await getSoloSync().commitImports(staged, ticket)) latest.events = latest.events.filter(item => item.id !== event.id);
           break;
         }

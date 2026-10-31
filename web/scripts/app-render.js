@@ -4,8 +4,8 @@ function getAppViewRenderer() {
   appViewRenderer ||= ViewRenderer.create({
     getPage: () => activePage,
     views: [
-      {id:'hub', pages:['hub'], render: () => renderHub()},
-      {id:'run', pages:['run'], render: () => renderRunMode()},
+      {id:'hub', pages:['hub'], render: () => { renderCurrentLocationControl(); renderHub(); }},
+      {id:'run', pages:['run'], render: () => { renderCurrentLocationControl(); renderRunMode(); }},
       {id:'create', pages:['create'], render: () => renderCreateShipIndicator()},
       // The ship-selection preview copies the interactive cargo grid.
       {id:'cargo-grid', pages:['home','load'], render: () => {

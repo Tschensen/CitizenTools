@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.8.1",
+    "de": {
+      "title": "Auftragszahlungen und Orte",
+      "changes": [
+        "Bestätigte Auftragszahlungen aus Game.log verbuchen, auch reduzierte Beträge und Gruppenanteile.",
+        "Standortanzeige verbessert und Orte in der Systemdatenbank zusammenführen.",
+        "Symbole in der aktuellen Route korrigiert."
+      ]
+    },
+    "en": {
+      "title": "Contract payments and locations",
+      "changes": [
+        "Book confirmed contract payments from Game.log, including reduced payouts and group shares.",
+        "Improved location display and added merging of locations in the system database.",
+        "Fixed icons in the current route."
+      ]
+    }
+  },
+  {
     "version": "0.8.0",
     "de": {
       "title": "Spiel-Log und Kontostandserkennung",
@@ -88,11 +107,17 @@
     "version": "0.5.1",
     "de": {
       "title": "Screenshot-Aufnahme",
-      "changes": ["Fehler behoben, durch den Screenshots nicht erstellt werden konnten.", "Update-Arbeitsordner und Programmsicherungen liegen jetzt in einem Unterordner der Anwendung."]
+      "changes": [
+        "Fehler behoben, durch den Screenshots nicht erstellt werden konnten.",
+        "Update-Arbeitsordner und Programmsicherungen liegen jetzt in einem Unterordner der Anwendung."
+      ]
     },
     "en": {
       "title": "Screenshot capture",
-      "changes": ["Fixed an issue that prevented screenshots from being captured.", "Update working files and program backups now reside in a subfolder of the application."]
+      "changes": [
+        "Fixed an issue that prevented screenshots from being captured.",
+        "Update working files and program backups now reside in a subfolder of the application."
+      ]
     }
   },
   {

@@ -33,6 +33,87 @@ function fixture() {
   return c;
 }
 const event = {id:'event',at:'2026-10-31T12:00:00Z'};
+
+function paymentFixture() {
+  const c=fixture(); c.window={CalendarDate:require('../web/scripts/calendar-date.js')};
+  for (const file of ['finance.js','ledger-automation.js']) {
+    vm.runInContext(fs.readFileSync(require.resolve('../web/scripts/'+file),'utf8'),c);
+  }
+  c.createMissionIncomeForCompletedMission=c.window.LedgerAutomation.createMissionIncomeForCompletedMission;
+  Object.assign(c,{createLedgerEntry:c.window.FinanceModule.createLedgerEntry, formatDateForInput:at=>at.slice(0,10),normalizeMissionType:type=>type,
+    getMissionTypeLabel:()=> 'Fracht',cargoLocale:()=> 'de-DE',
+    cargoText:(_key,fallback,params={})=>fallback.replace(/\{(\w+)\}/g,(_,key)=>String(params[key]))});
+  c.getMissionIncomeEntry=mission=>c.state.ledgerEntries.find(entry=>entry.missionId===mission.id && entry.flow==='income' && entry.amountAuec>0);
+  Object.assign(c.state.missions[0],{status:'completed',payout:50250,completedAt:'2026-10-31T11:59:59.950Z'});
+  return c;
+}
+
+test('payment stages exactly one real ledger entry and paid status without changing live state or cargo', () => {
+  const c=paymentFixture();
+  const before=copy(c.state), original=c.state, payment={...event,kind:'payment',amount:50250};
+  const staged=c.stageTelemetryEvent(payment,{action:'payment',missionId:'m'},{});
+  assert.equal(staged.state.missions[0].status,'paid');
+  assert.equal(staged.state.missions[0].paidAt,event.at);
+  assert.equal(staged.state.missions[0].completedAt,before.missions[0].completedAt);
+  assert.deepEqual(staged.state.missions[0].loads,before.missions[0].loads);
+  assert.equal(staged.state.ledgerEntries.length,1);
+  const income=staged.state.ledgerEntries[0];
+  assert.equal(income.amountAuec,50250); assert.equal(income.missionId,'m');
+  assert.equal(income.category,'Auftragserlös'); assert.equal(income.fleetEntryId,'ship');
+  assert.equal(income.telemetryEventId,event.id); assert.equal(income.createdAt,event.at);
+  assert.equal(income.notes,'Auszahlung aus Game.log bestätigt.');
+  assert.deepEqual(Array.from(staged.telemetryIds),[event.id]);
+  assert.deepEqual(c.state,before); assert.equal(c.state,original);
+  for (const amount of [0,-1,50250.5,1e12]) {
+    assert.equal(c.stageTelemetryEvent({...payment,amount},{action:'payment',missionId:'m'},{}),null);
+  }
+  assert.deepEqual(c.state,before);
+  c.state=staged.state;
+  assert.equal(c.stageTelemetryEvent(payment,{action:'payment',missionId:'m'},{}),null);
+  c.state.missions[0].status='completed'; delete c.state.missions[0].paidAt;
+  assert.equal(c.stageTelemetryEvent(payment,{action:'payment',missionId:'m'},{}),null);
+  assert.equal(c.state.ledgerEntries.length,1);
+});
+
+test('reduced rewards, group shares and bonuses book the receipt without rewriting planned rewards or splits', () => {
+  for (const amount of [45000,16750,60000]) {
+    const c=paymentFixture();
+    Object.assign(c.state.missions[0],{
+      participants:[{pilotId:'pilot-1'},{pilotId:'pilot-2'},{pilotId:'pilot-3'}],
+      payoutSplit:{mode:'amount',items:[{pilotId:'pilot-1',amountAuec:16750},{pilotId:'pilot-2',amountAuec:16750},{pilotId:'pilot-3',amountAuec:16750}]},
+    });
+    const before=copy(c.state), payment={...event,kind:'payment',amount};
+    const staged=c.stageTelemetryEvent(payment,{action:'payment',missionId:'m'},{});
+    assert.equal(staged.state.ledgerEntries.length,1);
+    assert.equal(staged.state.ledgerEntries[0].amountAuec,amount);
+    assert.equal(staged.state.ledgerEntries[0].notes,'Auszahlung aus Game.log bestätigt. Ursprünglicher Auftragserlös: 50.250 aUEC.');
+    assert.equal(staged.state.missions[0].payout,50250);
+    assert.equal(staged.state.missions[0].status,'paid');
+    assert.deepEqual(staged.state.missions[0].payoutSplit,before.missions[0].payoutSplit);
+    assert.deepEqual(staged.state.missions[0].participants,before.missions[0].participants);
+    assert.deepEqual(c.state,before);
+    c.state=staged.state;
+    assert.equal(c.stageTelemetryEvent(payment,{action:'payment',missionId:'m'},{}),null);
+  }
+});
+
+test('manual payments still use the planned reward and contract edits preserve actual log receipts', () => {
+  const c=paymentFixture();
+  c.markMissionPaid(c.state.missions[0],{paidAt:event.at});
+  assert.equal(c.state.ledgerEntries[0].amountAuec,50250);
+  assert.equal(c.state.ledgerEntries[0].telemetryEventId,undefined);
+  const actual=paymentFixture();
+  actual.state=actual.stageTelemetryEvent({...event,kind:'payment',amount:16750},{action:'payment',missionId:'m'},{}).state;
+  for (const context of [c,actual]) {
+    Object.assign(context,{window:{},getDistinctActiveMissionColor:color=>color,getMissionPayout:mission=>mission.payout});
+    vm.runInContext(fs.readFileSync(require.resolve('../web/scripts/mission-actions.js'),'utf8'),context);
+    context.saveMissionEntry({...context.state.missions[0],title:'Edited contract',payout:60000});
+    assert.equal(context.state.ledgerEntries[0].reference,'Edited contract');
+  }
+  assert.equal(c.state.ledgerEntries[0].amountAuec,60000);
+  assert.equal(actual.state.ledgerEntries[0].amountAuec,16750);
+  assert.equal(actual.state.ledgerEntries[0].telemetryEventId,event.id);
+});
 test('arrival selects the stop without delivering cargo or mutating live state', () => {
   const c=fixture(), before=copy(c.state), original=c.state;
   const staged=c.stageTelemetryEvent(event,{action:'location',value:'B'},{logAutoRoute:true});

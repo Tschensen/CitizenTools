@@ -20,7 +20,60 @@ def line(text, at=None):
     return '<' + (at or datetime.now(timezone.utc).isoformat()) + '> [Notice] ' + text + '\n'
 
 
+def payment_lines(amount='50250', title='Auftrag abgeschlossen: Quartz', reward=None, at=None):
+    at = at or datetime.now(timezone.utc)
+    def stamp(ms): return (at + timedelta(milliseconds=ms)).isoformat()
+    return [line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_COMPLETED', stamp(0)),
+            line(f'<SHUDEvent_OnNotification> Added notification "{title}: " [27] to queue, MissionId: [{MISSION}], ObjectiveId: []', stamp(4)),
+            line(f'<SHUDEvent_OnNotification> Added notification "{reward or amount + " aUEC erhalten"}: " [28] to queue, MissionId: [00000000-0000-0000-0000-000000000000], ObjectiveId: []', stamp(69))]
+
+
 class ParserTests(unittest.TestCase):
+    def test_payment_requires_adjacent_completion_and_reward_notifications(self):
+        for amount, title, reward in [('50250', 'Auftrag abgeschlossen: Quartz', None),
+                                     ('50.250', 'Auftrag abgeschlossen: Quartz', None),
+                                     ('50,250', 'Contract Complete: Quartz', 'Received 50,250 aUEC')]:
+            with self.subTest(amount=amount):
+                parser = GameLogParser()
+                lines = payment_lines(amount, title, reward)
+                events = [event for entry in lines for event in parser.feed(entry)]
+                self.assertEqual([event['kind'] for event in events], ['completed', 'payment'])
+                self.assertEqual(events[-1]['amount'], 50250)
+                self.assertEqual(events[-1]['missionId'], MISSION)
+                self.assertEqual(events[-1]['completedAt'], events[0]['at'])
+                self.assertEqual(parser.feed(lines[-1].replace('SHUDEvent_OnNotification', 'UpdateNotificationItem')), [])
+                self.assertEqual(parser.feed(lines[-1]), [])
+
+    def test_unrelated_ambiguous_invalid_or_late_payments_are_not_inferred(self):
+        lines = payment_lines()
+        other = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        cases = [lines[1:], lines[:1] + lines[2:],
+                 [lines[0].replace('STATE_COMPLETED', 'STATE_FAILED'), *lines[1:]],
+                 [lines[0], lines[0].replace(MISSION, other), *lines[1:]],
+                 [*lines[:2], lines[-1].replace('[28]', '[30]')],
+                 [*lines[:2], lines[-1].replace('00000000-0000-0000-0000-000000000000', other)],
+                 [*lines[:2], line('<Channel Disconnected> remoteAddr=server'), lines[-1]],
+                 [*lines[:2], line('<Channel Connection Complete> remoteAddr=server'), lines[-1]],
+                 [*lines[:2], lines[-1].replace('50250 aUEC erhalten', 'Other notification'), lines[-1]],
+                 [*lines[:2], line('<SHUDEvent_OnNotification> Added notification "incomplete'), lines[-1]],
+                 [*lines[:2], line('<SHUDEvent_OnNotification> Added notification "unknown" [28] MissionId: [invalid]'), lines[-1]],
+                 [*lines[:2], line(lines[-1].split('> [Notice] ', 1)[1], (datetime.now(timezone.utc) + timedelta(seconds=3)).isoformat())]]
+        for amount in ['0', '-50250', '50,25', '50.250,00', '1000000000000']:
+            cases.append(payment_lines(amount))
+        for case in cases:
+            with self.subTest(case=case):
+                parser = GameLogParser()
+                self.assertNotIn('payment', [event['kind'] for entry in case for event in parser.feed(entry)])
+
+    def test_multiline_payment_retains_the_completion_candidate(self):
+        parser = GameLogParser()
+        lines = payment_lines()
+        for entry in lines[:2]: parser.feed(entry)
+        header, footer = lines[-1].split(': " [28]', 1)
+        self.assertEqual(parser.feed(header), [])
+        events = parser.feed(line(': " [28]' + footer, lines[-1].split('>')[0][1:]))
+        self.assertEqual(events[0]['kind'], 'payment')
+
     def test_localized_ship_notifications_ignore_render_repeats_and_other_channels(self):
         p = GameLogParser()
         events = p.feed(line('<SHUDEvent_OnNotification> Added notification "Du bist Kanal [ RSI Hermes : Pilot ] beigetreten'))
@@ -118,11 +171,28 @@ class TailerTests(unittest.TestCase):
     def test_historical_completions_never_replay_but_live_ship_restores(self):
         text = line('<RequestLocationInventory> Player[Pilot] requested inventory for Location[Stanton2_Orison]')
         text += line('<SHUDEvent_OnNotification> Added notification "Du bist Kanal [ RSI Hermes : Pilot ] beigetreten')
-        text += line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_COMPLETED')
+        text += ''.join(payment_lines())
         self.path.write_text(text, encoding='utf-8'); self.reader.tick()
         data = self.reader.snapshot()
         self.assertTrue(data['live'])
         self.assertEqual({event['kind'] for event in data['events']}, {'ship', 'location'})
+
+    def test_payment_is_deduplicated_across_repeats_and_reader_restarts(self):
+        self.path.write_text(line('initial')); self.reader.tick()
+        for offset in [0, 1]:
+            with self.path.open('a', encoding='utf-8') as target:
+                target.write(''.join(payment_lines(at=datetime.now(timezone.utc) + timedelta(seconds=offset))))
+            self.reader.tick()
+        events = self.reader.snapshot()['events']
+        self.assertEqual([event['kind'] for event in events], ['completed', 'payment'])
+        self.assertEqual(events[-1]['id'], f'payment:{MISSION}:')
+        with self.connect() as db:
+            db.execute("UPDATE telemetry_events SET status='applied'"); db.commit()
+        self.reader = Telemetry(self.runtime, self.connect)
+        self.reader.tick()
+        with self.path.open('a', encoding='utf-8') as target: target.write(''.join(payment_lines()))
+        self.reader.tick()
+        self.assertEqual(self.reader.snapshot()['events'], [])
 
     def test_partial_lines_duplicates_and_rotation(self):
         self.path.write_text(line('initial')); self.reader.tick()
@@ -189,6 +259,8 @@ class BalanceTests(unittest.TestCase):
                 self.assertIsNone(read_balance('tesseract', path, 'Pilot')); number.assert_not_called()
 
     def test_settings_accept_only_local_directories_and_explicit_channels(self):
+        self.assertEqual(validate_settings({'logAutoPayment':True}), {'logAutoPayment':True})
+        with self.assertRaises(ValueError): validate_settings({'logAutoPayment':'true'})
         for payload in [{'logEnabled':'true'}, {'gameDirectory':'relative/StarCitizen'},
                         {'gameDirectory':r'\\server\StarCitizen'}, {'gameDirectory':r'C:\StarCitizen\LIVE\Game.log'},
                         {'gameDirectory':r'C:\StarCitizen\LIVE'}, {'gameDirectory':r'C:\StarCitizen.exe'},

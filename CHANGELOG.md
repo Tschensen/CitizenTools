@@ -1,5 +1,17 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.8.1 — Auftragszahlungen und Orte
+
+- Bestätigte Auftragszahlungen aus Game.log verbuchen, auch reduzierte Beträge und Gruppenanteile.
+- Standortanzeige verbessert und Orte in der Systemdatenbank zusammenführen.
+- Symbole in der aktuellen Route korrigiert.
+
+### English
+
+- Book confirmed contract payments from Game.log, including reduced payouts and group shares.
+- Improved location display and added merging of locations in the system database.
+- Fixed icons in the current route.
+
 ## 0.8.0 — Spiel-Log und Kontostandserkennung
 
 - Schiff und Standort automatisch anhand der Game.log erkennen.

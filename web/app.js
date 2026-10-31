@@ -712,6 +712,25 @@ const statisticsController = createStatisticsController({
 });
 const systemDatabaseController = createSystemDatabaseController({
   helpers: {
+    async mergeLocations(payload) {
+      const sync = getSoloSync();
+      if (window.personalTransferBusy || missionAutoImportBusy || !sync.status.hydrated
+          || sync.status.blocked || sync.status.reading || sync.status.importing) {
+        throw Object.assign(new Error('merge_unsaved'), {code:'merge_unsaved'});
+      }
+      if (!await sync.flush() || sync.status.hasUnsaved) {
+        throw Object.assign(new Error('merge_unsaved'), {code:'merge_unsaved'});
+      }
+      const {response, payload:result} = await soloRequestJson('./api/solo/locations/merge', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...payload, baseUpdatedAt:sync.status.revision, clientVersion:window.soloClientVersion}),
+      });
+      if (!response.ok) throw Object.assign(new Error(result.error), {code:result.error});
+      // The modal holds all other local edits while the server changes state.
+      // Adopt the new revision before any browser write is allowed again.
+      if (!await sync.refresh({allowEditing:true})) requireSoloReload();
+      return result;
+    },
     escapeHtml,
     renderApp: render,
     renderLocationSuggestions,

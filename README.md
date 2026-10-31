@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.8.0 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.8.1 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
@@ -16,6 +16,8 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 - Routen per frei belegbaren globalen Tastenkürzeln bedienen und zur konfigurierbaren Heimatbasis zurückkehren.
 - Flotte, Finanzen und Statistiken im Blick behalten.
 - Schiff und Standort automatisch anhand der Game.log erkennen.
+- Bestätigte Auftragszahlungen aus der Game.log verbuchen, auch Gruppenanteile.
+- Doppelte Orte in der Systemdatenbank zusammenführen.
 - Kontostand per Screenshot mit der Buchhaltung abgleichen.
 - Auf PC und weiteren Geräten im Heimnetz zusammenarbeiten.
 - Persönliche Daten sichern, exportieren und importieren.

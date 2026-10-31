@@ -2,10 +2,11 @@
   function createMissionIncomeForCompletedMission({
     state,
     mission,
+    amountAuec = mission?.payout,
     completedAt = new Date().toISOString(),
     helpers,
   }) {
-    const payout = Math.round(Number(mission?.payout) || 0);
+    const payout = Math.round(Number(amountAuec) || 0);
     if (!state || !mission?.id || payout <= 0) return null;
 
     const missionType = helpers.normalizeMissionType

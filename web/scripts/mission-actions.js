@@ -19,7 +19,7 @@ function saveMissionEntry(nextMission, { assignedFleetEntryId, importQuality = {
     if (incomeEntry) {
       const assignedFleetEntry = (state.fleet || []).find((entry) => entry.id === nextMission.assignedFleetEntryId) || null;
       incomeEntry.reference = nextMission.title || incomeEntry.reference;
-      if (missionHasPayout(nextMission)) incomeEntry.amountAuec = getMissionPayout(nextMission);
+      if (missionHasPayout(nextMission) && !incomeEntry.telemetryEventId) incomeEntry.amountAuec = getMissionPayout(nextMission);
       incomeEntry.fleetEntryId = assignedFleetEntry?.id || "";
       incomeEntry.shipId = assignedFleetEntry?.shipId || "";
     }

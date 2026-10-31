@@ -27,11 +27,13 @@ class SoloIntegrationTests(unittest.TestCase):
         self.assertFalse(self.runtime.settings['logEnabled'])
         directory = str(self.root / 'StarCitizen')
         code, result = self.api('/api/solo/settings', {'gameDirectory':directory, 'gameChannel':'PTU', 'logEnabled':True,
+                                                       'logAutoPayment':True,
                                                        'port':self.runtime.httpd.server_port})
         self.assertEqual(code,200,result)
         stored = SoloRuntime(self.root, port=0, lan=False).settings
         self.assertEqual(stored['gameDirectory'],directory)
         self.assertEqual(stored['gameChannel'],'PTU')
+        self.assertTrue(stored['logAutoPayment'])
         self.assertNotIn('logPath',stored)
         self.assertEqual(self.api('/api/solo/settings', {'gameDirectory':''})[0],400)
         self.assertEqual(self.api('/api/solo/settings', {'gameDirectory':'', 'logEnabled':False})[0],200)
@@ -55,6 +57,22 @@ class SoloIntegrationTests(unittest.TestCase):
         self.assertEqual(self.api('/api/solo/telemetry')[1]['events'], [])
         self.assertEqual(self.api('/api/state', {'state':{'missions':[]},'baseUpdatedAt':None,'telemetryIds':['unknown']})[0], 409)
         self.assertIsNone(self.api('/api/state')[1]['state'])
+
+    def test_payment_booking_and_acknowledgement_commit_once_across_devices(self):
+        at = datetime.now(timezone.utc).isoformat()
+        self.runtime.telemetry.enqueue({'id':'payment:game:', 'kind':'payment', 'at':at, 'missionId':'game', 'amount':50250})
+        state = {'missions':[{'id':'mission', 'status':'paid', 'paidAt':at}],
+                 'ledgerEntries':[{'id':'income', 'missionId':'mission', 'flow':'income', 'amountAuec':50250,
+                                   'telemetryEventId':'payment:game:'}]}
+        body = {'state':state, 'baseUpdatedAt':None, 'telemetryIds':['payment:game:']}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            replies = list(pool.map(lambda _: self.api('/api/state', body), range(2)))
+        self.assertEqual(sorted(code for code, _ in replies), [200,409])
+        saved = self.api('/api/state')[1]
+        self.assertEqual(saved['state'],state)
+        self.assertEqual(self.api('/api/solo/telemetry')[1]['events'],[])
+        self.assertEqual(self.api('/api/state', {**body, 'baseUpdatedAt':saved['updatedAt']})[0],409)
+        self.assertEqual(len(self.api('/api/state')[1]['state']['ledgerEntries']),1)
 
     def test_restore_old_database_migrates_telemetry_without_replaying_pending_events(self):
         self.api('/api/state', {'state':{'missions':[]}, 'baseUpdatedAt':None})
@@ -355,6 +373,31 @@ class SoloIntegrationTests(unittest.TestCase):
         self.assertEqual(code, 200, result)
         self.assertEqual(self.api('/api/state')[1]['state']['marker'], 'saved')
         self.assertTrue(list((self.root/'data').glob('*pre-restore*')))
+
+    def test_merge_locations_api_checks_version_revision_and_retains_home_alias(self):
+        self.api('/api/state', {'state':{'currentLocation':'Orison','missions':[]}, 'baseUpdatedAt':None})
+        code, target = self.api('/api/locations', {'name':'August Dunlow Spaceport','status':'active'})
+        self.assertEqual(code,201,target)
+        places = self.api('/api/locations')[1]['locations']
+        source = next(place for place in places if place['name'] == 'Orison')
+        target = target['location']
+        revision = self.api('/api/state')[1]['updatedAt']
+        self.runtime.settings['routeHomeLocation'] = 'Orison'
+        payload = {'sourceId':source['id'],'targetId':target['id'],
+                   'sourceUpdatedAt':source['updatedAt'],'targetUpdatedAt':target['updatedAt'],
+                   'baseUpdatedAt':revision,'clientVersion':VERSION}
+        endpoint = '/api/solo/locations/merge'
+        self.assertEqual(self.api(endpoint,{**payload,'clientVersion':'old'})[0],428)
+        self.assertEqual(self.api(endpoint,{**payload,'baseUpdatedAt':'old'})[0],409)
+        self.assertEqual(self.api('/api/state')[1]['state']['currentLocation'],'Orison')
+        code, result = self.api(endpoint,payload)
+        self.assertEqual(code,200,result)
+        self.assertEqual(self.api('/api/state')[1]['state']['currentLocation'],'August Dunlow Spaceport')
+        self.assertEqual(self.api('/api/solo/status')[1]['settings']['routeHomeLocation'],'August Dunlow Spaceport')
+        self.assertEqual(self.api(endpoint,payload)[0],409)
+        places = {place['id']:place for place in self.api('/api/locations')[1]['locations']}
+        self.assertEqual(places[source['id']]['status'],'archived')
+        self.assertIn('Orison',places[target['id']]['aliases'])
 
     def test_locations_and_capture_progress(self):
         code, result = self.api('/api/locations')

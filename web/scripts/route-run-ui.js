@@ -689,12 +689,13 @@ function selectStopByDropoff(dropoff) {
   }
 }
 
-function bookMissionIncome(mission, completedAt) {
-  if (!missionHasPayout(mission)) return null;
+function bookMissionIncome(mission, completedAt, { amountAuec } = {}) {
+  if (amountAuec === undefined && !missionHasPayout(mission)) return null;
   return createMissionIncomeForCompletedMission({
     state,
     mission,
     completedAt,
+    amountAuec,
     helpers: {
       createLedgerEntry,
       formatDateForInput,
@@ -726,11 +727,11 @@ function markMissionCompleted(mission, { completedAt = new Date().toISOString(),
   mission.paidAt = "";
 }
 
-function markMissionPaid(mission, { paidAt = new Date().toISOString() } = {}) {
+function markMissionPaid(mission, { paidAt = new Date().toISOString(), amountAuec } = {}) {
   if (!mission) return;
   const completedAt = mission.completedAt || paidAt;
   mission.completedAt = completedAt;
-  bookMissionIncome(mission, paidAt);
+  bookMissionIncome(mission, paidAt, { amountAuec });
   mission.status = "paid";
   mission.paidAt = mission.paidAt || paidAt;
 }

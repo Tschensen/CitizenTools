@@ -1745,6 +1745,7 @@
         fleetEntryId,
         createdAt: existingEntry?.createdAt,
       });
+      if (existingEntry?.telemetryEventId) nextEntry.telemetryEventId = existingEntry.telemetryEventId;
 
       if (existingIndex >= 0) {
         getState().ledgerEntries.splice(existingIndex, 1, nextEntry);

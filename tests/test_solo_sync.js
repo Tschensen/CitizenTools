@@ -56,6 +56,26 @@ test('conflicting edits recover the local snapshot before adopting the shared st
   assert.ok(f.events.includes('conflict'));
   assert.equal(f.sync.status.pending,false);
 });
+
+test('a confirmed server merge refreshes behind its modal without a false conflict or overwriting edits', async()=>{
+  const f=await fixture();
+  f.editing(true);
+  f.transport.fetch=async()=>response(200,{state:{missions:[],marker:'merged'},updatedAt:'r2'});
+  assert.equal(await f.sync.refresh(),false);
+  assert.equal(await f.sync.refresh({allowEditing:true}),true);
+  assert.equal(f.state.marker,'merged');
+  assert.equal(f.sync.status.revision,'r2');
+  assert.ok(!f.events.includes('conflict'));
+  assert.ok(!f.events.includes('render'));
+  const gate=deferred();
+  f.transport.fetch=()=>gate.promise;
+  const refresh=f.sync.refresh({allowEditing:true});
+  f.edit({missions:[],marker:'new edit'});
+  gate.resolve(response(200,{state:{missions:[],marker:'peer'},updatedAt:'r3'}));
+  assert.equal(await refresh,false);
+  assert.equal(f.state.marker,'new edit');
+  assert.equal(f.sync.status.revision,'r2');
+});
 test('edits made during a save are serialized against the newly committed revision', async()=>{
   const f=await fixture(), gate=deferred(), writes=[];
   f.transport.fetch=async(_url,options)=>{
