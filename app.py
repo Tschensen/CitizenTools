@@ -15,13 +15,42 @@ from urllib import request
 
 from runtime import SoloRuntime, VERSION, default_data_root
 from solo_updates import UpdateError
+from companion.telemetry import validate_settings as validate_telemetry_settings
 
 
-class NativeUpdates:
-    """Installation is deliberately absent from the HTTP/LAN API."""
+class NativeApi:
+    """Desktop actions that are deliberately absent from the HTTP/LAN API."""
     def __init__(self, runtime, restart_args, on_ready):
         self._runtime, self._restart_args, self._on_ready = runtime, restart_args, on_ready
         self._lock = threading.Lock()
+
+    def choose_game_directory(self, current_directory=''):
+        if not self._lock.acquire(blocking=False):
+            return {'ok': False, 'error': 'directory_busy'}
+        try:
+            window = self._runtime.window
+            if not window or window.get_current_url() != self._runtime.desktop_url:
+                return {'ok': False, 'error': 'directory_native_only'}
+            import webview
+            try:
+                initial = validate_telemetry_settings({'gameDirectory': current_directory})['gameDirectory']
+            except ValueError:
+                initial = ''
+            selected = window.create_file_dialog(webview.FileDialog.FOLDER, directory=initial, allow_multiple=False)
+            if not selected:
+                return {'ok': True, 'cancelled': True}
+            if window.get_current_url() != self._runtime.desktop_url:
+                return {'ok': False, 'error': 'directory_native_only'}
+            directory = validate_telemetry_settings({'gameDirectory': selected[0]})['gameDirectory']
+            # Return a draft value; saving and enabling remain explicit UI actions.
+            return {'ok': True, 'directory': directory}
+        except ValueError:
+            return {'ok': False, 'error': 'directory_invalid'}
+        except Exception:
+            logging.exception('Could not open installation folder dialog')
+            return {'ok': False, 'error': 'directory_failed'}
+        finally:
+            self._lock.release()
 
     def install_update(self, version):
         if not self._lock.acquire(blocking=False):
@@ -101,8 +130,8 @@ def main():
         if args.port is not None: restart_args += ['--port', str(args.port)]
         if args.localhost: restart_args.append('--localhost')
         if args.no_capture: restart_args.append('--no-capture')
-        native_updates = NativeUpdates(runtime, restart_args, exit_for_update)
-        window = webview.create_window(f"Citizen Tools · Flight Deck · {VERSION}", runtime.desktop_url, width=1440, height=960, min_size=(800, 600), background_color="#08111b", js_api=native_updates)
+        native_api = NativeApi(runtime, restart_args, exit_for_update)
+        window = webview.create_window(f"Citizen Tools · Flight Deck · {VERSION}", runtime.desktop_url, width=1440, height=960, min_size=(800, 600), background_color="#08111b", js_api=native_api)
         runtime.window = window
         window.events.loaded += runtime.shortcuts.configure
         def can_close():

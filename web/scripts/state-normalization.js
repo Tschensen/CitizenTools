@@ -512,6 +512,8 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
     levelFilter: input?.levelFilter === "all" ? "all" : clamp(Number(input?.levelFilter) || 0, 0, 8),
     selectedStopDropoff: String(input?.selectedStopDropoff || ""),
     currentLocation: String(input?.currentLocation || "").trim(),
+    telemetryLinks: typeof TelemetryDomain !== 'undefined' ? TelemetryDomain.links(input?.telemetryLinks) : {},
+    telemetryBalance: typeof TelemetryDomain !== 'undefined' ? TelemetryDomain.balance(input?.telemetryBalance) : null,
     selectedRunRoutePointKey: String(input?.selectedRunRoutePointKey || "").trim(),
     runPriorityRouteLocation: String(input?.runPriorityRouteLocation || "").trim(),
     runHomeDestinations: Object.fromEntries(fleet.map(entry => [entry.id,

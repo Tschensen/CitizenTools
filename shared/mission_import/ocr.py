@@ -80,6 +80,8 @@ def prepare_ocr_crop(image_path: Path, region: str) -> Path | None:
         "details": "Details",
         "reward": "Reward",
         "title": "Title",
+        "balance": "Balance",
+        "balancecontext": "BalanceContext",
     }.get(str(region).casefold(), "Objectives")
     file_descriptor, temporary_name = tempfile.mkstemp(
         prefix=f"citizen-tools-ocr-{normalized_region.casefold()}-",

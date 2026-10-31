@@ -1015,6 +1015,7 @@ function findAutoPlacementForLoad(load, settings = getAutoloadSettings(), cargoA
 function autoLoadEntries(entries, {
   persistAfter = true,
   renderAfter = true,
+  recordUndo = true,
   settings = getAutoloadSettings(),
   resultMissionId = "",
 } = {}) {
@@ -1044,7 +1045,7 @@ function autoLoadEntries(entries, {
   }
 
   prepareAutoloadLayout(normalizedSettings);
-  const before = captureCargoAction();
+  const before = recordUndo ? captureCargoAction() : null;
   const routeRanks = buildAutoloadRouteRanks();
   const segmentOrders = new Map(uniqueEntries.map(({ mission }) => [
     mission.id,
@@ -1097,7 +1098,7 @@ function autoLoadEntries(entries, {
   state.selectedLoadId = skippedLoadIds[0] || null;
   state.selectionCleared = skippedLoadIds.length === 0;
   lastUnloadPlan = null;
-  recordCargoAction(before);
+  if (before) recordCargoAction(before);
   if (persistAfter) persist();
   if (renderAfter) render();
   return { ...result };

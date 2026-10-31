@@ -173,12 +173,12 @@
       return refresh();
     }
     async function commitImports(staged, ticket) {
-      if (!staged.importIds.length || !canApply(ticket)) return false;
+      if (!(staged.importIds?.length || staged.telemetryIds?.length) || !canApply(ticket)) return false;
       const token = session;
       const snapshot = store.clean(staged.state);
       const task = (async () => {
         try {
-          const { response, payload } = await api.saveState(snapshot, revision, staged.importIds);
+          const { response, payload } = await api.saveState(snapshot, revision, staged.importIds, staged.telemetryIds);
           if (token !== session || blocked || response.status === 409) return false;
           if (!response.ok) throw new Error(payload.error || 'solo_import_save_failed');
           const shared = { ...payload, state:snapshot };

@@ -1,4 +1,5 @@
 import concurrent.futures
+from contextlib import closing
 import io
 import json
 import socket
@@ -20,6 +21,56 @@ from server import app as backend
 
 
 class SoloIntegrationTests(unittest.TestCase):
+    def test_log_requires_explicit_installation_folder_and_persists_the_channel(self):
+        code, result = self.api('/api/solo/settings', {'logEnabled':True})
+        self.assertEqual(code,400,result)
+        self.assertFalse(self.runtime.settings['logEnabled'])
+        directory = str(self.root / 'StarCitizen')
+        code, result = self.api('/api/solo/settings', {'gameDirectory':directory, 'gameChannel':'PTU', 'logEnabled':True,
+                                                       'port':self.runtime.httpd.server_port})
+        self.assertEqual(code,200,result)
+        stored = SoloRuntime(self.root, port=0, lan=False).settings
+        self.assertEqual(stored['gameDirectory'],directory)
+        self.assertEqual(stored['gameChannel'],'PTU')
+        self.assertNotIn('logPath',stored)
+        self.assertEqual(self.api('/api/solo/settings', {'gameDirectory':''})[0],400)
+        self.assertEqual(self.api('/api/solo/settings', {'gameDirectory':'', 'logEnabled':False})[0],200)
+
+    def test_telemetry_commit_is_atomic_and_shared_between_devices(self):
+        at = datetime.now(timezone.utc).isoformat()
+        self.runtime.telemetry.enqueue({'id':'test-event', 'kind':'location', 'at':at, 'value':'Orison'})
+        self.assertEqual(len(self.api('/api/solo/telemetry')[1]['events']), 1)
+        body = {'state':{'currentLocation':'Orison'}, 'baseUpdatedAt':None, 'telemetryIds':['test-event']}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            replies = list(pool.map(lambda _: self.api('/api/state', body), range(2)))
+        self.assertEqual(sorted(code for code, _ in replies), [200, 409])
+        self.assertEqual(self.api('/api/state')[1]['state']['currentLocation'], 'Orison')
+        self.assertEqual(self.api('/api/solo/telemetry')[1]['events'], [])
+        current = self.api('/api/state')[1]['updatedAt']
+        self.assertEqual(self.api('/api/state', {**body, 'baseUpdatedAt':current, 'state':{'currentLocation':'wrong'}})[0], 409)
+        self.assertEqual(self.api('/api/state')[1]['state']['currentLocation'], 'Orison')
+
+    def test_unknown_telemetry_event_cannot_commit_and_old_events_are_not_offered(self):
+        self.runtime.telemetry.enqueue({'id':'old-event','kind':'completed','at':'2000-01-01T00:00:00Z','missionId':'old'})
+        self.assertEqual(self.api('/api/solo/telemetry')[1]['events'], [])
+        self.assertEqual(self.api('/api/state', {'state':{'missions':[]},'baseUpdatedAt':None,'telemetryIds':['unknown']})[0], 409)
+        self.assertIsNone(self.api('/api/state')[1]['state'])
+
+    def test_restore_old_database_migrates_telemetry_without_replaying_pending_events(self):
+        self.api('/api/state', {'state':{'missions':[]}, 'baseUpdatedAt':None})
+        old = self.root / 'old.sqlite3'
+        with backend.get_connection() as db, closing(sqlite3.connect(old)) as target:
+            db.backup(target)
+            target.execute('DROP TABLE telemetry_events')
+            target.commit()
+        code, result = self.api('/api/restore', old.read_bytes(), headers={'Content-Type':'application/octet-stream'})
+        self.assertEqual(code,200,result)
+        self.assertEqual(self.api('/api/solo/telemetry')[1]['events'],[])
+        self.runtime.telemetry.enqueue({'id':'pending-restore','kind':'completed','at':datetime.now(timezone.utc).isoformat(),'missionId':'game'})
+        backup = self.api('/api/backup',raw=True)[1]
+        self.assertEqual(self.api('/api/restore',backup,headers={'Content-Type':'application/octet-stream'})[0],200)
+        self.assertEqual(self.api('/api/solo/telemetry')[1]['events'],[])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

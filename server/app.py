@@ -102,6 +102,9 @@ def init_db() -> None:
     connection.row_factory = sqlite3.Row
     try:
         connection.execute("PRAGMA foreign_keys = ON")
+        # Also migrate databases restored from releases before log detection.
+        from companion.telemetry import init_store
+        init_store(connection)
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS app_state (
@@ -2282,6 +2285,7 @@ class CargoPlannerHandler(SimpleHTTPRequestHandler):
                 with get_connection() as connection:
                     # A restore is a new revision, even if it restores an older state.
                     connection.execute("UPDATE app_state SET updated_at = ?", (restored_at,))
+                    connection.execute("UPDATE telemetry_events SET status='discarded' WHERE status='pending'")
                     write_meta(connection, "last_restore_at", restored_at)
                     connection.commit()
         except Exception:

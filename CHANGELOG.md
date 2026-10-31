@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.8.0 — Spiel-Log und Kontostandserkennung
+
+- Schiff und Standort automatisch anhand der Game.log erkennen.
+- Kontostand per Screenshot mit der Buchhaltung abgleichen.
+
+### English
+
+- Automatically detect ship and location from Game.log.
+- Compare the in-game balance from screenshots with the ledger.
+
 ## 0.7.0 — Teillieferungen und Stoppübersicht
 
 ### Deutsch

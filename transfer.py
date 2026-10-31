@@ -11,7 +11,8 @@ FORMAT = "citizen-tools-personal-transfer"
 MAX_BYTES = 32 * 1024 * 1024
 COLLECTIONS = {"shipLibrary": 500, "fleet": 500, "missions": 500, "ledgerEntries": 1000, "contacts": 500}
 EXTRAS = ("layout", "pilots", "soloPilotId", "activeFleetEntryId", "autoload", "stopHistory", "currentLocation",
-          "selectedStopDropoff", "selectedRunRoutePointKey", "runPriorityRouteLocation", "runCompletedRoutePoints", "runHomeDestinations")
+          "selectedStopDropoff", "selectedRunRoutePointKey", "runPriorityRouteLocation", "runCompletedRoutePoints", "runHomeDestinations",
+          "telemetryLinks", "telemetryBalance")
 PRIVATE = {"_onlineMeta", "organization", "pilotGroups", "organizationLink", "organizationOrigin", "organizationProgress",
            "participantAllocations", "participants", "participantProgress", "onlineAssigneeIds", "groupId", "workspaceId",
            "payoutSplit", "payoutSettlement", "permissions", "roles", "createdBy", "ownerUserId"}
@@ -59,6 +60,10 @@ def canonical_ids(state):
     for entry in state.get('stopHistory', []) if isinstance(state.get('stopHistory'), list) else []:
         if isinstance(entry, dict) and isinstance(entry.get('missionIds'), list):
             entry['missionIds'] = [mapping.get(identifier, identifier) if isinstance(identifier, str) else identifier for identifier in entry['missionIds']]
+    links = state.get('telemetryLinks')
+    if isinstance(links, dict) and isinstance(links.get('missions'), dict):
+        links['missions'] = {key: mapping.get(value, value) if isinstance(value, str) else value
+                             for key, value in links['missions'].items()}
 
 
 def parse(document):

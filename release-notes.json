@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.8.0",
+    "de": {
+      "title": "Spiel-Log und Kontostandserkennung",
+      "changes": [
+        "Schiff und Standort automatisch anhand der Game.log erkennen.",
+        "Kontostand per Screenshot mit der Buchhaltung abgleichen."
+      ]
+    },
+    "en": {
+      "title": "Game log and balance recognition",
+      "changes": [
+        "Automatically detect ship and location from Game.log.",
+        "Compare the in-game balance from screenshots with the ledger."
+      ]
+    }
+  },
+  {
     "version": "0.7.0",
     "de": {
       "title": "Teillieferungen und Stoppübersicht",
