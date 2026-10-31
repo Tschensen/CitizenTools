@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Output,
 
-    [ValidateSet("Objectives", "Details", "Reward", "Title")]
+    [ValidateSet("Objectives", "Details", "Reward", "Title", "Balance", "BalanceContext")]
     [string]$Region = "Objectives"
 )
 
@@ -14,7 +14,19 @@ Add-Type -AssemblyName System.Drawing
 
 $sourceImage = [System.Drawing.Bitmap]::FromFile($Source)
 try {
-    if ($Region -eq "Details") {
+    if ($Region -eq "Balance") {
+        $cropX = [int]($sourceImage.Width * 0.2845)
+        $cropY = [int]($sourceImage.Height * 0.8958)
+        $cropWidth = [int]($sourceImage.Width * 0.072)
+        $cropHeight = [int]($sourceImage.Height * 0.025)
+    }
+    elseif ($Region -eq "BalanceContext") {
+        $cropX = [int]($sourceImage.Width * 0.268)
+        $cropY = [int]($sourceImage.Height * 0.887)
+        $cropWidth = [int]($sourceImage.Width * 0.095)
+        $cropHeight = [int]($sourceImage.Height * 0.065)
+    }
+    elseif ($Region -eq "Details") {
         $cropX = [int]($sourceImage.Width * 0.385)
         $cropY = [int]($sourceImage.Height * 0.245)
         $cropWidth = [int]($sourceImage.Width * 0.215)
@@ -41,7 +53,8 @@ try {
     $cropWidth = [Math]::Min($cropWidth, $sourceImage.Width - $cropX)
     $cropHeight = [Math]::Min($cropHeight, $sourceImage.Height - $cropY)
 
-    $targetImage = New-Object System.Drawing.Bitmap ($cropWidth * 2), ($cropHeight * 2)
+    $scale = if ($Region -like 'Balance*') { 3 } else { 2 }
+    $targetImage = New-Object System.Drawing.Bitmap ($cropWidth * $scale), ($cropHeight * $scale)
     try {
         $graphics = [System.Drawing.Graphics]::FromImage($targetImage)
         try {

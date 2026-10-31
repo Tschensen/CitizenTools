@@ -25,9 +25,10 @@
       if (!response.ok) throw new Error('solo_state_unavailable');
       return validate(payload);
     }
-    async function saveState(state, revision, importIds) {
+    async function saveState(state, revision, importIds, telemetryIds) {
       const body = { state, baseUpdatedAt:revision, clientVersion:clientVersion() };
       if (importIds) body.importIds = importIds;
+      if (telemetryIds) body.telemetryIds = telemetryIds;
       const result = await requestJson('./api/state?scope=solo', {
         method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
       });

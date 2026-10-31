@@ -1,5 +1,5 @@
 // Planner layout selection, level filters and layout controls.
-async function syncLayoutToActiveFleetShip({ confirmChange = false, persistChanges = true } = {}) {
+function syncLayoutToActiveFleetShip({ confirmChange = false, persistChanges = true } = {}) {
   const activeEntry = currentActiveFleetEntry();
   const shipProfile = currentActiveShipProfile();
 
@@ -23,14 +23,13 @@ async function syncLayoutToActiveFleetShip({ confirmChange = false, persistChang
     overloadMode: shipDefinition.overloadMode,
   };
 
-  if (confirmChange && !(await confirmShipLayoutChange(nextLayout))) {
-    return false;
-  }
-
-  applyLayoutDefinition(shipDefinition, activeEntry.id, activeEntry.shipId, overloadMode);
-  state = pruneInvalidPlacements(state);
-  if (persistChanges) persist();
-  return true;
+  const apply = () => {
+    applyLayoutDefinition(shipDefinition, activeEntry.id, activeEntry.shipId, overloadMode);
+    state = pruneInvalidPlacements(state);
+    if (persistChanges) persist();
+    return true;
+  };
+  return confirmChange ? confirmShipLayoutChange(nextLayout).then(allowed => allowed ? apply() : false) : apply();
 }
 
 function ensureFleetPlannerSelection() {

@@ -521,17 +521,24 @@ def process_screenshot(
             message="Texterkennung läuft",
         )
     draft, last_ocr_error = service.read_mission_screenshot(tesseract_path, image_path, emit)
+    balance_read = False
+    observer = getattr(args, 'balance_observer', None)
+    if observer:
+        try:
+            balance_read = observer(tesseract_path, image_path)
+        except (OSError, RuntimeError, subprocess.SubprocessError):
+            emit('Kontostand konnte nicht sicher gelesen werden.', True)
 
     if not draft:
         if last_ocr_error:
             emit(f"OCR error: {last_ocr_error}", True)
-        emit("No supported contract recognized.")
+        emit("Kontostand erkannt." if balance_read else "No supported contract recognized.")
         if job_id and report_progress:
             report_progress(
                 job_id,
-                "failed",
+                "completed" if balance_read else "failed",
                 source_file=image_path.name,
-                message="Kein unterstützter Auftrag erkannt",
+                message="Kontostand erkannt" if balance_read else "Kein unterstützter Auftrag erkannt",
             )
         state.mark(signature)
         return

@@ -1,8 +1,76 @@
-# Citizen Tools · Flight Deck · 0.7.0
+# Citizen Tools · Flight Deck · 0.8.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Spiel-Log und Kontostand
+
+Unter **Einstellungen → Companion & Heimnetz → Spiel-Log & Kontostand** lässt
+sich die Erkennung einschalten. Den **Star-Citizen-Programmordner** eintragen oder
+in der Windows-App mit **Ordner auswählen …** im Windows-Dialog auswählen,
+beispielsweise `D:\RSI\StarCitizen`. Anschließend den **Spielkanal** wählen (LIVE, PTU, EPTU
+oder HOTFIX). Gemeint ist der Ordner, der diese Kanalordner enthält. Die angezeigte
+Logdatei ergibt sich daraus, etwa `D:\RSI\StarCitizen\LIVE\Game.log`.
+Es gibt keine automatische Suche und keinen automatischen Kanalwechsel. Ohne
+Programmordner lässt sich das Mitlesen nicht aktivieren. Fehlt die Logdatei,
+erscheint eine Meldung; andere Ordner werden nicht geprüft.
+Mit **Erkennung speichern** übernehmen. Die Funktion läuft
+lokal auf dem Spiele-PC; erkannte Änderungen erscheinen auch auf verbundenen Geräten.
+Die Ordnerauswahl übernimmt zunächst nur den Pfad ins Formular. Abbrechen erhält
+den bisherigen Eintrag. Im Browser ist die Ordnerauswahl mit entsprechendem Hinweis
+deaktiviert; am Spiele-PC kann der Pfad weiterhin von Hand eingetragen werden.
+
+- **Erkanntes Schiff auswählen:** Ein eindeutig passendes aktives Flottenschiff
+  wird ausgewählt. Bei mehreren gleichen Modellen oder fremdem Besitzer die Zuordnung
+  einmal im Erkennungsbereich treffen. Die Meldung zeigt das betretene Schiff an;
+  sie beweist nicht, dass man am Steuer sitzt.
+- **Standort übernehmen:** Bestätigte Inventarorte aktualisieren den Standort.
+  Unbekannte interne Ortsnamen einmal einem vorhandenen Ort zuordnen. Eine gewählte
+  Quantumsprung-Destination gilt nicht als Ankunft.
+- **Ankunft und verknüpften Teilzielen folgen:** Öffnet den passenden Routenhalt.
+  Jeder Spielauftrag wird anhand seiner Spiel-ID einmal dem eigenen Auftrag zugeordnet.
+  Bestätigte Kurier-Abholungen und Lieferungen können danach automatisch weiterlaufen.
+  Fracht-Teilziele nur einer **gesamten Frachtposition** zuordnen, wenn das Spielteilziel
+  tatsächlich deren vollständige Menge bestätigt. Teilmengen bleiben manuell.
+  Passt eine bestätigte Abholung nicht vollständig ins aktive Schiff, wartet sie.
+- **Verknüpfte Aufträge bei Spielbestätigung abschließen:** Übernimmt ausschließlich
+  ausdrückliche erfolgreiche Auftragsabschlüsse. Diese Option ist zunächst aus.
+  Die Auszahlung wird weiterhin über die Buchhaltung bestätigt.
+
+Ankunft allein liefert keine Fracht ab. Deutsche und englische beobachtete Meldungen
+werden unterstützt. Beim Einschalten werden alte Abschlüsse nicht nachgetragen.
+Offene neue Ereignisse warten höchstens 15 Minuten auf Zuordnung; doppelte Meldungen
+werden nur einmal übernommen. Sitzungswechsel und veraltete Logs werden erkannt.
+Die Automatik aktualisiert Citizen Tools; sie steuert das Spiel nicht.
+
+**Kontostand aus neuen Companion-Screenshots lesen** prüft neue Aufnahmen zusätzlich.
+Der unter Companion eingetragene Import-Handle oder der erkannte Spieler muss im
+mobiGlas-Kontobereich lesbar sein. Zwei OCR-Lesungen müssen mit hoher Sicherheit
+übereinstimmen; unsichere Bilder werden übersprungen. Geprüft wurde das vorhandene
+mobiGlas-Layout in 3440 × 1440. Andere HUD-Anordnungen können unerkannt bleiben.
+Alte Screenshots und manuelle Bildimporte aktualisieren den Kontostand nicht.
+
+Unter Finanzen und in den Einstellungen erscheinen der zuletzt erkannte Betrag,
+Aufnahmezeit und Differenz zum Buchhaltungssaldo. Diese Momentaufnahme erzeugt keine
+Buchung und überschreibt keine Einnahmen oder Ausgaben. So werden Auftragszahlungen
+nicht zugleich über Abschluss und Screenshot doppelt erfasst.
+
+**English:** Enable **Settings → Companion & home network → Game log & balance**
+on the game PC. Enter the installation folder containing LIVE/PTU and select a game
+channel. In the Windows app, **Choose folder…** opens the native folder picker;
+confirm the resulting form with **Save detection settings**. Cancelling keeps the
+previous path. Browser clients display a hint instead of opening a local folder picker.
+The exact log path is displayed. There is no drive search or automatic
+channel switching; a missing path or log file requires you to adjust the settings.
+Link ambiguous ships, internal locations and each contract's game ID.
+Only explicit successful objectives or contract completions advance linked work;
+arrival alone never delivers cargo. Cargo objectives require an explicit whole-line
+link. Historical completions are not replayed, and pending events expire after
+15 minutes. New Companion mobiGlas screenshots can supply a verified balance snapshot
+and ledger difference. The tested layout is 3440 × 1440; unclear images are skipped.
+Balance snapshots never create accounting entries. All automation updates Citizen
+Tools only.
 
 ## Teillieferungen und Rücknahme
 

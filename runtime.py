@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlparse
 
 from companion import app as capture_app
 from companion import capture
+from companion import telemetry
 from shared.mission_import import ocr
 from server import app as backend
 import transfer
@@ -27,7 +28,7 @@ import solo_about
 import solo_shortcuts
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -81,6 +82,7 @@ class SoloRuntime:
             "setupCompleted": False,
             **dict.fromkeys(solo_shortcuts.SHORTCUTS, ""),
             "routeHomeLocation": "",
+            **telemetry.DEFAULTS,
         }
         if self.config_path.is_file():
             # A damaged config is reported instead of silently overwritten.
@@ -105,6 +107,7 @@ class SoloRuntime:
         self.addresses = lan_addresses()
         self.url = ""
         self.on_status = lambda: None
+        self.telemetry = telemetry.Telemetry(self, backend.get_connection)
         self.updates = UpdateManager(VERSION, self.root, program=Path(sys.executable).parent if getattr(sys, 'frozen', False) else None)
 
     @staticmethod
@@ -130,6 +133,7 @@ class SoloRuntime:
             result["captureRetention"] = value
         if "pilotName" in payload: result["pilotName"] = str(payload["pilotName"]).strip()[:80]
         result.update(solo_shortcuts.normalize_shortcuts(payload))
+        result.update(telemetry.validate_settings(payload))
         if "routeHomeLocation" in payload:
             location = payload["routeHomeLocation"]
             if not isinstance(location, str) or len(location) > 160:
@@ -156,6 +160,7 @@ class SoloRuntime:
         backend.SHIP_IMAGE_DIR = backend.DATA_DIR / "ship-images"
         backend.init_db()
         self.httpd = SoloHTTPServer(("0.0.0.0" if self.active_lan else "127.0.0.1", self.settings["port"]), SoloHandler)
+        self.telemetry.start()
         self.httpd.runtime = self
         self.url = f"http://127.0.0.1:{self.httpd.server_port}"
         self.http_thread = threading.Thread(target=self.httpd.serve_forever, name="SoloServer", daemon=True)
@@ -186,6 +191,8 @@ class SoloRuntime:
         updates = self.validate_settings(payload)
         with self.lock:
             settings = {**self.settings, **updates}
+            if settings['logEnabled'] and not settings['gameDirectory']:
+                raise ValueError('Bitte zuerst den Star-Citizen-Programmordner angeben.')
             solo_shortcuts.validate_shortcuts(settings)
             if "port" in updates and self.httpd and settings["port"] != self.httpd.server_port:
                 try:
@@ -235,6 +242,7 @@ class SoloRuntime:
             args.capture_mode = settings["captureMode"]
             args.capture_retention = settings["captureRetention"]
             args.pilot_name = settings["pilotName"]
+            args.balance_observer = self.telemetry.capture_balance
             def work():
                 try: capture_app.run_companion(args, self.worker_stop, self.emit)
                 except Exception as error:
@@ -258,6 +266,7 @@ class SoloRuntime:
 
     def stop(self):
         self.closing = True
+        self.telemetry.stop()
         self.shortcuts.stop()
         self.updates.stop()
         try: self.stop_capture()
@@ -398,6 +407,8 @@ class SoloHandler(backend.CargoPlannerHandler):
                 return self.send_json(200, document)
             except (ValueError, OSError) as error:
                 return self.send_json(400, {"error": str(error)})
+        if path == "/api/solo/telemetry":
+            return self.send_json(200, {"ok": True, "settings": self.runtime.settings, **self.runtime.telemetry.snapshot()})
         if path == "/api/solo/status":
             return self.send_json(200, self.runtime.status())
         return super().do_GET()
@@ -500,6 +511,9 @@ class SoloHandler(backend.CargoPlannerHandler):
             payload = self.read_json_body(16 * 1024 * 1024)
             state = solo_state(payload.get("state"))
             import_ids = payload.get("importIds", [])
+            event_ids = payload.get("telemetryIds", [])
+            if not isinstance(event_ids, list) or len(event_ids) > 100 or any(not isinstance(item, str) or not item or len(item) > 200 for item in event_ids):
+                raise ValueError("Ungültige Log-Ereignisse.")
             if not isinstance(import_ids, list) or len(import_ids) > 500 or any(not isinstance(item, str) or not item or len(item) > 200 for item in import_ids):
                 raise ValueError("Ungültige Auftragsimporte.")
         except ValueError as error: return self.send_json(400, {"error": str(error)})
@@ -510,6 +524,7 @@ class SoloHandler(backend.CargoPlannerHandler):
         if "baseUpdatedAt" not in payload:
             return self.send_json(428, {"error": "Versionsstand fehlt. Bitte die Oberfläche neu laden."})
         with backend.get_connection() as connection:
+            connection.execute('BEGIN IMMEDIATE')
             row = connection.execute("SELECT value, updated_at FROM app_state WHERE state_key = ?", (backend.STATE_KEY,)).fetchone()
             current = row["updated_at"] if row else None
             if payload["baseUpdatedAt"] != current:
@@ -521,7 +536,11 @@ class SoloHandler(backend.CargoPlannerHandler):
                 pending = connection.execute("SELECT status FROM mission_imports WHERE import_id = ? AND scope = 'solo'", (import_id,)).fetchone()
                 if not pending or pending["status"] != "pending" or import_id not in mission_imports:
                     return self.send_json(409, {"error": "import_already_handled", "updatedAt": current, "state": json.loads(row["value"]) if row else None, "scope": "solo"})
-            if row and json.loads(row["value"]) == state and not import_ids:
+            for event_id in set(event_ids):
+                pending = connection.execute("SELECT status FROM telemetry_events WHERE id = ?", (event_id,)).fetchone()
+                if not pending or pending['status'] != 'pending':
+                    return self.send_json(409, {"error": "event_already_handled", "updatedAt": current, "state": json.loads(row["value"]) if row else None, "scope": "solo"})
+            if row and json.loads(row["value"]) == state and not import_ids and not event_ids:
                 return self.send_json(200, {"ok": True, "scope": "solo", "updatedAt": current})
             updated = datetime.now(timezone.utc).isoformat()
             connection.execute("INSERT INTO app_state (state_key,value,updated_at) VALUES (?,?,?) ON CONFLICT(state_key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at", (backend.STATE_KEY, json.dumps(state, ensure_ascii=False), updated))
@@ -529,5 +548,7 @@ class SoloHandler(backend.CargoPlannerHandler):
             backend.discover_state_locations(connection, state)
             for import_id in set(import_ids):
                 connection.execute("UPDATE mission_imports SET status = 'imported', updated_at = ? WHERE import_id = ? AND scope = 'solo'", (updated, import_id))
+            for event_id in set(event_ids):
+                connection.execute("UPDATE telemetry_events SET status='applied' WHERE id=?", (event_id,))
             connection.commit()
         self.send_json(200, {"ok": True, "scope": "solo", "updatedAt": updated})

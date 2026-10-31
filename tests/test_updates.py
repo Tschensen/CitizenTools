@@ -17,7 +17,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import solo_updates as updates
 import update_helper as helper
-from app import NativeUpdates
+from app import NativeApi
 from update_contract import UPDATE_ASSETS, update_manifest
 
 
@@ -391,7 +391,7 @@ class NativeBridgeTests(unittest.TestCase):
         runtime = Mock(); runtime.desktop_url = 'http://127.0.0.1:4174/?desktop=1&v=0.3.0'
         runtime.window.get_current_url.return_value = runtime.desktop_url
         runtime.window.evaluate_js.return_value = False
-        api = NativeUpdates(runtime, [], Mock())
+        api = NativeApi(runtime, [], Mock())
         self.assertEqual(api.install_update('0.4.0')['error'], 'update_unsaved')
         runtime.updates.launch_installer.assert_not_called()
         runtime.window.evaluate_js.return_value = True

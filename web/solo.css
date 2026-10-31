@@ -379,3 +379,15 @@ body::before {
 .solo-release-card li { line-height: 1.55; margin: 6px 0; }
 .solo-license-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; overflow-y: auto; padding: 14px; font: .8rem/1.6 Consolas, monospace; background: #050b12; border-radius: 6px; }
 #soloLicenseSearch { width: min(100%, 520px); margin: 0 0 4px; }
+/* Log detection shares the existing settings and route visual language. */
+.telemetry-details { overflow-wrap:anywhere; }
+.telemetry-directory-field { display:grid; gap:8px; align-content:start; min-width:0; }
+.telemetry-directory-controls { display:flex; flex-wrap:wrap; gap:8px; }
+.telemetry-directory-controls input { flex:1 1 200px; min-width:0; }
+.telemetry-directory-controls button { flex:0 0 auto; }
+.telemetry-directory-field .form-hint { margin:0; }
+.telemetry-link-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(180px,1fr); gap:12px; align-items:center; margin:12px 0; }
+.telemetry-link-row span { overflow-wrap:anywhere; }
+.telemetry-link-row select { min-width:0; width:100%; }
+.telemetry-status, .telemetry-balance { padding:10px 14px; border-left:3px solid var(--flight-cyan, #62b7e6); background:rgba(98,183,230,.06); font-size:.85rem; overflow-wrap:anywhere; }
+@media (max-width:700px) { .telemetry-link-row { grid-template-columns:1fr; } }

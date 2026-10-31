@@ -214,6 +214,14 @@ test('stale import tickets and competing importer conflicts cannot overwrite cur
   assert.deepEqual(f.state.runRouteOrder,{ship:['b','a']});
   assert.ok(!f.events.includes('conflict'));
 });
+
+test('telemetry-only commits carry the acknowledgement with the new state', async()=>{
+  const f=await fixture();
+  const staged={state:{...f.state,currentLocation:'Orison'},telemetryIds:['log-event']};
+  assert.equal(await f.sync.commitImports(staged,f.sync.checkpoint()),true);
+  assert.deepEqual(f.writes[0].telemetryIds,['log-event']);
+  assert.equal(f.state.currentLocation,'Orison');
+});
 test('restoration invalidates old network responses before hydrating the replacement state', async()=>{
   const f=await fixture(), gate=deferred();let calls=0;
   f.transport.fetch=async()=>++calls===1?gate.promise:response(200,{state:{missions:[],marker:'restored'},updatedAt:'r9'});
