@@ -24,8 +24,8 @@ function renderRunWaypoints(runState) {
 
 function renderRunTaskIcon(kind) {
   const paths = {
-    pickup: '<path d="M12 3v12m0 0-5-5m5 5 5-5M5 19h14v2H5v-2Z" />',
-    delivery: '<path d="M12 21V9m0 0-5 5m5-5 5 5M5 3h14v2H5V3Z" />',
+    pickup: '<path d="M12 3v12m-5-5 5 5 5-5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />',
+    delivery: '<path d="M12 21V9m-5 5 5-5 5 5M5 3h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />',
     service: '<path d="M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5l-2.4 2.4-3-3 2.4-2.4Z" />',
   };
   return `<span class="run-task-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false">${paths[kind] || paths.service}</svg></span>`;

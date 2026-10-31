@@ -26,6 +26,18 @@ function stageTelemetryEvent(event, plan, settings) {
       markMissionCompleted(mission, {completedAt:event.at, bookIncome:false});
       for (const item of mission.serviceDetails?.packages || []) { item.pickedUpAt ||= event.at; item.deliveredAt ||= event.at; }
       state.selectedRunRoutePointKey = '';
+    } else if (plan.action === 'payment') {
+      if (!mission || mission.status !== 'completed' || mission.paidAt || getMissionIncomeEntry(mission)
+          || !Number.isSafeInteger(event.amount) || event.amount <= 0 || event.amount > 999999999999) return null;
+      markMissionPaid(mission, {paidAt:event.at, amountAuec:event.amount});
+      const income = getMissionIncomeEntry(mission);
+      if (!income || income.amountAuec !== event.amount) return null;
+      income.telemetryEventId = event.id;
+      income.notes = cargoText('telemetry.payment.note', 'Auszahlung aus Game.log bestätigt.');
+      if (Number(mission.payout) > 0 && event.amount !== Number(mission.payout)) {
+        income.notes += ' ' + cargoText('telemetry.payment.expected', 'Ursprünglicher Auftragserlös: {amount} aUEC.',
+          {amount:Number(mission.payout).toLocaleString(cargoLocale())});
+      }
     } else if (plan.action === 'package') {
       const item = mission.serviceDetails.packages.find(item => item.id === plan.targetId);
       item.pickedUpAt ||= event.at;

@@ -149,15 +149,15 @@
       if (result && pending) await flush();
       return result;
     }
-    async function refresh() {
+    async function refresh({allowEditing = false} = {}) {
       if (!hydrated) return hydrate();
-      if (blocked || busy() || hasUnsaved() || isEditing() || !enabled()) return false;
+      if (blocked || busy() || hasUnsaved() || (!allowEditing && isEditing()) || !enabled()) return false;
       const ticket = generation, token = session;
       if (renderPending) { renderPending = false; onRender(); }
       const task = (async () => {
         try {
           const payload = await api.fetchState();
-          if (token !== session || blocked || ticket !== generation || hasUnsaved() || isEditing()) return false;
+          if (token !== session || blocked || ticket !== generation || hasUnsaved() || (!allowEditing && isEditing())) return false;
           if (payload.updatedAt !== revision) adopt(payload);
           else onMeta(payload);
           return true;
