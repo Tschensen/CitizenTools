@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.8.2",
+    "de": {
+      "title": "Standorterkennung",
+      "changes": [
+        "Standorterkennung über gespeicherte Ortskennungen verbessert."
+      ]
+    },
+    "en": {
+      "title": "Location detection",
+      "changes": [
+        "Improved location detection using stored location identifiers."
+      ]
+    }
+  },
+  {
     "version": "0.8.1",
     "de": {
       "title": "Auftragszahlungen und Orte",

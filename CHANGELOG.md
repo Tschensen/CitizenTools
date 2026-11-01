@@ -1,6 +1,6 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
-## Noch nicht veröffentlicht
+## 0.8.2 — Standorterkennung
 
 - Standorterkennung über gespeicherte Ortskennungen verbessert.
 
