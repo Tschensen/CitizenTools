@@ -21,6 +21,19 @@ from server import app as backend
 
 
 class SoloIntegrationTests(unittest.TestCase):
+    def test_location_database_does_not_import_language_files_automatically(self):
+        before = self.api('/api/locations?status=active')[1]['locations']
+        game = self.root / 'StarCitizen'
+        path = game / 'LIVE' / 'data' / 'Localization' / 'german_(germany)' / 'global.ini'
+        path.parent.mkdir(parents=True)
+        path.write_text('RR_CRU_L4=CRU-L4 Shallow Fields Station\nRR_HUR_L3=HUR-L3 Thundering Express Station\n')
+        self.api('/api/solo/settings', {'gameDirectory': str(game), 'gameChannel': 'LIVE'})
+        code, result = self.api('/api/locations?status=active')
+        self.assertEqual(code, 200)
+        self.assertEqual(result['locations'], before)
+        path.write_text('RR_HUR_L3=Updated station name\n')
+        self.assertEqual(self.api('/api/locations?status=active')[1]['locations'], before)
+
     def test_log_requires_explicit_installation_folder_and_persists_the_channel(self):
         code, result = self.api('/api/solo/settings', {'logEnabled':True})
         self.assertEqual(code,400,result)

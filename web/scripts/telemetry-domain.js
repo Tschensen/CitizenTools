@@ -2,9 +2,9 @@
 // before committing them with the event acknowledgement in one transaction.
 (function(root) {
   const key = value => String(value || '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  // Inventory name observed on arrival at Seraphim Station. Resolve against
+  // Inventory names observed on arrival at these stations. Resolve against
   // existing locations so archived or renamed entries are not recreated.
-  const inventoryLocations = {RR_CRU_LEO:'Seraphim Station'};
+  const inventoryLocations = {RR_CRU_LEO:'Seraphim Station', RR_CRU_L4:'CRU-L4 Shallow Fields Station'};
   function links(value) {
     const result = {};
     for (const name of ['ships', 'locations', 'missions', 'objectives']) {
@@ -19,11 +19,15 @@
     const code = key(raw);
     const suffix = key(String(raw).split('_').at(-1));
     let matches = choices.filter(place => [place.name, ...(place.aliases || [])]
-      .some(name => key(name) === code || (suffix.length > 3 && key(name) === suffix)));
+      .some(name => key(name) === code));
     const knownName = inventoryLocations[String(raw).trim().toUpperCase()];
     if (!matches.length && knownName) {
       matches = choices.filter(place => [place.name, ...(place.aliases || [])]
         .some(name => key(name) === key(knownName)));
+    }
+    if (!matches.length && suffix.length > 3) {
+      matches = choices.filter(place => [place.name, ...(place.aliases || [])]
+        .some(name => key(name) === suffix));
     }
     const names = [...new Set(matches.map(place => place.name))];
     return names.length === 1 ? names[0] : null;

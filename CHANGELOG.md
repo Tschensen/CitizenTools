@@ -1,5 +1,13 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## Noch nicht veröffentlicht
+
+- Standorterkennung über gespeicherte Ortskennungen verbessert.
+
+### English
+
+- Improved location detection using stored location identifiers.
+
 ## 0.8.1 — Auftragszahlungen und Orte
 
 - Bestätigte Auftragszahlungen aus Game.log verbuchen, auch reduzierte Beträge und Gruppenanteile.
