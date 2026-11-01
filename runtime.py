@@ -29,7 +29,7 @@ import solo_shortcuts
 import location_merge
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.8.1"
+VERSION = "0.8.2"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
