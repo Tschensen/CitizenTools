@@ -70,6 +70,14 @@ test('Seraphim inventory code resolves to an existing station and respects user 
   const event = {at,kind:'location',value:'RR_CRU_LEO'};
   assert.deepEqual(D.plan(event,fixture(),settings,places,true,now,{location:'RR_CRU_LEO'}), {action:'location',value:'Seraphim Station'});
 });
+
+test('imported exact log identifiers take precedence over a matching system suffix', () => {
+  const places = [{name:'Pyro'}, {name:'Nyx - Pyro Jump Point',aliases:['Nyx_JumpPoint_Pyro']}];
+  assert.equal(D.resolveLocation('Nyx_JumpPoint_Pyro', places), 'Nyx - Pyro Jump Point');
+  assert.equal(D.resolveLocation('Nyx_JumpPoint_Pyro', places, {Nyx_JumpPoint_Pyro:'Custom'}), 'Custom');
+  assert.equal(D.resolveLocation('Nyx_JumpPoint_Pyro', [...places,
+    {name:'Ambiguous',aliases:['Nyx_JumpPoint_Pyro']}]), null);
+});
 test('mission title alone cannot complete a contract, linked IDs can', () => {
   assert.equal(plan({kind:'completed',missionId:'other',title:'same title'}).reason,'mission');
   assert.equal(plan({kind:'completed',missionId:'game'}).action,'complete');
