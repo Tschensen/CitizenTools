@@ -18,8 +18,8 @@
     mission: ["Auftragserlös"],
     cargo: ["Warenverkauf", "Warenankauf", "Cargo-Gebühr", "Cargo-Sonstiges"],
     ship: ["Schiffskauf", "Schiffsverkauf", "Upgrade", "Leihgebühr", "Schiff-Sonstiges"],
-    service: ["Reparatur", "Betankung", "Treibstoffankauf", "Versicherung", "Claim", "Hangargebühr", "Service-Sonstiges"],
-    other: ["Anfangsbestand", "Transfer", "Geschenk", "Rückerstattung", "Steuer / Gebühr", "Sonstiges"],
+    service: ["Reparatur", "Betankung", "Wasserstoff", "Quantum", "Treibstoffankauf", "Versicherung", "Claim", "Hangargebühr", "Service-Sonstiges"],
+    other: ["Anfangsbestand", "Essen", "Trinken", "Transfer", "Geschenk", "Rückerstattung", "Steuer / Gebühr", "Sonstiges"],
   };
 
   const LEDGER_CATEGORY_LABEL_KEYS = {
@@ -36,7 +36,10 @@
     Reparatur: "finance.category.repair",
     Betankung: "finance.category.refuel",
     Treibstoffankauf: "finance.category.fuelPurchase",
+    Wasserstoff: "finance.category.hydrogen",
     Quantum: "finance.category.quantum",
+    Essen: "finance.category.food",
+    Trinken: "finance.category.drink",
     Versicherung: "finance.category.insurance",
     Claim: "finance.category.claim",
     Hangargebühr: "finance.category.hangarFee",
@@ -132,6 +135,10 @@
     "Schiff-Sonstiges",
     "Reparatur",
     "Betankung",
+    "Wasserstoff",
+    "Quantum",
+    "Essen",
+    "Trinken",
     "Treibstoffankauf",
     "Versicherung",
     "Claim",
@@ -139,6 +146,12 @@
     "Service-Sonstiges",
     "Steuer / Gebühr",
   ]);
+  const DEFAULT_INCOME_CATEGORIES = new Set(["Auftragserlös", "Warenverkauf", "Schiffsverkauf", "Anfangsbestand", "Geschenk", "Rückerstattung"]);
+  const QUICK_EXPENSE_PRESETS = {
+    food: { scope: "other", category: "Essen", title: "finance.quick.foodTitle" },
+    drink: { scope: "other", category: "Trinken", title: "finance.quick.drinkTitle" },
+    refuel: { scope: "service", title: "finance.quick.refuelTitle" },
+  };
   const SHIP_WORKFLOW_STATUS = {
     sale: "sold",
     upgrade: "melted",
@@ -395,6 +408,11 @@
       financeAssetsSummary: document.querySelector("#financeAssetsSummary"),
       financeAssetsTable: document.querySelector("#financeAssetsTable"),
       financeQuickExpenseDialog: document.querySelector("#financeQuickExpenseDialog"),
+      financeQuickExpenseTitle: document.querySelector("#financeQuickExpenseTitle"),
+      financeQuickExpenseButtons: Array.from(document.querySelectorAll("[data-finance-quick-expense]")),
+      financeQuickExpenseDetails: Array.from(document.querySelectorAll("[data-finance-quick-details]")),
+      financeQuickExpenseFuelField: document.querySelector("#financeQuickExpenseFuelField"),
+      financeQuickExpenseFuel: document.querySelector("#financeQuickExpenseFuel"),
       financeQuickExpenseForm: document.querySelector("#financeQuickExpenseForm"),
       financeQuickExpenseShip: document.querySelector("#financeQuickExpenseShip"),
       financeQuickExpenseDate: document.querySelector("#financeQuickExpenseDate"),
@@ -412,6 +430,9 @@
 
     let activeFinanceView = "statement";
     let quickExpenseFleetEntryId = "";
+    let quickExpensePreset = "";
+    let quickExpenseReturnFocus = null;
+    let flowManuallySelected = false;
 
     const translate = (key, params = {}) => (typeof helpers.t === "function" ? helpers.t(key, params) : String(key || ""));
     const currentLanguage = () => (typeof helpers.currentUiLanguage === "function" ? helpers.currentUiLanguage() : "de");
@@ -551,9 +572,10 @@
     }
 
     function applyDefaultFlowForCategory() {
-      if (!dom.financeForm || dom.financeForm.entryId?.value) return;
+      if (!dom.financeForm || dom.financeForm.entryId?.value || flowManuallySelected) return;
       const category = String(dom.financeCategorySelect?.value || "").trim();
-      dom.financeForm.flow.value = DEFAULT_EXPENSE_CATEGORIES.has(category) ? "expense" : "income";
+      if (DEFAULT_EXPENSE_CATEGORIES.has(category)) dom.financeForm.flow.value = "expense";
+      else if (DEFAULT_INCOME_CATEGORIES.has(category)) dom.financeForm.flow.value = "income";
     }
 
     function renderShipOptions(preferred = dom.financeShipSelect?.value || "") {
@@ -900,6 +922,7 @@
     }
 
     function syncQuickExpenseCalculation() {
+      dom.financeQuickExpenseEndingBalance?.setCustomValidity("");
       if (!dom.financeQuickExpenseBalanceCalculation) return;
       const useEndingBalance = getQuickExpenseAmountMode() === "endingBalance";
       dom.financeQuickExpenseBalanceCalculation.hidden = !useEndingBalance;
@@ -930,9 +953,51 @@
       });
     }
 
-    function closeQuickShipExpense() {
+    function closeQuickExpense() {
       quickExpenseFleetEntryId = "";
+      quickExpensePreset = "";
       if (dom.financeQuickExpenseDialog) dom.financeQuickExpenseDialog.hidden = true;
+      quickExpenseReturnFocus?.focus();
+      quickExpenseReturnFocus = null;
+    }
+
+    function showQuickExpense({ preset = "", fleetEntry = null, category = "Betankung" } = {}) {
+      if (!dom.financeQuickExpenseDialog || !dom.financeQuickExpenseForm) return;
+      quickExpensePreset = preset;
+      quickExpenseFleetEntryId = fleetEntry?.id || "";
+      quickExpenseReturnFocus = document.activeElement;
+      dom.financeQuickExpenseForm.reset();
+      const title = QUICK_EXPENSE_PRESETS[preset]?.title || "finance.quick.title";
+      if (dom.financeQuickExpenseTitle) {
+        dom.financeQuickExpenseTitle.dataset.i18n = title;
+        dom.financeQuickExpenseTitle.textContent = translate(title);
+      }
+      dom.financeQuickExpenseDetails.forEach((element) => { element.hidden = Boolean(preset); });
+      if (dom.financeQuickExpenseFuelField) dom.financeQuickExpenseFuelField.hidden = preset !== "refuel";
+      if (dom.financeQuickExpenseFuel) {
+        dom.financeQuickExpenseFuel.disabled = preset !== "refuel";
+        dom.financeQuickExpenseFuel.required = preset === "refuel";
+      }
+      if (dom.financeQuickExpenseDate) dom.financeQuickExpenseDate.value = helpers.formatDateForInput(new Date());
+      if (dom.financeQuickExpenseCategory) dom.financeQuickExpenseCategory.value = category;
+      if (dom.financeQuickExpenseShip) {
+        dom.financeQuickExpenseShip.hidden = !fleetEntry;
+        dom.financeQuickExpenseShip.textContent = getFleetEntryLabel(fleetEntry);
+      }
+      dom.financeQuickExpenseAmountModes.forEach((input) => {
+        input.checked = input.value === (preset ? "endingBalance" : "amount");
+      });
+      syncQuickExpenseAmountMode();
+      dom.financeQuickExpenseDialog.hidden = false;
+      window.requestAnimationFrame(() => {
+        (preset ? dom.financeQuickExpenseEndingBalance : dom.financeQuickExpenseAmount)?.focus();
+      });
+    }
+
+    function openQuickExpense(preset) {
+      if (!Object.hasOwn(QUICK_EXPENSE_PRESETS, preset)) return;
+      const activeShip = preset === "refuel" ? findFleetEntryById(getState().activeFleetEntryId) : null;
+      showQuickExpense({ preset, fleetEntry: activeShip?.status === "active" ? activeShip : null });
     }
 
     function openQuickShipExpense(fleetEntryId, category = "Betankung") {
@@ -941,23 +1006,19 @@
         openShipExpense(fleetEntryId);
         return;
       }
-      quickExpenseFleetEntryId = fleetEntry.id;
-      dom.financeQuickExpenseForm.reset();
-      if (dom.financeQuickExpenseDate) dom.financeQuickExpenseDate.value = helpers.formatDateForInput(new Date());
-      if (dom.financeQuickExpenseCategory) dom.financeQuickExpenseCategory.value = LEDGER_CATEGORY_OPTIONS.service.includes(category) ? category : "Betankung";
-      if (dom.financeQuickExpenseShip) dom.financeQuickExpenseShip.textContent = getFleetEntryLabel(fleetEntry);
-      syncQuickExpenseAmountMode();
-      dom.financeQuickExpenseDialog.hidden = false;
-      window.requestAnimationFrame(() => dom.financeQuickExpenseAmount?.focus());
+      showQuickExpense({ fleetEntry, category: LEDGER_CATEGORY_OPTIONS.service.includes(category) ? category : "Betankung" });
     }
 
-    function submitQuickShipExpense(event) {
+    function submitQuickExpense(event) {
       event.preventDefault();
+      if (dom.financeQuickExpenseDialog?.hidden) return;
       const fleetEntry = findFleetEntryById(quickExpenseFleetEntryId);
-      if (!fleetEntry || !dom.financeQuickExpenseForm) {
-        closeQuickShipExpense();
+      const preset = QUICK_EXPENSE_PRESETS[quickExpensePreset];
+      if ((!preset && !fleetEntry) || !dom.financeQuickExpenseForm) {
+        closeQuickExpense();
         return;
       }
+      dom.financeQuickExpenseEndingBalance?.setCustomValidity("");
       const calculation = getQuickExpenseCalculation();
       if (getQuickExpenseAmountMode() === "endingBalance" && !calculation.valid) {
         const message = translate("finance.balance.expenseInvalid", { balance: formatCurrency(calculation.openingBalance) });
@@ -966,20 +1027,24 @@
         return;
       }
       if (!dom.financeQuickExpenseForm.reportValidity()) return;
+      const category = quickExpensePreset === "refuel"
+        ? dom.financeQuickExpenseFuel?.value
+        : preset?.category || dom.financeQuickExpenseCategory?.value;
+      if (quickExpensePreset === "refuel" && !["Wasserstoff", "Quantum"].includes(category)) return;
 
       const nextEntry = createLedgerEntry({
         bookedOn: dom.financeQuickExpenseDate?.value,
-        scope: "service",
+        scope: preset?.scope || "service",
         flow: "expense",
-        category: dom.financeQuickExpenseCategory?.value,
+        category,
         amountAuec: calculation.amountAuec,
         reference: dom.financeQuickExpenseReference?.value,
-        fleetEntryId: fleetEntry.id,
-        shipId: fleetEntry.shipId,
+        fleetEntryId: fleetEntry?.id,
+        shipId: fleetEntry?.shipId,
         notes: dom.financeQuickExpenseNotes?.value,
       });
       getState().ledgerEntries.unshift(nextEntry);
-      closeQuickShipExpense();
+      closeQuickExpense();
       helpers.persist();
       helpers.render();
     }
@@ -1071,6 +1136,7 @@
     function resetForm() {
       if (!dom.financeForm || !dom.financeScopeSelect) return;
       dom.financeForm.reset();
+      flowManuallySelected = false;
       dom.financeForm.entryId.value = "";
       dom.financeForm.bookedOn.value = helpers.formatDateForInput(new Date());
       dom.financeForm.scope.value = "mission";
@@ -1103,6 +1169,7 @@
       dom.financeForm.scope.value = "service";
       renderCategoryOptions("Reparatur");
       dom.financeForm.flow.value = "expense";
+      flowManuallySelected = true;
       renderShipOptions(fleetEntry.id);
       renderMissionOptions("");
       syncShipWorkflowFields();
@@ -1119,6 +1186,7 @@
       dom.financeForm.scope.value = entry.scope;
       renderCategoryOptions(entry.category);
       dom.financeForm.flow.value = entry.flow;
+      flowManuallySelected = true;
       dom.financeForm.amountAuec.value = entry.amountAuec ? String(entry.amountAuec) : "";
       dom.financeAmountModeInputs.forEach((input) => {
         input.checked = input.value === "amount";
@@ -1764,6 +1832,7 @@
     function init() {
       if (!dom.financeForm) return;
       dom.financeForm.addEventListener("submit", handleSubmit);
+      dom.financeFlowSelect?.addEventListener("change", () => { flowManuallySelected = true; });
       dom.financeViewTabs.forEach((button) => {
         button.addEventListener("click", () => {
           setFinanceView(button.dataset.financeViewTarget || "statement");
@@ -1796,14 +1865,23 @@
       };
       dom.financeForm.addEventListener("input", syncDraftUi);
       dom.financeForm.addEventListener("change", syncDraftUi);
-      dom.financeQuickExpenseForm?.addEventListener("submit", submitQuickShipExpense);
+      dom.financeQuickExpenseButtons.forEach((button) => {
+        button.addEventListener("click", () => openQuickExpense(button.dataset.financeQuickExpense));
+      });
+      dom.financeQuickExpenseForm?.addEventListener("submit", submitQuickExpense);
       dom.financeQuickExpenseAmountModes.forEach((input) => {
         input.addEventListener("change", syncQuickExpenseAmountMode);
       });
       dom.financeQuickExpenseEndingBalance?.addEventListener("input", syncQuickExpenseCalculation);
-      dom.financeQuickExpenseCancel?.addEventListener("click", closeQuickShipExpense);
+      dom.financeQuickExpenseCancel?.addEventListener("click", closeQuickExpense);
       dom.financeQuickExpenseDialog?.addEventListener("click", (event) => {
-        if (event.target === dom.financeQuickExpenseDialog) closeQuickShipExpense();
+        if (event.target === dom.financeQuickExpenseDialog) closeQuickExpense();
+      });
+      dom.financeQuickExpenseDialog?.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeQuickExpense();
+        }
       });
       dom.financeCancelButton?.addEventListener("click", () => {
         resetForm();

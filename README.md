@@ -5,7 +5,7 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.8.2 · **Lizenz:** GPLv3 oder später
+**Quellcode-Stand:** 0.9.0 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
@@ -15,6 +15,7 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 - Fracht in Teilmengen liefern, Mengen je Auftrag und Stopp vergleichen und unveränderte Lieferungen zurücknehmen.
 - Routen per frei belegbaren globalen Tastenkürzeln bedienen und zur konfigurierbaren Heimatbasis zurückkehren.
 - Flotte, Finanzen und Statistiken im Blick behalten.
+- Essen, Trinken und Tanken per Schnellwahl als Ausgabe buchen.
 - Schiff und Standort automatisch anhand der Game.log erkennen.
 - Bestätigte Auftragszahlungen aus der Game.log verbuchen, auch Gruppenanteile.
 - Doppelte Orte in der Systemdatenbank zusammenführen.
