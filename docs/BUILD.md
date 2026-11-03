@@ -43,6 +43,7 @@ node tests\test_statistics_period.js
 node tests\test_mission_cargo_edit.js
 node tests\test_mission_submit.js
 node tests\test_view_renderer.js
+node tests\test_finance_form.js
 ```
 
 Die zusätzlichen Integrationstests in `test_personal_transfer.py` benötigen

@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## 0.9.0 — Finanz-Schnellwahl
+
+- Schnellwahl für Essen, Trinken und Tanken (Wasserstoff/Quantum), per Betrag oder Kontostand.
+- Gewählte Buchungsrichtung bleibt beim Bearbeiten erhalten.
+
+### English
+
+- Quick bookings for food, drinks and fuel (hydrogen/quantum), using an amount or ending balance.
+- The selected income/expense direction is preserved while editing.
+
 ## 0.8.2 — Standorterkennung
 
 - Standorterkennung über gespeicherte Ortskennungen verbessert.

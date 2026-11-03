@@ -5396,6 +5396,27 @@ button[aria-disabled="true"]:hover {
   width: min(620px, 100%);
 }
 
+.finance-quick-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.finance-quick-actions small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.finance-quick-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .finance-quick-expense-dialog .finance-amount-mode {
   margin: 0;
 }

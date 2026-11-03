@@ -1,8 +1,23 @@
-# Citizen Tools · Flight Deck · 0.8.2
+# Citizen Tools · Flight Deck · 0.9.0
 
 Eigenständige Offline-Ausgabe der lokalen Citizen-Tools-Python-Suite für Windows 10/11 (64 Bit). Ein Programm startet das App-Fenster, die lokale SQLite-Datenbank und den Screenshot-Companion. Es benötigt im Betrieb keine Internetverbindung.
 
 Enthalten: Aufträge, Frachtplanung und Cargo-Grids, Routen, Flotte, Schiffsdatenbank, Systemdaten und OCR-Aliase, Finanzen, Statistik, Screenshot-OCR sowie Backup und Wiederherstellung. Organisationen, Einsatzgruppen, Rollen und Benutzerverwaltung sind nicht Bestandteil dieser Ausgabe.
+
+## Finanz-Schnellwahl
+
+Unter **Finanzen → Schnellwahl** stehen **Essen**, **Trinken** und **Tanken** bereit.
+Den neuen Kontostand nach dem Kauf eingeben; die Differenz zum Buchhaltungssaldo
+wird als Ausgabe angezeigt und mit **Kosten buchen** gespeichert. Alternativ
+lässt sich auf die direkte Eingabe des Betrags umschalten. Beim Tanken zusätzlich
+**Wasserstoff** oder **Quantum** auswählen. Ein aktives Flottenschiff wird dabei
+automatisch verknüpft und im Dialog angezeigt; ohne aktives Schiff funktioniert
+die Buchung ebenfalls. Essen und Trinken werden ohne Schiff unter **Sonstiges**
+erfasst. Das Buchungsdatum ist der heutige Tag.
+
+Eine im normalen Buchungsformular bewusst ausgewählte Richtung bleibt auch beim
+Wechsel von Bereich oder Kategorie erhalten. Schiffskauf, Upgrade und Schiffsverkauf
+behalten ihre fest vorgegebene Richtung.
 
 ## Spiel-Log und Kontostand
 
