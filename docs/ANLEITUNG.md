@@ -37,12 +37,52 @@ den bisherigen Eintrag. Im Browser ist die Ordnerauswahl mit entsprechendem Hinw
 deaktiviert; am Spiele-PC kann der Pfad weiterhin von Hand eingetragen werden.
 
 - **Erkanntes Schiff auswählen:** Ein eindeutig passendes aktives Flottenschiff
-  wird ausgewählt. Bei mehreren gleichen Modellen oder fremdem Besitzer die Zuordnung
-  einmal im Erkennungsbereich treffen. Die Meldung zeigt das betretene Schiff an;
-  sie beweist nicht, dass man am Steuer sitzt.
+  wird ausgewählt, wenn der Besitzername aus der Einstiegsmeldung zum lokalen
+  Spieler gehört. Fremde Besitzer werden nicht automatisch deiner Flotte zugeordnet.
+  Lokale Navigations-/Kontrollmeldungen können zusätzlich die konkrete Schiffs-ID
+  bestätigen. Gespeichert werden ID, Besitzer, Typ, Spielkanal und Zeitpunkt.
+  Bei mehreren gleichen Modellen oder einer geänderten ID die Instanz unter
+  **Spiel-Log & Kontostand** einem vorhandenen oder zusätzlichen Schiff zuordnen.
+  Die ID bezeichnet eine beobachtete Instanz; sie ist kein dauerhafter Kaufnachweis.
+  Die Startseite zeigt bei einem aktuellen Spielsignal das betretene Schiff mit
+  **Eigenes Schiff** oder **Schiff von …**. Ein fremdes Schiff verändert die eigene
+  Flottenauswahl nicht. Ohne aktuelles Spielsignal bleibt das ausgewählte Flottenschiff sichtbar.
+  Nach einer passenden Ausstiegsmeldung steht dort **Nicht an Bord** und
+  **Für Beladung ausgewählt**. Das ausgewählte Flottenschiff und seine Ladung
+  bleiben erhalten; ein Ausstieg ist kein Entladen.
+- **Neu erkannte eigene Schiffe aufnehmen:** Optional und zunächst ausgeschaltet.
+  Mit bestätigter Instanz-ID und eindeutigem Modell aus der Schiffsdatenbank kann
+  ein bisher nicht vorhandenes eigenes Modell aufgenommen werden. Bei bereits
+  vorhandenem oder archiviertem Modell bleibt eine Auswahl erforderlich.
+  Aufnahmedatum ist das Erkennungsdatum; Kaufdatum, Registrierung und Kaufart
+  lassen sich bearbeiten. Es entsteht keine Kaufbuchung. Auch Miet-/Leihschiffe
+  können unter dem eigenen Namen erscheinen; Besitzart bei Bedarf korrigieren.
+- **Schiffsverlust prüfen:** Eine eindeutig zugeordnete Kollisions-/Zerstörungsmeldung
+  erscheint unter **Flotte → Verlustmeldungen** als Schiffskarte mit Bild, Hersteller
+  und Registrierung. Mit **Als zerstört markieren**
+  wird das konkrete Schiff archiviert. **Ignorieren** verwirft den Vorschlag;
+  **Wieder aktiv setzen** nimmt die Markierung zurück, solange die zugehörige
+  Instanz nicht zwischenzeitlich ersetzt wurde. Die normale Flottenbearbeitung
+  bleibt verfügbar. Ladung, Aufträge und Buchungen werden dabei nicht geändert.
+  Ignorierte oder zurückgenommene Meldungen verschwinden aus der Übersicht.
+  Ein Tod des Spielers allein bestätigt keinen Schiffsverlust. Nicht jede mögliche
+  Zerstörung wird im Log mit den bisher beobachteten Mustern gemeldet.
 - **Standort übernehmen:** Bestätigte Inventarorte aktualisieren den Standort.
   Unbekannte interne Ortsnamen einmal einem vorhandenen Ort zuordnen. Eine gewählte
   Quantumsprung-Destination gilt nicht als Ankunft.
+  Der bestätigte Landeort hat Vorrang vor einem wechselnden untergeordneten Bereich.
+  Außerhalb benannter Orte erscheinen geprüfte Planeten-/Mondbereiche (einschließlich
+  ihrer Umgebung), beispielsweise **Crusader** oder **Daymar**. Erkannte
+  Weltraumbereiche erscheinen als **Im All · Stanton** oder **Im All · CRU-L4**.
+  Diese Weltraumanzeige zählt nicht als Ankunft an einer Station.
+  Bei noch nicht zugeordneten Bereichen erscheint **Unterwegs** mit dem letzten
+  bestätigten Ort; ein bekanntes Reiseziel steht getrennt im Hinweis. Eine bestätigte
+  Abreise leert den bisherigen Stationsstandort für die Routenplanung.
+  **Standort unbekannt** bleibt für Sitzungen ohne verwertbare Positionsdaten.
+  Ohne aktuelles Spielsignal wird ein zuvor aus dem Log übernommener Ort als
+  **Zuletzt bekannter Standort** beschriftet. Manuelle Routenstandorte bleiben möglich.
+  Die bisher geprüften Logs melden Quantum-Ankünfte, aber keinen eindeutigen Beginn.
+  Daher wird aus einer Routenberechnung keine Anzeige „Im Quantum“ abgeleitet.
 - **Ankunft und verknüpften Teilzielen folgen:** Öffnet den passenden Routenhalt.
   Jeder Spielauftrag wird anhand seiner Spiel-ID einmal dem eigenen Auftrag zugeordnet.
   Bestätigte Kurier-Abholungen und Lieferungen können danach automatisch weiterlaufen.
@@ -55,7 +95,8 @@ deaktiviert; am Spiele-PC kann der Pfad weiterhin von Hand eingetragen werden.
 
 Ankunft allein liefert keine Fracht ab. Deutsche und englische beobachtete Meldungen
 werden unterstützt. Beim Einschalten werden alte Abschlüsse nicht nachgetragen.
-Offene neue Ereignisse warten höchstens 15 Minuten auf Zuordnung; doppelte Meldungen
+Offene neue Ereignisse warten höchstens 15 Minuten auf Zuordnung; Verlustmeldungen
+bleiben bis zur Prüfung erhalten. Doppelte Meldungen
 werden nur einmal übernommen. Sitzungswechsel und veraltete Logs werden erkannt.
 Die Automatik aktualisiert Citizen Tools; sie steuert das Spiel nicht.
 

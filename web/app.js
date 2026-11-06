@@ -1850,6 +1850,8 @@ function createFleetEntry({
   notes = "",
   shipId = "",
   createdAt = new Date().toISOString(),
+  logIdentity = null,
+  logLoss = null,
 }) {
   const normalizedRefuelContainerSizes = normalizeRefuelContainerSizeList(refuelContainerSizesScu);
   const hasSpecificRefuelSizes = normalizedRefuelContainerSizes.some((size) => size > 0);
@@ -1875,6 +1877,8 @@ function createFleetEntry({
     notes: String(notes || "").trim(),
     shipId: String(shipId || "").trim(),
     createdAt,
+    logIdentity: typeof FleetLog !== 'undefined' ? FleetLog.identity(logIdentity) : null,
+    logLoss: typeof FleetLog !== 'undefined' ? FleetLog.loss(logLoss) : null,
   };
 }
 

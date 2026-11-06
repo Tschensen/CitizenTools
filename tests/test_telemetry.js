@@ -49,8 +49,8 @@ test('exact ship selection rejects ambiguity and ships owned by someone else', (
   const event = {kind:'ship',name:'RSI Hermes',player:'Pilot',owner:'Pilot'};
   assert.equal(plan(event).fleetId,'fleet');
   const state=fixture(); state.fleet.push({...state.fleet[0],id:'other'});
-  assert.equal(plan(event,state).reason,'ship');
-  assert.equal(plan({...event,owner:'Other'}).reason,'ship');
+  assert.equal(plan(event,state).reason,'ship_instance');
+  assert.equal(plan({...event,owner:'Other'}).reason,'ship_owner');
 });
 test('locations use unique exact names or aliases, never a fuzzy substring', () => {
   assert.equal(plan({kind:'location',value:'Stanton2_Orison'}).value,'Orison');
@@ -108,4 +108,65 @@ test('balance only accepts valid newer snapshots and never returns a ledger muta
   assert.equal(plan({kind:'balance',amount:0}).action,'balance');
   assert.equal(plan({kind:'balance',amount:NaN}).action,'discard');
   assert.equal(D.balance({amount:-1,at}),null);
+});
+
+test('unmapped locations clear the old station once, remain linkable, and allow a manual route location', () => {
+  const state=fixture(), event={id:'new-place',kind:'location',value:'UnknownCode',at};state.currentLocation='Orison';
+  assert.equal(plan(event,state).action,'location_unresolved');
+  state.telemetryLocation=D.locationObservation({...event,raw:event.value,value:''});
+  state.currentLocation='Manual route start';
+  assert.equal(plan(event,state).reason,'location');
+  state.telemetryLinks.locations={'UnknownCode':'Bountiful Harvest'};
+  assert.deepEqual(plan(event,state),{action:'location',value:'Bountiful Harvest'});
+  assert.deepEqual(plan({...event,value:''},state),{action:'location',value:''});
+});
+
+test('location labels distinguish confirmed, last known, manually selected and unknown locations', () => {
+  const state=fixture();state.currentLocation='Orison';
+  state.telemetryLocation=D.locationObservation({id:'place',at,raw:'Stanton2_Orison',value:'Orison',session:'session'});
+  const context={enabled:true,live:true,location:'Stanton2_Orison',lastLocation:'Stanton2_Orison',session:'session'};
+  assert.equal(D.locationStatus(state,context,locations).kind,'confirmed');
+  assert.equal(D.locationStatus(state,{...context,live:false},locations).kind,'stale');
+  assert.equal(D.locationStatus(state,{...context,location:''},locations).kind,'stale');
+  state.currentLocation='Manual';assert.equal(D.locationStatus(state,context,locations).kind,'selected');
+  state.currentLocation='';assert.deepEqual(D.locationStatus(state,{...context,location:''},locations),{kind:'unknown',previous:'Orison',offline:false});
+});
+
+test('space and travel stay separate from route locations and respect manual selection and disabled detection', () => {
+  const state=fixture(); state.currentLocation='';
+  const context={enabled:true,live:true,location:'',lastLocation:'Stanton2_Orison',session:'current',
+    locationContext:{kind:'space',system:'Stanton',near:'CRU-L4',destination:'RR_CRU_L1',at}};
+  const status=D.locationStatus(state,context,locations);
+  assert.equal(status.kind,'space'); assert.equal(status.previous,'Orison');
+  assert.equal(status.destination,'CRU-L1 Ambitious Dream Station');
+  const event={id:'space',kind:'location',at,value:'',locationContext:context.locationContext};
+  assert.deepEqual(D.plan(event,state,settings,locations,true,now,context),{action:'location',value:''});
+  assert.equal(D.locationStatus(state,{...context,locationContext:{kind:'travel'}},locations).kind,'travel');
+  state.currentLocation='Manually chosen start';
+  assert.equal(D.locationStatus(state,context,locations).kind,'selected');
+  state.currentLocation='';
+  for (const change of [{enabled:false},{live:false},{settings:{logAutoLocation:false}}]) {
+    assert.equal(D.locationStatus(state,{...context,...change},locations).kind,'unknown');
+  }
+});
+
+test('planet regions resolve against existing locations without creating an arrival at a city', () => {
+  const state=fixture(), places=[...locations,{name:'Crusader',aliases:['Stanton2'],type:'planet',starSystem:'Stanton'}];
+  const event={id:'body',kind:'location',at,value:'Crusader',session:'current',locationContext:{kind:'body',system:'Stanton',at}};
+  assert.deepEqual(D.plan(event,state,settings,places,true,now),{action:'location',value:'Crusader'});
+  state.currentLocation='Crusader';
+  state.telemetryLocation=D.locationObservation({...event,raw:'Crusader'});
+  const context={enabled:true,live:true,location:'Crusader',session:'current',locationContext:event.locationContext};
+  assert.deepEqual(D.locationStatus(state,context,places),{kind:'confirmed',scope:'body'});
+  // A region absent from the user's database is still readable, but does not
+  // invent a route location or duplicate the catalog.
+  state.currentLocation=''; state.telemetryLocation=null;
+  assert.deepEqual(D.plan(event,state,settings,locations,true,now),{action:'location_unresolved',value:''});
+  assert.equal(D.locationStatus(state,context,locations).name,'Crusader');
+});
+
+test('newer empty location observations supersede older space and travel observations', () => {
+  const event={id:'old-space',kind:'location',at,value:'',locationContext:{kind:'space',at:'2026-10-31T11:59:50Z'}};
+  assert.equal(D.plan(event,fixture(),settings,locations,true,now,
+    {location:'',locationContext:{kind:'travel',at}}).reason,'superseded');
 });

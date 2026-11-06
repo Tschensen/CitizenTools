@@ -4,11 +4,17 @@ function renderHub() {
   const activeMissionCount = activeMissions.length;
   const dispatcherMode = typeof isDispatcherMode === "function" && isDispatcherMode();
   const activeFleetEntry = currentActiveFleetEntry();
-  const activeShipMedia = activeFleetEntry ? getFleetMediaEntry(activeFleetEntry) : null;
-  const activeShipName = activeFleetEntry
+  const currentShip = !dispatcherMode ? window.soloTelemetry?.currentShip() : null;
+  const displayedEntry = currentShip ? currentShip.entry : activeFleetEntry;
+  const activeShipMedia = displayedEntry ? getFleetMediaEntry(displayedEntry) : currentShip?.profile;
+  const activeShipName = currentShip?.name || (activeFleetEntry
     ? `${activeFleetEntry.manufacturer} ${activeFleetEntry.model}`.trim()
-    : t("hub.summary.noActiveShip");
-  const activeShipRegistration = activeFleetEntry ? formatFleetRegistration(activeFleetEntry) : t("hub.summary.chooseFleet");
+    : t("hub.summary.noActiveShip"));
+  const activeShipRegistration = displayedEntry ? formatFleetRegistration(displayedEntry)
+    : currentShip?.live ? "" : t("hub.summary.chooseFleet");
+  const ownershipLabel = currentShip?.ownership === 'own' ? t('hub.ship.own')
+    : currentShip?.owner ? t('hub.ship.owner', {owner:currentShip.owner})
+    : currentShip?.live ? t('hub.ship.unknownOwner') : '';
   const locale = currentUiLanguage() === "en" ? "en-US" : "de-DE";
   const routeState = buildRunRouteState();
   const compatibleActiveMissions = dispatcherMode
@@ -86,7 +92,9 @@ function renderHub() {
   hubSummary.innerHTML = [
     dispatcherMode
       ? { key:"ship", label: t("dispatcher.summary.orgShips"), value: t("dispatcher.summary.shipCount", { count: activeOrgShips }), target: "fleet" }
-      : { key:"ship", label: t("hub.summary.activeShip"), value: activeShipName, detail: activeShipRegistration, target: "fleet" },
+      : { key:"ship", label: t(currentShip?.live ? "hub.ship.aboard" : "hub.ship.selected"), value: activeShipName,
+          detail: activeShipRegistration, ownership:ownershipLabel, ownerKind:currentShip?.ownership,
+          presence:currentShip?.presence === 'outside' ? t('hub.ship.outside') : '', target: "fleet" },
     { key:"mission", label: t("hub.summary.activeMissions"), badge: t("hub.summary.activeCount", { count: activeMissionCount }), value: focusMissionTitle, detail: focusMissionText, target: focusMissionTarget, mission: true },
     { key:"payout", label: t("hub.summary.plannedPayout"), value: `${plannedPayout.toLocaleString(locale)} aUEC` },
     { key:"balance", label: t("hub.summary.balance"), value: `${accountBalance.toLocaleString(locale)} aUEC`, target: "finance" },
@@ -98,6 +106,8 @@ function renderHub() {
           <div class="hub-summary-heading"><span>${escapeHtml(card.label)}</span>${card.badge ? `<span class="hub-mission-count" data-flight-stat="mission-count">${escapeHtml(card.badge)}</span>` : ""}</div>
           <strong data-flight-stat="${card.key}" title="${escapeHtml(String(card.value))}">${escapeHtml(String(card.value))}</strong>
           ${card.detail ? `<small title="${escapeHtml(String(card.detail))}">${escapeHtml(String(card.detail))}</small>` : ""}
+          ${card.ownership ? `<span class="hub-ship-ownership" data-ownership="${escapeHtml(card.ownerKind)}">${escapeHtml(card.ownership)}</span>` : ""}
+          ${card.presence ? `<small class="hub-ship-presence">${escapeHtml(card.presence)}</small>` : ""}
         </div>
       `,
     )
@@ -170,7 +180,7 @@ function renderHub() {
   }
   window.soloCockpit?.apply();
   window.soloEffects?.hub({
-    ship:[activeFleetEntry?.id, activeFleetEntry?.manufacturer, activeFleetEntry?.model],
+    ship:[activeShipName, currentShip?.owner, displayedEntry?.id],
     'mission-count':activeMissionCount,
     mission:[focusMission?.id, focusMission?.title],
     payout:plannedPayout,

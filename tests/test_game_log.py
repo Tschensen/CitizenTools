@@ -177,6 +177,43 @@ class TailerTests(unittest.TestCase):
         self.assertTrue(data['live'])
         self.assertEqual({event['kind'] for event in data['events']}, {'ship', 'location'})
 
+    def test_exit_snapshot_and_unknown_location_survive_tailer_restart(self):
+        text = line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42')
+        text += line('<Update Inventory Location> Player [Pilot] is changing location. Landing [0] -> [12]. Location [0] -> [12].')
+        text += line('<RequestLocationInventory> Player[Pilot] requested inventory for Location[Orison]')
+        text += line('<SHUDEvent_OnNotification> Added notification "Du bist Kanal [ Origin 400i : Pilot ] beigetreten')
+        text += line('<Update Inventory Location> Player [Pilot] is changing location. Landing [12] -> [0]. Location [12] -> [99].')
+        text += line('<SHUDEvent_OnNotification> Added notification "Du hast Kanal [ Origin 400i : Pilot ] verlassen')
+        self.path.write_text(text,encoding='utf-8'); self.reader.tick()
+        snapshot=self.reader.snapshot()
+        self.assertTrue(snapshot['live']);self.assertIsNone(snapshot['ship'])
+        self.assertEqual(snapshot['shipPresence'],'outside')
+        self.assertEqual(snapshot['location'],'');self.assertEqual(snapshot['lastLocation'],'Orison')
+        self.assertEqual([(item['kind'],item.get('value')) for item in snapshot['events']],[('location','')])
+
+    def test_live_session_without_location_emits_unknown_instead_of_retaining_old_planner_location(self):
+        self.path.write_text(line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42'))
+        self.reader.tick()
+        snapshot=self.reader.snapshot()
+        self.assertEqual(snapshot['shipPresence'],'unknown')
+        self.assertEqual(snapshot['events'][0]['value'],'')
+
+    def test_body_and_space_context_restore_after_tailer_restart(self):
+        for region, kind, name in [('2493660041','body','Crusader'), ('1902223495','space','')]:
+            with self.subTest(kind=kind):
+                text=line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42')
+                text+=line('<Update Inventory Location> Player [Pilot] is changing location. Landing [0] -> [12]. Location [0] -> [12].')
+                text+=line('<RequestLocationInventory> Player[Pilot] requested inventory for Location[Stanton2_Orison]')
+                text+=line(f'<Update Inventory Location> Player [Pilot] is changing location. Landing [12] -> [0]. Location [12] -> [{region}].')
+                self.path.write_text(text,encoding='utf-8')
+                restored=Telemetry(self.runtime,self.connect); restored.tick()
+                snapshot=restored.snapshot()
+                self.assertTrue(snapshot['live'])
+                self.assertEqual(snapshot['location'],name)
+                self.assertEqual(snapshot['lastLocation'],'Stanton2_Orison')
+                self.assertEqual(snapshot['locationContext']['kind'],kind)
+                self.assertTrue(any(item.get('locationContext',{}).get('kind')==kind for item in snapshot['events']))
+
     def test_payment_is_deduplicated_across_repeats_and_reader_restarts(self):
         self.path.write_text(line('initial')); self.reader.tick()
         for offset in [0, 1]:
@@ -218,6 +255,21 @@ class TailerTests(unittest.TestCase):
         self.reader.tick()
         with self.path.open('a') as target: target.write(line('<Channel Disconnected> remoteAddr=server reason="disconnect"'))
         self.reader.tick(); self.assertFalse(self.reader.snapshot()['live'])
+
+    def test_loss_inbox_survives_review_delay_and_is_deduplicated(self):
+        old = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        event = {'id':'ship_loss:LIVE:123','at':old,'kind':'ship_loss','entityId':'123','channel':'LIVE'}
+        self.reader.enqueue(event); self.reader.enqueue(event)
+        self.reader.enqueue({'id':'old-ship','at':old,'kind':'ship'})
+        self.assertEqual([item['id'] for item in self.reader.snapshot()['events']], ['ship_loss:LIVE:123'])
+
+    def test_reading_old_loss_does_not_offer_a_historical_destruction(self):
+        from test_ship_log import navigation, collision
+        self.path.write_text(line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42')
+            + line('<SHUDEvent_OnNotification> Added notification "Du bist Kanal [ Origin 400i : Pilot ] beigetreten')
+            + line(navigation()) + line(collision()), encoding='utf-8')
+        self.reader.tick()
+        self.assertNotIn('ship_loss', [item['kind'] for item in self.reader.snapshot()['events']])
 
     def test_in_place_rotation_with_same_prefix_invalidates_the_session(self):
         prefix = line('shared header ' + 'x' * 300)

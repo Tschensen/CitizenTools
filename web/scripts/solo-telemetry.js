@@ -7,6 +7,7 @@
   const pickerMessage = document.getElementById('soloDirectoryPickerMessage');
   const pc = ['127.0.0.1', 'localhost'].includes(location.hostname);
   let latest = null, busy = false, loaded = false, choosing = false, issue = '';
+  let renderedShip = '';
   const say = (de, en) => currentUiLanguage() === 'en' ? en : de;
   const D = window.TelemetryDomain;
   function updateFolderPicker() {
@@ -41,21 +42,121 @@
     expired:['Veraltetes Ereignis', 'Expired event'],
     payment_completion:['Zahlung wartet auf den Auftragsabschluss', 'Payment is waiting for contract completion'],
     payment_failed:['Zahlung konnte nicht verbucht werden – bitte prüfen', 'Payment could not be booked — please review'],
+    ship_owner:['Fremdes Schiff oder Besitzer nicht bestätigt', 'Other owner or ownership not confirmed'],
+    ship_instance:['Schiffsinstanz zuordnen – vorhandenes oder zusätzliches Schiff', 'Link this instance — existing or additional ship'],
+    ship_new:['Eigenes Schiff erkannt – Aufnahme in die Flotte prüfen', 'Own ship detected — review adding it to the fleet'],
+    ship_profile:['Kein eindeutiges Modell in der Schiffsdatenbank', 'No unique model in the ship database'],
+    ship_identity:['Wartet auf eine lokale Meldung mit Schiffs-ID', 'Waiting for local evidence with a ship ID'],
+    ship_loss_link:['Verlustmeldung einem eigenen Schiff zuordnen', 'Link the loss report to an own ship'],
   };
+  async function fleetAction(build) {
+    if (busy || blocked()) return;
+    busy = true;
+    try {
+      if (!await getSoloSync().refresh() || blocked()) return;
+      const ticket = getSoloSync().checkpoint(), staged = build();
+      if (!staged) throw new Error(say('Die Zuordnung hat sich geändert. Bitte erneut prüfen.', 'The match has changed. Please review again.'));
+      const committed = staged.telemetryIds?.length
+        ? await getSoloSync().commitImports(staged, ticket) : await getSoloSync().commitChange(staged.state, ticket);
+      if (!committed) throw new Error(say('Änderung nicht gespeichert. Bitte erneut prüfen.', 'Change not saved. Please review again.'));
+      latest.events = latest.events.filter(event => !(staged.telemetryIds || []).includes(event.id));
+      issue = '';
+    } catch (error) { issue = error.message; }
+    finally { busy = false; renderStatus(); }
+  }
+  function chooseShip(eventId, fleetId) {
+    return fleetAction(() => {
+      const event = latest.events.find(item => item.id === eventId);
+      if (!event || !['ship_instance','ship_new','ship_loss_link'].includes(decision(event).reason)) return null;
+      let plan;
+      if (fleetId) {
+        if (!FleetLog.candidates(event, state).some(entry => entry.id === fleetId)) return null;
+        if (state.fleet.some(entry => FleetLog.sameIdentity(entry.logIdentity, event) && entry.id !== fleetId)) return null;
+        plan = {action:event.kind === 'ship_loss' ? 'ship_loss' : 'ship', fleetId};
+      } else {
+        const profiles = FleetLog.profiles(event, state);
+        if (event.kind !== 'ship' || profiles.length !== 1) return null;
+        plan = {action:'ship_create', shipId:profiles[0].id};
+      }
+      const staged = stageTelemetryEvent(event, plan, latest.settings);
+      if (staged && fleetId) {
+        staged.state.telemetryLinks = D.links(staged.state.telemetryLinks);
+        for (const [key, value] of Object.entries(staged.state.telemetryLinks.ships)) {
+          if (value === fleetId) delete staged.state.telemetryLinks.ships[key];
+        }
+        staged.state.telemetryLinks.ships[FleetLog.bindingKey(event)] = fleetId;
+      }
+      return staged;
+    });
+  }
+  function decideFleetLoss(fleetId, lossId, choice) {
+    return fleetAction(() => {
+      const copy = cloneData(state), entry = copy.fleet.find(item => item.id === fleetId);
+      const date = entry?.logLoss ? formatDateForInput(new Date(entry.logLoss.at)) : '';
+      return FleetLog.decideLoss(copy, fleetId, lossId, choice, date) ? {state:soloCleanState(copy), telemetryIds:[]} : null;
+    });
+  }
+  function shipRow(event, label) {
+    const row = document.createElement('div'); row.className = 'fleet-log-entry';
+    const caption = document.createElement('p'); caption.textContent = label; row.append(caption);
+    const available = FleetLog.candidates(event, state);
+    if (available.length) {
+      const select = document.createElement('select'); select.setAttribute('aria-label', say('Eigenes Flottenschiff', 'Own fleet ship'));
+      select.append(new Option(say('Vorhandenes Schiff auswählen …', 'Choose existing ship …'), ''));
+      for (const entry of available) select.append(new Option(formatFleetEntryDisplayName(entry), entry.id));
+      row.append(select);
+      const bind = document.createElement('button'); bind.type = 'button'; bind.className = 'secondary-button'; bind.disabled = true;
+      bind.textContent = say('Diese Instanz zuordnen', 'Link this instance');
+      select.addEventListener('change', () => {bind.disabled = !select.value;});
+      bind.addEventListener('click', () => chooseShip(event.id, select.value)); row.append(bind);
+    }
+    if (event.kind === 'ship' && FleetLog.identity(event) && FleetLog.profiles(event, state).length === 1
+        && !state.fleet.some(entry => FleetLog.sameIdentity(entry.logIdentity, event))) {
+      const add = document.createElement('button'); add.type = 'button'; add.className = 'secondary-button';
+      add.textContent = say('Als zusätzliches Schiff aufnehmen', 'Add as an additional ship');
+      add.addEventListener('click', () => chooseShip(event.id, '')); row.append(add);
+    }
+    const ignore = document.createElement('button'); ignore.type = 'button'; ignore.className = 'secondary-button';
+    ignore.textContent = say('Meldung ignorieren', 'Ignore report');
+    ignore.addEventListener('click', () => fleetAction(() => stageTelemetryEvent(event, {action:'discard'}, latest.settings)));
+    row.append(ignore); inbox.append(row);
+  }
   function renderStatus() {
     if (!latest) return;
+    const shipSignature = JSON.stringify([latest.enabled, latest.live, latest.player, latest.ship, latest.shipPresence,
+      latest.location, latest.lastLocation, latest.locationContext, latest.settings.logAutoLocation, latest.settings.gameChannel]);
+    if (shipSignature !== renderedShip && !soloEditing()) {
+      renderedShip = shipSignature;
+      getAppViewRenderer().invalidate(['hub','run','cargo-overview']);
+      getAppViewRenderer().render();
+    }
+    window.fleetLogUi?.render();
+    const fleetMessage = document.getElementById('fleetLogMessage');
+    fleetMessage.textContent = issue; fleetMessage.hidden = !issue;
     status.textContent = issue || (!latest.enabled ? say('Log-Erkennung ausgeschaltet', 'Log reading disabled')
       : latest.error === 'directory_required' ? say('Bitte Star-Citizen-Programmordner angeben.', 'Enter the Star Citizen installation folder.')
       : latest.error ? say('Game.log im gewählten Ordner und Spielkanal nicht lesbar.', 'Cannot read Game.log in the selected folder and channel.')
       : latest.live ? say('Spiel verbunden', 'Game connected') : say('Kein aktuelles Spielsignal – letzte Erkennung:', 'No live game signal — last detection:'));
     const details = document.getElementById('soloTelemetryDetails');
     const location = D.resolveLocation(latest.location, places(), D.links(state.telemetryLinks).locations);
-    details.textContent = [latest.player, latest.ship?.name, location ?? latest.location,
+    const position = D.locationContext(latest.locationContext);
+    const locationDetail = location || latest.location || (latest.live && position.kind === 'space'
+      ? [say('Im All', 'In space'), position.near || position.system].filter(Boolean).join(' · ')
+      : latest.live && position.kind === 'travel' ? say('Unterwegs', 'En route') : '');
+    details.textContent = [latest.player, latest.ship ? `${latest.ship.name} · ${latest.ship.owner}` : '', locationDetail,
       latest.at ? new Date(latest.at).toLocaleString() : '', latest.path].filter(Boolean).join(' · ');
     const badge = document.getElementById('runTelemetryStatus');
     badge.hidden = !latest.enabled;
     badge.textContent = latest.live ? say('Game.log verbunden · automatische Erkennung', 'Game.log connected · automatic detection')
       : say('Game.log: keine aktuellen Daten', 'Game.log: no live data');
+    const pendingLosses = state.fleet.filter(entry => entry.logLoss?.status === 'pending').length;
+    if (pendingLosses) {
+      badge.hidden = false;
+      badge.textContent += ` · ${pendingLosses} ${say('Verlustmeldung(en) in der Flotte prüfen', 'loss report(s) to review in Fleet')}`;
+    }
+    if (latest.events.some(event => event.kind === 'ship_loss' && decision(event).reason === 'ship_loss_link')) {
+      badge.hidden = false; badge.textContent += say(' · Verlustmeldung unter Spiel-Log zuordnen', ' · Link a loss report in Game log settings');
+    }
     const snapshot = D.balance(state.telemetryBalance);
     const ledger = (state.ledgerEntries || []).reduce((sum, entry) => sum + (entry.flow === 'expense' ? -1 : 1) * (Number(entry.amountAuec) || 0), 0);
     const text = snapshot ? `${say('Spielkontostand', 'Game balance')}: ${snapshot.amount.toLocaleString()} aUEC · ${new Date(snapshot.at).toLocaleString()} · ${say('Differenz zur Buchhaltung', 'Difference from ledger')}: ${(snapshot.amount - ledger).toLocaleString()} aUEC`
@@ -96,7 +197,7 @@
         ? `${Number(event.amount).toLocaleString()} aUEC · ${state.missions.find(item => item.id === plan.missionId)?.title || event.missionId}`
         : event.name || event.value || event.objectiveId || event.missionId || event.kind;
       const label = `${say(...(reasons[plan.reason] || ['Zuordnung offen', 'Unmatched']))}: ${description}`;
-      if (plan.reason === 'ship') selectRow(label, getActiveFleetEntries().map(entry => ({id:entry.id, name:formatFleetEntryDisplayName(entry)})), saved.ships[plan.bindingKey], 'ships', plan.bindingKey);
+      if (['ship_instance','ship_new','ship_loss_link'].includes(plan.reason)) shipRow(event, `${label} · ${event.owner} · ${event.entityId || ''}`);
       else if (plan.reason === 'location') selectRow(label, places().map(place => ({id:place.name, name:place.name})), saved.locations[plan.bindingKey], 'locations', plan.bindingKey);
       else if (plan.reason === 'objective') {
         const mission = state.missions.find(item => item.id === plan.missionId);
@@ -134,7 +235,9 @@
           const ticket = getSoloSync().checkpoint();
           const staged = stageTelemetryEvent(event, superseded ? {action:'discard'} : plan, latest.settings);
           if (!staged) { issue = say(...reasons[plan.action === 'payment' ? 'payment_failed' : 'grid']); continue; }
-          if (await getSoloSync().commitImports(staged, ticket)) latest.events = latest.events.filter(item => item.id !== event.id);
+          const committed = staged.telemetryIds.length ? await getSoloSync().commitImports(staged, ticket)
+            : await getSoloSync().commitChange(staged.state, ticket);
+          if (committed) latest.events = latest.events.filter(item => !staged.telemetryIds.includes(item.id));
           break;
         }
       }
@@ -192,6 +295,8 @@
   }
   document.getElementById('uiLanguageSelect')?.addEventListener('change', translate);
   window.addEventListener('pywebviewready', updateFolderPicker);
-  window.soloTelemetry = {refresh, render:renderStatus};
+  window.soloTelemetry = {refresh, render:renderStatus, decideFleetLoss,
+    currentShip:() => FleetLog.hubShip(latest || {}, state, currentActiveFleetEntry(), getSoloPilotProfile()?.name),
+    locationStatus:() => D.locationStatus(state, latest || {}, places())};
   translate(); void refresh(); setInterval(refresh, 2000);
 })();

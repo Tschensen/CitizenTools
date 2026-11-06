@@ -652,6 +652,21 @@ function applyFleetWipe() {
   return true;
 }
 
+function renderFleetCardIdentity(entry, shipType, factsMarkup = "") {
+  const pledgeTooltip = fleetText("fleet.card.pledgeTooltip", "Mit Echtgeld gekauft");
+  return `
+    <div class="fleet-roster-media">
+      ${renderShipProfileMedia(getFleetMediaEntry(entry, shipType), "fleet-card-media")}
+      ${entry.pledgePurchased ? `<span class="fleet-pledge-badge tooltip-button" data-tooltip="${escapeHtml(pledgeTooltip)}" aria-label="${escapeHtml(pledgeTooltip)}">€</span>` : ""}
+    </div>
+    <div class="fleet-card-copy fleet-roster-identity">
+      <span class="fleet-card-eyebrow">${escapeHtml(entry.manufacturer)}</span>
+      <h3>${escapeHtml(entry.model)}</h3>
+      <p class="fleet-registration${entry.registration ? "" : " fleet-registration-placeholder"}">${escapeHtml(formatFleetRegistration(entry))}</p>
+      ${factsMarkup ? `<div class="fleet-roster-facts">${factsMarkup}</div>` : ""}
+    </div>`;
+}
+
 function renderFleetCard(entry) {
   const shipType = findShipLibraryEntryById(entry.shipId);
   const dispatcherMode = typeof isDispatcherMode === "function" && isDispatcherMode();
@@ -659,16 +674,13 @@ function renderFleetCard(entry) {
   const activeClass = entry.status === "active" ? " is-active-entry" : "";
   const isExpanded = expandedFleetCardId === entry.id;
   const notesMarkup = entry.notes ? `<p class="fleet-card-notes">${escapeHtml(entry.notes)}</p>` : "";
-  const registrationClass = entry.registration ? "" : " fleet-registration-placeholder";
   const ownerName = String(entry.ownerName || "").trim();
   const pilotName = getFleetEntryPilotName(entry);
-  const pledgePurchased = Boolean(entry.pledgePurchased);
   const detailsId = `fleet-card-details-${entry.id}`;
   const statusBadgeMarkup =
     entry.status === "active"
       ? ""
       : `<span class="fleet-status-badge fleet-status-${escapeHtml(entry.status)}">${escapeHtml(getFleetStatusLabel(entry.status))}</span>`;
-  const pledgeTooltip = fleetText("fleet.card.pledgeTooltip", "Mit Echtgeld gekauft");
   const gridSummary = shipType ? getShipGridSummary(shipType) : null;
   const officialCargo = gridSummary ? gridSummary.official.totalScu || Number(shipType?.cargoScu) || 0 : 0;
   const maxCargo = gridSummary ? Math.max(officialCargo, gridSummary.total.totalScu || 0) : 0;
@@ -686,19 +698,7 @@ function renderFleetCard(entry) {
     <article class="fleet-card fleet-roster-card${activeClass}${isCurrentActiveShip ? " is-current-ship" : ""}${isExpanded ? " is-expanded" : ""}" data-fleet-id="${entry.id}">
       <div class="fleet-roster-main">
         <button class="fleet-roster-open" type="button" aria-label="${escapeHtml(fleetText("fleet.dossier.open", "Schiffsakte für {ship} öffnen", { ship: `${entry.manufacturer} ${entry.model}` }))}">
-          <div class="fleet-roster-media">
-            ${renderShipProfileMedia(getFleetMediaEntry(entry, shipType), "fleet-card-media")}
-            ${pledgePurchased ? `<span class="fleet-pledge-badge tooltip-button" data-tooltip="${escapeHtml(pledgeTooltip)}" aria-label="${escapeHtml(pledgeTooltip)}">€</span>` : ""}
-          </div>
-          <div class="fleet-card-copy fleet-roster-identity">
-            <span class="fleet-card-eyebrow">${escapeHtml(entry.manufacturer)}</span>
-            <h3>${escapeHtml(entry.model)}</h3>
-            <p class="fleet-registration${registrationClass}">${escapeHtml(formatFleetRegistration(entry))}</p>
-            <div class="fleet-roster-facts">
-              ${statusBadgeMarkup}
-              ${quickFacts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join("")}
-            </div>
-          </div>
+          ${renderFleetCardIdentity(entry, shipType, statusBadgeMarkup + quickFacts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join(""))}
         </button>
         <div class="fleet-card-actions">
           ${renderFleetActionIconButton({
@@ -1672,7 +1672,12 @@ function registerFleetEvents() {
     const nextEntry = createFleetEntry({
       ...draft,
       createdAt: existingEntry?.createdAt,
+      logIdentity: existingEntry?.shipId === draft.shipId ? existingEntry.logIdentity : null,
+      logLoss: existingEntry?.shipId === draft.shipId ? existingEntry.logLoss : null,
     });
+    if (nextEntry.logLoss && nextEntry.status !== existingEntry?.status) {
+      nextEntry.logLoss.status = nextEntry.status === 'destroyed' ? 'confirmed' : 'dismissed';
+    }
     const replacementEntry = replacementDecision?.createReplacement
       ? createFleetReplacementEntry(nextEntry, replacementDecision.registration)
       : null;

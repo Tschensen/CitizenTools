@@ -13,6 +13,7 @@ from shared.game_log import GameLogParser
 
 CHANNELS = ('LIVE', 'PTU', 'EPTU', 'HOTFIX')
 DEFAULTS = {'logEnabled': False, 'gameDirectory': '', 'gameChannel': 'LIVE', 'logAutoShip': True,
+            'logAutoFleet': False,
             'logAutoLocation': True, 'logAutoRoute': True, 'logAutoComplete': False, 'logAutoPayment': False,
             'balanceOcrEnabled': False}
 
@@ -168,15 +169,19 @@ class Telemetry:
                 if self.parser.connected and -5 <= seconds_since(self.parser.last_at) < 120:
                     if self.parser.ship:
                         new_events.append(self.parser.event('ship', self.parser.last_at, **self.parser.ship))
-                    if self.parser.location:
-                        new_events.append(self.parser.event('location', self.parser.last_at, value=self.parser.location))
+                    # A fresh session with no known location must also clear a
+                    # station retained by the planner from an earlier session.
+                    new_events.append(self.parser.location_event(self.parser.last_at))
             for event in new_events:
+                event['channel'] = settings.get('gameChannel', 'LIVE')
                 if event['kind'] in ('accepted', 'objective_text', 'ship_exit', 'disconnected'):
                     continue
                 # Semantic objective IDs are stable even when the game repeats
                 # the same completed objective with a different timestamp.
                 if event['kind'] in ('objective', 'completed', 'payment'):
                     event['id'] = event['kind'] + ':' + event['missionId'] + ':' + event.get('objectiveId', '')
+                if event['kind'] == 'ship_loss':
+                    event['id'] = 'ship_loss:' + event['channel'] + ':' + event['entityId']
                 self.enqueue(event)
 
     def snapshot(self):
@@ -188,11 +193,14 @@ class Telemetry:
             result = {'enabled': enabled, 'live': fresh, 'error': self.error,
                       'path': str(self.path or ''),
                       'player': self.parser.player, 'ship': copy.deepcopy(self.parser.ship),
+                      'shipPresence': self.parser.ship_presence, 'shipAt': self.parser.ship_at,
                       'session': self.parser.session,
                       'location': self.parser.location or '', 'at': self.parser.last_at,
+                      'lastLocation': self.parser.last_location,
+                      'locationContext': self.parser.position.context(),
                       'contracts': list(copy.deepcopy(self.parser.contracts).values())[-100:]}
         with self.connect() as connection:
-            rows = connection.execute("SELECT payload FROM telemetry_events WHERE status='pending' AND julianday(at) >= julianday('now','-15 minutes') ORDER BY at,id LIMIT 100").fetchall()
+            rows = connection.execute("SELECT payload FROM telemetry_events WHERE status='pending' AND (kind='ship_loss' OR julianday(at) >= julianday('now','-15 minutes')) ORDER BY at,id LIMIT 100").fetchall()
             result['events'] = [json.loads(row[0]) for row in rows]
         return result
 

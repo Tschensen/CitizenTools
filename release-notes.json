@@ -1,5 +1,30 @@
 [
   {
+    "version": "0.10.0",
+    "de": {
+      "title": "Schiffserkennung und Verlustmeldungen",
+      "changes": [
+        "Eigene Schiffe anhand von Besitzer, Spielkanal und beobachteter Schiffs-ID mit der Flotte verbinden.",
+        "Neue eigene Modelle optional aus der Schiffsdatenbank aufnehmen; geänderte Instanzen bleiben zur Zuordnung offen.",
+        "Schiffsverluste in der Flotte prüfen, als zerstört markieren, ignorieren oder zurücknehmen.",
+        "Besitzer direkt beim aktuellen Schiff auf der Startseite anzeigen; Verlustmeldungen als Schiffskarten mit Bild und Registrierung darstellen.",
+        "Nach dem Aussteigen bleibt das Beladeschiff ausgewählt. Unbekannte und zuletzt bestätigte Standorte werden klar unterschieden.",
+        "Bestätigte Landeorte trotz interner Bereichswechsel erhalten; geprüfte Planeten-/Mondbereiche, Im All und Unterwegs getrennt anzeigen."
+      ]
+    },
+    "en": {
+      "title": "Ship identity and loss reports",
+      "changes": [
+        "Link own ships to the fleet using owner, game channel and observed ship instance ID.",
+        "Optionally add newly detected own models from the ship database; changed instances require review.",
+        "Review ship losses in Fleet, mark ships as destroyed, ignore reports or reverse the marking.",
+        "Show the owner on the current ship on the home page; present loss reports as ship cards with an image and registration.",
+        "Leaving a ship preserves the loading selection. Unknown and last confirmed locations are shown separately.",
+        "Preserve confirmed landing locations across internal area changes; distinguish verified planet/moon regions, In space and En route."
+      ]
+    }
+  },
+  {
     "version": "0.9.0",
     "de": {
       "title": "Finanz-Schnellwahl",

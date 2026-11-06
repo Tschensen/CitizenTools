@@ -388,6 +388,8 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
             notes: entry.notes,
             shipId,
             createdAt: entry.createdAt,
+            logIdentity: entry.logIdentity,
+            logLoss: entry.logLoss,
           })};
         })
         .filter((entry) => entry.manufacturer && entry.model && entry.acquiredOn)
@@ -514,6 +516,7 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
     currentLocation: String(input?.currentLocation || "").trim(),
     telemetryLinks: typeof TelemetryDomain !== 'undefined' ? TelemetryDomain.links(input?.telemetryLinks) : {},
     telemetryBalance: typeof TelemetryDomain !== 'undefined' ? TelemetryDomain.balance(input?.telemetryBalance) : null,
+    telemetryLocation: typeof TelemetryDomain !== 'undefined' ? TelemetryDomain.locationObservation(input?.telemetryLocation) : null,
     selectedRunRoutePointKey: String(input?.selectedRunRoutePointKey || "").trim(),
     runPriorityRouteLocation: String(input?.runPriorityRouteLocation || "").trim(),
     runHomeDestinations: Object.fromEntries(fleet.map(entry => [entry.id,

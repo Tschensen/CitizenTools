@@ -567,10 +567,28 @@ function renderCurrentLocationControl() {
   if (dispatcherMode) return;
 
   const location = String(state.currentLocation || "").trim();
+  const observation = window.soloTelemetry?.locationStatus() || {kind:location ? 'selected' : 'unknown'};
+  const detected = observation.kind === 'space' ? [t('location.space'), observation.near || observation.system].filter(Boolean).join(' · ')
+    : observation.kind === 'travel' ? t('location.travel')
+    : ['body','place'].includes(observation.kind) && observation.name ? observation.name : t('location.unknown');
+  const label = t(observation.kind === 'stale' ? 'location.lastKnown' : 'hub.location.current');
+  let hint = observation.kind === 'stale' ? t('location.noCurrentConfirmation')
+    : observation.kind === 'confirmed' ? t(observation.scope === 'body' ? 'location.bodyHint' : 'location.logConfirmed')
+    : observation.kind === 'selected' ? t('location.routeSelection')
+    : observation.previous ? t('location.previous', {location:observation.previous})
+    : observation.offline ? t('location.noSignal') : t('location.unknownHint');
+  if (['body','place'].includes(observation.kind)) hint = t('location.unmapped');
+  if (observation.kind === 'space') hint = t('location.spaceHint');
+  if (observation.destination && ['space','travel'].includes(observation.kind)) {
+    hint = [hint, t('location.destination', {location:observation.destination})].filter(Boolean).join(' · ');
+  }
+  document.querySelectorAll('[data-current-location-label]').forEach(node => {node.textContent = label;});
+  document.querySelectorAll('[data-location-status]').forEach(node => {node.textContent = hint;});
   [hubCurrentLocationSelect, runCurrentLocationSelect].filter(Boolean).forEach((select) => {
+    if (document.activeElement === select) return;
     const suggestions = collectLocationSuggestions();
     select.innerHTML = [
-      `<option value="">${escapeHtml(cargoText("hub.location.select", "Standort auswählen"))}</option>`,
+      `<option value="">${escapeHtml(location ? t('location.unknown') : detected)}</option>`,
       ...suggestions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`),
     ].join("");
     select.value = location;
@@ -582,8 +600,8 @@ function renderCurrentLocationControl() {
   if (clearCurrentLocationButton) clearCurrentLocationButton.disabled = !location;
   if (currentLocationHint) {
     currentLocationHint.textContent = location
-      ? cargoText("contracts.route.locationActive", "Die Route beginnt bei {location}.", { location })
-      : cargoText("contracts.route.locationMissing", "Lege den Ausgangspunkt fest, damit die Route dort beginnt.");
+      ? `${cargoText("contracts.route.locationActive", "Die Route beginnt bei {location}.", { location })} ${hint}`
+      : `${detected}. ${hint}`;
   }
 }
 
