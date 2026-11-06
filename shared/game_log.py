@@ -10,10 +10,25 @@ import re
 import uuid
 from datetime import datetime
 
+from shared.log_location import LogLocation
+
 STAMP = re.compile(r'^<([^>]+)>')
 UUID = r'[0-9a-fA-F-]{36}'
 AMOUNT = r'(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]{1,3}(?:\.[0-9]{3})+|[0-9]{1,12})'
 PAYMENT_WINDOW = 2
+
+# These are entity-class prefixes, not persistent ownership identifiers.
+SHIP_MAKERS = {'ORIG': 'Origin', 'RSI': 'RSI', 'MISC': 'MISC', 'DRAK': 'Drake',
+               'ANVL': 'Anvil', 'AEGS': 'Aegis', 'CRUS': 'Crusader', 'ARGO': 'Argo',
+               'CNOU': 'Consolidated Outland', 'GRIN': 'Greycat'}
+
+
+def ship_class_matches(name, class_name):
+    maker, _, model = class_name.partition('_')
+    if maker not in SHIP_MAKERS or not model:
+        return False
+    normalize = lambda value: re.sub(r'[^a-z0-9]', '', value.lower())
+    return normalize(name) in {normalize(SHIP_MAKERS[maker] + model), normalize(maker + model)}
 
 
 def elapsed(later, earlier):
@@ -30,17 +45,86 @@ def clean(value):
 class GameLogParser:
     def __init__(self):
         self.player = ''
+        self.player_id = ''
         self.ship = None
-        self.location = None
+        self.ship_presence = 'unknown'
+        self.ship_at = ''
+        self.position = LogLocation()
         self.connected = False
         self.last_at = ''
         self.contracts = {}
-        self.locations = {}
-        self.location_id = ''
         self.notification = ''
         self.completions = {}
         self.payment_candidate = None
         self.session = uuid.uuid4().hex
+        self.ship_entities = {}
+        self.ship_collisions = {}
+        self.ship_losses = set()
+
+    @property
+    def location(self):
+        return self.position.value
+
+    @property
+    def last_location(self):
+        return self.position.previous
+
+    def location_event(self, at):
+        return self.event('location', at, value=self.location or '', locationContext=self.position.context())
+
+    def bind_ship_entity(self, entity, entity_id, at):
+        """Only bind a locally controlled ship to the current boarding notice."""
+        class_name, _, suffix = entity.rpartition('_')
+        if not self.ship or suffix != entity_id or not ship_class_matches(self.ship['name'], class_name):
+            return []
+        if self.ship.get('entityId') and self.ship['entityId'] != entity_id:
+            return []  # A different instance requires a new boarding notice.
+        changed = self.ship.get('entityId') != entity_id
+        self.ship.update(entityId=entity_id, className=class_name)
+        self.ship_entities[entity_id] = dict(self.ship)
+        if len(self.ship_entities) > 100:
+            self.ship_entities.pop(next(iter(self.ship_entities)))
+        events = [self.event('ship', at, **self.ship)] if changed else []
+        collision = self.ship_collisions.get(entity_id)
+        if collision and 0 <= elapsed(at, collision['at']) <= 5:
+            events += self.ship_loss(entity_id, at, 'fatal_collision', collision['zone'])
+        return events
+
+    def ship_loss(self, entity_id, at, evidence, zone=''):
+        ship = self.ship_entities.get(entity_id)
+        if not ship or not self.player or ship['owner'].casefold() != self.player.casefold() or entity_id in self.ship_losses:
+            return []
+        self.ship_losses.add(entity_id)
+        return [self.event('ship_loss', at, **ship, evidence=evidence, zone=zone)]
+
+    def ship_entity_events(self, line, at):
+        # Generic route updates, spawn lists and nearby entities are NOT local
+        # player evidence. Only explicit local input/control events qualify.
+        navigation = re.search(r'<Player Selected Quantum Target - Local>.*?\| ([A-Za-z0-9_]+)\[(\d+)\]\|', line)
+        if navigation:
+            return self.bind_ship_entity(navigation[1], navigation[2], at)
+        control = re.search(r"<Vehicle Control Flow>.*?Local client node \[(\d+)\] releasing control token for '([^']+)' \[(\d+)\]", line)
+        if control and self.player_id and control[1] == self.player_id:
+            return self.bind_ship_entity(control[2], control[3], at)
+        collision = re.search(r'<FatalCollision> Fatal Collision occu(?:r|rr)ed for vehicle ([A-Za-z0-9_]+) \[.*?Zone: ([^,\]]+), PlayerPilot: [01]\]', line)
+        if collision:
+            entity_id = collision[1].rpartition('_')[2]
+            if entity_id.isdigit():
+                self.ship_collisions[entity_id] = {'at': at, 'zone': collision[2]}
+                if len(self.ship_collisions) > 100:
+                    self.ship_collisions.pop(next(iter(self.ship_collisions)))
+                return self.ship_loss(entity_id, at, 'fatal_collision', collision[2])
+        dead = re.search(r"<\[ActorState\] Dead>.*?Actor '([^']+)' \[(\d+)\] ejected from zone '([^']+)' \[(\d+)\].*?due to previous zone being in a destroyed vehicle", line)
+        if dead and self.player and self.player_id and dead[1] == self.player and dead[2] == self.player_id:
+            events = self.bind_ship_entity(dead[3], dead[4], at)
+            events += self.ship_loss(dead[4], at, 'destroyed_vehicle')
+            if self.ship and self.ship.get('entityId') == dead[4]:
+                self.ship = None
+                self.position.clear_destination()
+                self.ship_presence, self.ship_at = 'outside', at
+                events.append(self.event('ship_exit', at))
+            return events
+        return []
 
     def event(self, kind, at, **data):
         identity = f'{kind}|{at}|{data}'
@@ -83,40 +167,46 @@ class GameLogParser:
             return []
         at = timestamp[1]
         self.last_at = at
-        identity = re.search(r'nickname="([^"]+)"\s+playerGEID=\d+', line)
+        identity = re.search(r'nickname="([^"]+)"\s+playerGEID=(\d+)', line)
         if identity and '<Channel ' in line:
             self.player = identity[1]
+            self.player_id = identity[2]
         if '<Channel Connection Complete>' in line and 'remoteAddr=<local>' not in line:
             self.session = uuid.uuid4().hex
-            self.ship = self.location = None
-            self.location_id = ''
+            self.ship = None
+            self.position = LogLocation()
+            self.ship_presence, self.ship_at = 'unknown', ''
             self.connected = True
             self.contracts.clear()
-            self.locations.clear()
             self.completions.clear()
             self.payment_candidate = None
             self.notification = ''
+            self.ship_entities.clear()
+            self.ship_collisions.clear()
+            self.ship_losses.clear()
+            return [self.location_event(at)]
         if '<Channel Disconnected>' in line and 'remoteAddr=<local>' not in line:
             self.connected = False
+            self.ship = None
+            self.position.clear_destination()
+            self.ship_presence, self.ship_at = 'unknown', ''
+            self.ship_entities.clear()
+            self.ship_collisions.clear()
             self.completions.clear()
             self.payment_candidate = None
             self.notification = ''
             return [self.event('disconnected', at)]
-        found = re.search(r'<RequestLocationInventory> Player\[([^]]+)\] requested inventory for Location\[([^]]+)\]', line)
-        if found and (not self.player or found[1] == self.player):
-            self.player = found[1]
-            self.location = found[2]
+        ship_events = self.ship_entity_events(line, at)
+        location_changed = self.position.feed(line, at, self.player, self.ship)
+        if location_changed:
+            if not self.player:
+                identity = re.search(r'Player\[([^]]+)\]', line)
+                if identity:
+                    self.player = identity[1]
             self.connected = True
-            if self.location_id:
-                self.locations[self.location_id] = self.location
-            return [self.event('location', at, value=self.location)]
-        moved = re.search(r'<Update Inventory Location> Player \[([^]]+)\].*?Location \[\d+\] -> \[(\d+)\]', line)
-        if moved and (not self.player or moved[1] == self.player):
-            self.location_id = moved[2]
-            location = self.locations.get(self.location_id)
-            if location != self.location:
-                self.location = location
-                return [self.event('location', at, value=location or '')]
+            ship_events.append(self.location_event(at))
+        if ship_events:
+            return ship_events
         # Some localized notifications span two timestamped lines. Keep the
         # header until its MissionId/ObjectiveId footer arrives.
         if '<SHUDEvent_OnNotification> Added notification ' in line:
@@ -139,11 +229,15 @@ class GameLogParser:
                 channel = (ship[1] or ship[2]).strip()
                 if ' : ' in channel:
                     name, owner = channel.rsplit(' : ', 1)
+                    self.position.clear_destination()
                     self.ship = {'name': name.strip(), 'owner': owner.strip()}
+                    self.ship_presence, self.ship_at = 'aboard', at
                     return [self.event('ship', at, **self.ship)]
             left = re.search(r"(?:You have left the channel '([^']+)'|Du hast (?:den )?Kanal \[\s*([^]]+)\]\s*verlassen)", line)
-            if left and self.ship and self.ship['name'] in (left[1] or left[2]):
+            if left and self.ship and (left[1] or left[2]).strip() == f"{self.ship['name']} : {self.ship['owner']}":
                 self.ship = None
+                self.position.clear_destination()
+                self.ship_presence, self.ship_at = 'outside', at
                 return [self.event('ship_exit', at)]
             accepted = re.search(r'(?:Auftrag angenommen|Contract Accepted):\s*(.*?)".*?MissionId: \[(' + UUID + r')\]', line)
             if accepted:

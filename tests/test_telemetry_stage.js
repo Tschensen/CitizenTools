@@ -6,7 +6,7 @@ const D = require('../web/scripts/telemetry-domain.js');
 const progress = require('../web/scripts/delivery-progress.js');
 const copy = value => JSON.parse(JSON.stringify(value));
 function fixture() {
-  const c = {console, Date, Map, Set, TelemetryDomain:D, DeliveryProgress:progress,
+  const c = {console, Date, Map, Set, TelemetryDomain:D, FleetLog:require('../web/scripts/fleet-log.js'), DeliveryProgress:progress,
     cloneData:copy, sanitizeState:copy, soloCleanState:copy,
     state:{activeFleetEntryId:'ship', currentLocation:'A', selectedRunRoutePointKey:'old',
       fleet:[{id:'ship'}],layout:{rows:4,cols:4},ledgerEntries:[],stopHistory:[],runCompletedRoutePoints:[],
@@ -33,6 +33,21 @@ function fixture() {
   return c;
 }
 const event = {id:'event',at:'2026-10-31T12:00:00Z'};
+
+test('space observations persist context and clear route selection without confirming or consuming a destination', () => {
+  const c=fixture();
+  c.consumeRunRoutePriority=()=>{throw Error('A space region is not a route arrival');};
+  c.buildRunRouteState=()=>{throw Error('A space region is not a route arrival');};
+  const before=copy(c.state);
+  const observation={...event,kind:'location',value:'',session:'trip',
+    locationContext:{kind:'space',system:'Stanton',near:'CRU-L4',destination:'RR_CRU_L1',previous:'Orison',at:event.at}};
+  const staged=c.stageTelemetryEvent(observation,{action:'location',value:''},{logAutoRoute:true});
+  assert.equal(staged.state.currentLocation,''); assert.equal(staged.state.selectedRunRoutePointKey,'');
+  assert.deepEqual(staged.state.missions,before.missions);
+  assert.equal(staged.state.telemetryLocation.locationContext.kind,'space');
+  assert.equal(staged.state.telemetryLocation.locationContext.destination,'RR_CRU_L1');
+  assert.deepEqual(c.state,before);
+});
 
 function paymentFixture() {
   const c=fixture(); c.window={CalendarDate:require('../web/scripts/calendar-date.js')};
@@ -178,4 +193,67 @@ test('ship staging applies the existing grid synchronously and restores state on
   c.pruneInvalidPlacements=()=>{throw Error('invalid grid');};
   assert.throws(()=>c.stageTelemetryEvent(event,{action:'ship',fleetId:'next'},{}),/invalid grid/);
   assert.deepEqual(c.state,before);
+});
+
+function fleetFixture() {
+  const c=fixture();
+  Object.assign(c, {FLEET_STATUS_LABELS:{active:'Active',destroyed:'Destroyed'},
+    normalizeRefuelContainerSizeList:()=>[], normalizePositiveDecimal:()=>null,
+    normalizeShipImageUrl:value=>value || '', normalizeDateInput:value=>value || '',
+    getSoloPilotProfile:()=>({id:'pilot',name:'Pilot'}),
+    getShipEntryDisplayName:profile=>profile.model,
+    formatDateForInput:date=>date.toISOString().slice(0,10), syncLayoutToActiveFleetShip:()=>{}});
+  const app=fs.readFileSync(require.resolve('../web/app.js'),'utf8');
+  vm.runInContext(app.slice(app.indexOf('function createFleetEntry('),app.indexOf('function getGridHeightAt(')),c);
+  c.state.shipLibrary=[{id:'profile',manufacturer:'Origin',model:'400i'}];
+  c.state.fleet=[c.createFleetEntry({id:'ship',manufacturer:'Origin',model:'400i',shipId:'profile',acquiredOn:'2026-01-01'})];
+  return c;
+}
+const ownedShip={...event,kind:'ship',name:'Origin 400i',player:'Pilot',owner:'Pilot',entityId:'123',className:'ORIG_400i',channel:'LIVE'};
+test('real fleet factory retains identity and review metadata through edit/reload',()=>{
+  const c=fleetFixture();
+  let staged=c.stageTelemetryEvent(ownedShip,{action:'ship',fleetId:'ship'},{});
+  assert.equal(staged.state.fleet[0].logIdentity.entityId,'123');
+  c.state=staged.state;
+  staged=c.stageTelemetryEvent({...ownedShip,id:'loss',kind:'ship_loss',evidence:'fatal_collision'},{action:'ship_loss',fleetId:'ship'},{});
+  assert.equal(staged.state.fleet[0].status,'active');
+  assert.equal(staged.state.fleet[0].logLoss.status,'pending');
+  const reloaded=c.createFleetEntry({...staged.state.fleet[0],registration:'edited'});
+  assert.equal(reloaded.logIdentity.entityId,'123');assert.equal(reloaded.logLoss.id,'loss');
+  assert.deepEqual(staged.state.missions,c.state.missions);assert.deepEqual(staged.state.ledgerEntries,c.state.ledgerEntries);
+});
+test('new own ship uses the known database profile without a purchase booking and cannot duplicate an instance',()=>{
+  const c=fleetFixture(), before=copy(c.state);
+  const staged=c.stageTelemetryEvent(ownedShip,{action:'ship_create',shipId:'profile'},{});
+  assert.equal(staged.state.fleet.length,2);
+  const ship=staged.state.fleet[0];
+  assert.equal(ship.shipId,'profile');assert.equal(ship.ownerName,'Pilot');assert.equal(ship.logIdentity.entityId,'123');
+  assert.equal(ship.acquiredOn,'2026-10-31');
+  assert.deepEqual(staged.state.ledgerEntries,before.ledgerEntries);assert.deepEqual(copy(c.state),before);
+  c.state=staged.state;
+  assert.equal(c.stageTelemetryEvent(ownedShip,{action:'ship_create',shipId:'profile'},{}),null);
+  assert.equal(c.stageTelemetryEvent({...ownedShip,owner:'Other',entityId:'456'},{action:'ship_create',shipId:'profile'},{}),null);
+});
+
+test('an old loss cannot be staged against a replacement instance, including an explicit mapping',()=>{
+  const c=fleetFixture();
+  c.state=c.stageTelemetryEvent({...ownedShip,entityId:'456'},{action:'ship',fleetId:'ship'},{}).state;
+  const before=copy(c.state);
+  assert.equal(c.stageTelemetryEvent({...ownedShip,id:'old-loss',kind:'ship_loss',evidence:'fatal_collision'},
+    {action:'ship_loss',fleetId:'ship'},{}),null);
+  assert.deepEqual(copy(c.state),before);
+});
+
+test('departure clears the route location without changing loading selection, cargo or completed route points',()=>{
+  for (const action of ['location','location_unresolved']) {
+    const c=fixture(),before=copy(c.state);
+    c.consumeRunRoutePriority=()=>{throw Error('Unknown locations must not advance the route');};
+    const staged=c.stageTelemetryEvent({...event,value:action==='location' ? '' : 'UnknownCode'}, {action,value:''}, {logAutoRoute:true});
+    assert.equal(staged.state.currentLocation,'');assert.equal(staged.state.selectedRunRoutePointKey,'');
+    assert.equal(staged.state.activeFleetEntryId,before.activeFleetEntryId);
+    assert.deepEqual(staged.state.missions,before.missions);assert.deepEqual(staged.state.layout,before.layout);
+    assert.deepEqual(staged.state.runCompletedRoutePoints,before.runCompletedRoutePoints);
+    assert.equal(staged.telemetryIds.length,action==='location' ? 1 : 0);
+    assert.deepEqual(c.state,before);
+  }
 });

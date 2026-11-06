@@ -101,7 +101,15 @@ body::before {
 :is(.hub-ship-media, .ship-card-media) .ship-profile-media-fallback { justify-self: end; margin-right: 4%; width: 68%; height: 100%; min-height: 0; color: rgba(var(--flight-rgb), 0.22); }
 :is(.hub-ship-media, .ship-card-media) .ship-profile-media-fallback svg { height: 100%; }
 :is(.hub-ship-media, .ship-card-media).has-image:not(.is-image-error) .ship-profile-media-fallback { visibility: hidden; }
-.hub-ship-card > :is(.hub-summary-heading, strong, small) { position: relative; z-index: 1; }
+.hub-ship-card > :is(.hub-summary-heading, strong, small, .hub-ship-ownership) { position: relative; z-index: 1; }
+.flight-deck-panel .hub-ship-card .hub-ship-ownership { display: flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--muted-strong); font-size: .76rem; line-height: 1.4; text-transform: none; letter-spacing: normal !important; overflow-wrap: anywhere; }
+.hub-ship-ownership::before { content: ""; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
+.hub-ship-card .hub-ship-ownership[data-ownership="own"] { color: var(--flight-cyan); }
+.hub-ship-card .hub-ship-ownership[data-ownership="other"] { color: var(--flight-amber); }
+.hub-ship-presence { margin-top: 5px; }
+.location-observation { display: block; color: var(--muted); font-size: .74rem; line-height: 1.4; font-weight: 400; overflow-wrap: anywhere; }
+.hub-location-field .location-observation { grid-column: 2; text-align: right; }
+@media (max-width: 620px) { .hub-location-field .location-observation { grid-column: 1 / -1; text-align: left; } }
 .ship-art-card > :not(.ship-card-art) { position: relative; z-index: 1; }
 .mission-ship-card .ship-card-art { left: auto; right: min(20%, 180px); width: min(340px, 65%); opacity: .8; }
 .mission-ship-card .ship-card-art::after { background: linear-gradient(90deg, #0a1828, #0a182855 55%, #0a1828b0); }
@@ -391,3 +399,12 @@ body::before {
 .telemetry-link-row select { min-width:0; width:100%; }
 .telemetry-status, .telemetry-balance { padding:10px 14px; border-left:3px solid var(--flight-cyan, #62b7e6); background:rgba(98,183,230,.06); font-size:.85rem; overflow-wrap:anywhere; }
 @media (max-width:700px) { .telemetry-link-row { grid-template-columns:1fr; } }
+.fleet-log-panel { margin-bottom: 16px; }
+.fleet-loss-card[data-loss-status="pending"] { border-color: rgba(239, 189, 114, .4); }
+.fleet-loss-card .fleet-card-actions { flex-wrap: wrap; max-width: 460px; }
+.fleet-loss-card .fleet-roster-facts .fleet-loss-status { color: var(--flight-amber); }
+@media (max-width: 920px) { .fleet-loss-card .fleet-card-actions { max-width: none; } }
+.fleet-log-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 0; border-bottom: 1px solid rgba(135, 175, 205, .2); }
+.fleet-log-entry > strong, .fleet-log-entry > p, .fleet-log-entry > details { flex-basis: 100%; margin: 0; overflow-wrap: anywhere; }
+.fleet-log-entry > select { min-width: 0; max-width: 100%; }
+.fleet-log-entry:last-child { border-bottom: 0; }

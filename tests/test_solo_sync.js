@@ -242,6 +242,22 @@ test('telemetry-only commits carry the acknowledgement with the new state', asyn
   assert.deepEqual(f.writes[0].telemetryIds,['log-event']);
   assert.equal(f.state.currentLocation,'Orison');
 });
+test('review decisions commit without an inbox ID and adopt only the confirmed server snapshot', async()=>{
+  const f=await fixture({initial:{fleet:[{id:'ship',status:'active'}]}});
+  const staged={fleet:[{id:'ship',status:'destroyed'}]};
+  assert.equal(await f.sync.commitChange(staged,f.sync.checkpoint()),true);
+  assert.equal(f.state.fleet[0].status,'destroyed');
+  assert.equal(f.writes.length,1);
+  f.transport.fetch=async()=>response(409,{state:{fleet:[{id:'ship',status:'sold'}]},updatedAt:'r3'});
+  assert.equal(await f.sync.commitChange({fleet:[{id:'ship',status:'active'}]},f.sync.checkpoint()),false);
+  assert.equal(f.state.fleet[0].status,'destroyed');
+});
+test('a stale review decision cannot overwrite intervening local changes', async()=>{
+  const f=await fixture(), ticket=f.sync.checkpoint();
+  f.edit({...f.state,marker:'edited'}); await f.sync.flush();
+  assert.equal(await f.sync.commitChange({marker:'old'},ticket),false);
+  assert.equal(f.state.marker,'edited');
+});
 test('restoration invalidates old network responses before hydrating the replacement state', async()=>{
   const f=await fixture(), gate=deferred();let calls=0;
   f.transport.fetch=async()=>++calls===1?gate.promise:response(200,{state:{missions:[],marker:'restored'},updatedAt:'r9'});

@@ -1,10 +1,12 @@
 // Conservative matching. Decisions are pure; the view stages all mutations
 // before committing them with the event acknowledgement in one transaction.
 (function(root) {
+  const FleetLog = typeof module !== 'undefined' && module.exports ? require('./fleet-log.js') : root.FleetLog;
   const key = value => String(value || '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/g, '');
   // Inventory names observed on arrival at these stations. Resolve against
   // existing locations so archived or renamed entries are not recreated.
-  const inventoryLocations = {RR_CRU_LEO:'Seraphim Station', RR_CRU_L4:'CRU-L4 Shallow Fields Station'};
+  const inventoryLocations = {RR_CRU_LEO:'Seraphim Station', RR_CRU_L4:'CRU-L4 Shallow Fields Station',
+    RR_CRU_L1:'CRU-L1 Ambitious Dream Station'};
   function links(value) {
     const result = {};
     for (const name of ['ships', 'locations', 'missions', 'objectives']) {
@@ -34,13 +36,16 @@
   }
   function plan(event, state, settings, choices, live, now = Date.now(), context = {}) {
     const age = now - Date.parse(event.at);
-    if (!Number.isFinite(age) || age < -5000 || age > 15 * 60 * 1000) return {action:'discard', reason:'expired'};
+    if (!Number.isFinite(age) || age < -5000 || (event.kind !== 'ship_loss' && age > 15 * 60 * 1000)) return {action:'discard', reason:'expired'};
     const player = context.player || settings.pilotName;
     if (event.player && player && key(event.player) !== key(player)) return {action:'discard', reason:'player'};
     if (['ship', 'location'].includes(event.kind) && event.session && context.session && event.session !== context.session) return {action:'discard', reason:'session'};
     if (event.kind === 'ship' && Object.hasOwn(context, 'ship')
-        && (!context.ship || event.name !== context.ship.name || event.owner !== context.ship.owner)) return {action:'discard', reason:'superseded'};
+        && (!context.ship || event.name !== context.ship.name || event.owner !== context.ship.owner
+          || (event.entityId && event.entityId !== context.ship.entityId))) return {action:'discard', reason:'superseded'};
     if (event.kind === 'location' && Object.hasOwn(context, 'location') && event.value !== context.location) return {action:'discard', reason:'superseded'};
+    if (event.kind === 'location' && event.locationContext?.at && context.locationContext?.at
+        && event.locationContext.at !== context.locationContext.at) return {action:'discard', reason:'superseded'};
     const saved = links(state.telemetryLinks);
     if (event.kind === 'balance') {
       if (!settings.balanceOcrEnabled) return {reason:'disabled'};
@@ -51,17 +56,15 @@
     if (!settings.logEnabled || (!live && ['ship', 'location'].includes(event.kind))) return {reason:'offline'};
     if (event.kind === 'ship') {
       if (!settings.logAutoShip) return {reason:'disabled'};
-      const shipKey = `${event.name}|${event.owner}`;
-      const active = state.fleet.filter(entry => entry.status === 'active' && entry.shipId);
-      const explicit = active.find(entry => entry.id === saved.ships[shipKey]);
-      const matches = explicit ? [explicit] : active.filter(entry =>
-        (!event.owner || key(event.owner) === key(event.player) || key(event.owner) === key(entry.ownerName))
-        && [entry.model, `${entry.manufacturer} ${entry.model}`].some(name => key(name) === key(event.name)));
-      return matches.length === 1 ? {action:'ship', fleetId:matches[0].id} : {reason:'ship', bindingKey:shipKey};
+      return FleetLog.shipPlan(event, state, settings, player || event.player, saved.ships);
     }
+    if (event.kind === 'ship_loss') return FleetLog.lossPlan(event, state, player || event.player, saved.ships);
     if (event.kind === 'location') {
       if (!settings.logAutoLocation) return {reason:'disabled'};
       const value = resolveLocation(event.value, choices, saved.locations);
+      if (value === null && event.id && locationObservation(state.telemetryLocation)?.id !== event.id) {
+        return {action:'location_unresolved', value:''};
+      }
       return value !== null ? {action:'location', value} : {reason:'location', bindingKey:event.value};
     }
     if (!['objective', 'completed', 'payment'].includes(event.kind)) return {action:'discard'};
@@ -103,7 +106,43 @@
     if (!value || !Number.isSafeInteger(value.amount) || value.amount < 0 || !Number.isFinite(Date.parse(value.at))) return null;
     return {amount:value.amount, at:value.at, sourceFile:String(value.sourceFile || '').slice(0, 240)};
   }
-  const api = {key, links, resolveLocation, plan, balance};
+  function locationObservation(value) {
+    if (!value || typeof value.id !== 'string' || !value.id || value.id.length > 200
+        || !Number.isFinite(Date.parse(value.at))) return null;
+    return {id:value.id, at:value.at, raw:String(value.raw || '').slice(0,300),
+      value:String(value.value || '').slice(0,300), session:String(value.session || '').slice(0,100),
+      ...(value.locationContext ? {locationContext:locationContext(value.locationContext)} : {})};
+  }
+  function locationContext(value) {
+    const result = {kind:['place','body','space','travel','unknown'].includes(value?.kind) ? value.kind : 'unknown'};
+    for (const name of ['system','near','destination','previous','at']) result[name] = String(value?.[name] || '').slice(0,300);
+    return result;
+  }
+  function locationName(raw, choices, saved) {
+    return resolveLocation(raw, choices, saved) || inventoryLocations[raw] || raw || '';
+  }
+  function locationStatus(state, context, choices = []) {
+    const current = String(state.currentLocation || '').trim(), observation = locationObservation(state.telemetryLocation);
+    if (current) {
+      if (!observation || observation.value !== current) return {kind:'selected'};
+      const confirmed = context.enabled && context.live && context.settings?.logAutoLocation !== false && context.location === observation.raw
+        && (!observation.session || observation.session === context.session);
+      return {kind:confirmed ? 'confirmed' : 'stale',
+        ...(confirmed && context.locationContext?.kind === 'body' ? {scope:'body'} : {})};
+    }
+    const active = context.enabled && context.settings?.logAutoLocation !== false;
+    const saved = links(state.telemetryLinks).locations;
+    const previous = active && context.live ? locationName(context.lastLocation, choices, saved) : '';
+    if (active && context.live && context.locationContext) {
+      const details = locationContext(context.locationContext);
+      return {...details, previous, name:locationName(context.location, choices, saved),
+        destination:locationName(details.destination, choices, saved), offline:false};
+    }
+    // A disconnected/disabled reader must not display a saved space or travel
+    // observation as the player's current position.
+    return {kind:'unknown', previous:previous || '', offline:Boolean(context.enabled && !context.live)};
+  }
+  const api = {key, links, resolveLocation, plan, balance, locationObservation, locationContext, locationStatus};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TelemetryDomain = api;
 })(globalThis);

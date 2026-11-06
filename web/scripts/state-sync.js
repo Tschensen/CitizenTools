@@ -172,8 +172,8 @@
       if (pending) return flush();
       return refresh();
     }
-    async function commitImports(staged, ticket) {
-      if (!(staged.importIds?.length || staged.telemetryIds?.length) || !canApply(ticket)) return false;
+    async function commitSnapshot(staged, ticket) {
+      if (!canApply(ticket)) return false;
       const token = session;
       const snapshot = store.clean(staged.state);
       const task = (async () => {
@@ -190,6 +190,13 @@
       importing = task;
       try { return await task; } finally { if (importing === task) importing = null; }
     }
+    async function commitImports(staged, ticket) {
+      if (!(staged.importIds?.length || staged.telemetryIds?.length)) return false;
+      return commitSnapshot(staged, ticket);
+    }
+    async function commitChange(state, ticket) {
+      return commitSnapshot({state}, ticket);
+    }
     async function reset() {
       if (pending) store.recover(pending);
       session++;
@@ -202,7 +209,7 @@
       return hydrate();
     }
     return Object.freeze({
-      schedule, save, flush, hydrate, refresh, poll, commitImports, blockForUpdate, reset, checkpoint, canApply,
+      schedule, save, flush, hydrate, refresh, poll, commitImports, commitChange, blockForUpdate, reset, checkpoint, canApply,
       get status() {
         return Object.freeze({ revision, hydrated, initialized, blocked, pending:Boolean(pending),
           saving:Boolean(saving), reading:Boolean(reading), importing:Boolean(importing),

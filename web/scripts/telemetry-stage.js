@@ -5,14 +5,40 @@ function stageTelemetryEvent(event, plan, settings) {
   state = cloneData(state);
   try {
     const mission = state.missions.find(item => item.id === plan.missionId);
-    if (plan.action === 'ship') {
+    if (plan.action === 'ship_create') {
+      const profile = FleetLog.profiles(event, state).find(item => item.id === plan.shipId);
+      const identity = FleetLog.identity(event);
+      if (!profile || !identity || !FleetLog.own(event, event.player)
+          || state.fleet.some(entry => FleetLog.sameIdentity(entry.logIdentity, identity))) return null;
+      const pilot = getSoloPilotProfile();
+      const entry = createFleetEntry({manufacturer:profile.manufacturer, model:getShipEntryDisplayName(profile),
+        shipId:profile.id, acquiredOn:formatDateForInput(new Date(event.at)), createdAt:event.at,
+        ownerName:event.owner, pilotId:pilot?.id || '', pilotName:pilot?.name || event.player,
+        logIdentity:identity});
+      state.fleet.unshift(entry);
+      plan = {...plan, action:'ship', fleetId:entry.id};
+    }
+    if (plan.action === 'ship_loss') {
+      const entry = state.fleet.find(item => item.id === plan.fleetId);
+      if (!entry || entry.status !== 'active' || !FleetLog.identity(event)
+          || !FleetLog.own(event, event.player) || entry.logLoss?.id === event.id
+          || (FleetLog.identity(entry.logIdentity) && !FleetLog.sameIdentity(entry.logIdentity, event))) return null;
+      entry.logIdentity = FleetLog.identity(event);
+      entry.logLoss = FleetLog.loss({id:event.id, at:event.at, identity:entry.logIdentity,
+        status:'pending', evidence:event.evidence, zone:event.zone});
+    } else if (plan.action === 'ship') {
+      const entry = state.fleet.find(item => item.id === plan.fleetId);
+      if (entry && typeof FleetLog !== 'undefined' && FleetLog.identity(event)) entry.logIdentity = FleetLog.identity(event);
       state.activeFleetEntryId = plan.fleetId;
       // This function executes synchronously unless confirmation is requested.
       syncLayoutToActiveFleetShip({persistChanges:false});
       state.selectedRunRoutePointKey = '';
-    } else if (plan.action === 'location') {
+    } else if (['location','location_unresolved'].includes(plan.action)) {
       state.currentLocation = plan.value;
-      if (settings.logAutoRoute) {
+      state.telemetryLocation = TelemetryDomain.locationObservation({id:event.id,at:event.at,raw:event.value,
+        value:plan.value,session:event.session,locationContext:event.locationContext});
+      if (!plan.value) state.selectedRunRoutePointKey = '';
+      if (settings.logAutoRoute && plan.value) {
         consumeRunRoutePriority(plan.value);
         const route = buildRunRouteState();
         const point = route.openPoints.find(item => TelemetryDomain.key(item.dropoff) === TelemetryDomain.key(plan.value));
@@ -62,6 +88,6 @@ function stageTelemetryEvent(event, plan, settings) {
     } else if (plan.action === 'balance') {
       state.telemetryBalance = TelemetryDomain.balance(event);
     }
-    return {state:soloCleanState(state), telemetryIds:[event.id]};
+    return {state:soloCleanState(state), telemetryIds:plan.action === 'location_unresolved' ? [] : [event.id]};
   } finally { state = previous; lastUnloadPlan = oldPlan; }
 }
