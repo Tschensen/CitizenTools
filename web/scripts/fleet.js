@@ -1155,6 +1155,8 @@ function renderFleetDossier() {
         <div class="fleet-dossier-heading-meta">
           <span class="fleet-status-badge fleet-status-${escapeHtml(entry.status)}">${escapeHtml(getFleetStatusLabel(entry.status))}</span>
           ${shipType?.shipClass ? `<span>${escapeHtml(getShipClassLabel(shipType.shipClass))}</span>` : ""}
+          ${state.fleet.filter(item => item.id === entry.replacesFleetEntryId).map(item => `<span>${escapeHtml(fleetText('fleet.replacement.predecessor', 'Ersatz für: {ship}', {ship:formatFleetEntryDisplayName(item)}))}</span>`).join('')}
+          ${state.fleet.filter(item => item.replacesFleetEntryId === entry.id).map(item => `<span>${escapeHtml(fleetText('fleet.replacement.successor', 'Ersetzt durch: {ship}', {ship:formatFleetEntryDisplayName(item)}))}</span>`).join('')}
         </div>
       </div>
     </div>
@@ -1568,23 +1570,24 @@ function getFleetLongestOwnershipEntry() {
   }, null);
 }
 
-function createFleetReplacementEntry(sourceEntry, registration = "") {
+function createFleetReplacementEntry(sourceEntry, registration = "", acquiredOn = sourceEntry.endedOn || formatDateForInput(new Date())) {
   return createFleetEntry({
     manufacturer: sourceEntry.manufacturer,
     model: sourceEntry.model,
     registration,
     refuelContainerSizeScu: sourceEntry.refuelContainerSizeScu,
     refuelContainerSizesScu: sourceEntry.refuelContainerSizesScu,
-    acquiredOn: sourceEntry.endedOn || formatDateForInput(new Date()),
+    acquiredOn,
     endedOn: "",
     status: "active",
     patchVersion: "",
-    ownerName: sourceEntry.ownerName,
+    ownerName: sourceEntry.ownerName || sourceEntry.logIdentity?.owner,
     pilotId: sourceEntry.pilotId,
     pilotName: sourceEntry.pilotName,
     pledgePurchased: sourceEntry.pledgePurchased,
     notes: "",
     shipId: sourceEntry.shipId,
+    replacesFleetEntryId: sourceEntry.id,
   });
 }
 
@@ -1674,6 +1677,7 @@ function registerFleetEvents() {
       createdAt: existingEntry?.createdAt,
       logIdentity: existingEntry?.shipId === draft.shipId ? existingEntry.logIdentity : null,
       logLoss: existingEntry?.shipId === draft.shipId ? existingEntry.logLoss : null,
+      replacesFleetEntryId: existingEntry?.shipId === draft.shipId ? existingEntry.replacesFleetEntryId : '',
     });
     if (nextEntry.logLoss && nextEntry.status !== existingEntry?.status) {
       nextEntry.logLoss.status = nextEntry.status === 'destroyed' ? 'confirmed' : 'dismissed';
@@ -1687,6 +1691,11 @@ function registerFleetEvents() {
       state.fleet.splice(existingIndex, 1, nextEntry);
     } else {
       state.fleet.unshift(nextEntry);
+    }
+    if (nextEntry.status === 'active' && existingEntry?.status === 'destroyed') {
+      for (const entry of state.fleet) {
+        if (entry.replacesFleetEntryId === nextEntry.id) entry.replacesFleetEntryId = '';
+      }
     }
     if (replacementEntry) {
       state.fleet.unshift(replacementEntry);

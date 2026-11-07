@@ -390,6 +390,7 @@ function sanitizeState(input, { mode = activeAppMode } = {}) {
             createdAt: entry.createdAt,
             logIdentity: entry.logIdentity,
             logLoss: entry.logLoss,
+            replacesFleetEntryId: entry.replacesFleetEntryId,
           })};
         })
         .filter((entry) => entry.manufacturer && entry.model && entry.acquiredOn)

@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.11.0",
+    "de": {
+      "title": "Sitzungslogbuch und Flottenverwaltung",
+      "changes": [
+        "Sitzungslogbuch mit Reisezeiten und geschätztem Kraftstoffbedarf ergänzt.",
+        "Zusammenführen von Orten verbessert.",
+        "Schiffsverlust und Ersatzverwaltung verfeinert.",
+        "Laden und Verbindung auf Tablets stabilisiert."
+      ]
+    },
+    "en": {
+      "title": "Session journal and fleet management",
+      "changes": [
+        "Added a session journal with travel times and estimated fuel requirements.",
+        "Improved location merging.",
+        "Refined ship loss and replacement management.",
+        "Improved loading and connection stability on tablets."
+      ]
+    }
+  },
+  {
     "version": "0.10.0",
     "de": {
       "title": "Schiffserkennung und Verlustmeldungen",

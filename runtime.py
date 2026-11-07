@@ -20,6 +20,7 @@ from urllib.parse import parse_qs, urlparse
 from companion import app as capture_app
 from companion import capture
 from companion import telemetry
+from companion import journal
 from shared.mission_import import ocr
 from server import app as backend
 import transfer
@@ -29,7 +30,7 @@ import solo_shortcuts
 import location_merge
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -415,6 +416,16 @@ class SoloHandler(backend.CargoPlannerHandler):
                 return self.send_json(400, {"error": str(error)})
         if path == "/api/solo/telemetry":
             return self.send_json(200, {"ok": True, "settings": self.runtime.settings, **self.runtime.telemetry.snapshot()})
+        if path == '/api/solo/journal':
+            query = parse_qs(urlparse(self.path).query)
+            selected = query.get('session', [''])[0]
+            before = query.get('before', [''])[0]
+            if (selected and not re.fullmatch(r'[0-9a-f]{64}', selected)) or len(before) > 40:
+                return self.send_json(400, {'error':'invalid_journal_query'})
+            with backend.get_connection() as connection:
+                result = journal.read(connection, selected, before)
+            result.update(enabled=self.runtime.settings.get('logEnabled', False), loading=self.runtime.telemetry.loading)
+            return self.send_json(200, result)
         if path == "/api/solo/status":
             return self.send_json(200, self.runtime.status())
         return super().do_GET()

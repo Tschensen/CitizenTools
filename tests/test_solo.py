@@ -21,6 +21,22 @@ from server import app as backend
 
 
 class SoloIntegrationTests(unittest.TestCase):
+    def test_session_journal_is_read_only_shared_and_validates_query(self):
+        from companion import journal
+        session = {'id':'a'*64, 'startedAt':'2026-11-07T12:00:00Z', 'player':'Pilot', 'channel':'LIVE'}
+        entry = {'id':'event', 'sessionId':session['id'], 'kind':'location', 'at':session['startedAt'], 'place':'Orison'}
+        with backend.get_connection() as db:
+            journal.save(db,[session],[entry]); db.commit()
+        before = self.api('/api/state')[1]
+        for _ in range(2):
+            code, result = self.api('/api/solo/journal')
+            self.assertEqual(code,200)
+            self.assertEqual(result['session'],session)
+            self.assertEqual(result['entries'],[entry])
+        self.assertEqual(self.api('/api/state')[1],before)
+        self.assertEqual(self.api('/api/solo/journal?session=invalid')[0],400)
+        self.assertEqual(self.api('/api/solo/journal?scope=dispatcher')[0],400)
+
     def test_location_database_does_not_import_language_files_automatically(self):
         before = self.api('/api/locations?status=active')[1]['locations']
         game = self.root / 'StarCitizen'

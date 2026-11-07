@@ -104,6 +104,44 @@
     return matches.length === 1 && available.some(entry => entry.id === matches[0].id)
       ? {action:'ship_loss', fleetId:matches[0].id} : {reason:'ship_loss_link', bindingKey:binding};
   }
+  function replacement(state, sourceId) {
+    return (state.fleet || []).find(entry => entry.replacesFleetEntryId === sourceId) || null;
+  }
+  function replacementCandidates(state, source) {
+    if (!source || source.status !== 'destroyed' || !source.shipId) return [];
+    const sourceOwner = handle(source.ownerName || source.logIdentity?.owner);
+    return (state.fleet || []).filter(entry => {
+      const owner = handle(entry.ownerName || entry.logIdentity?.owner);
+      if (entry.id === source.id || entry.status !== 'active' || entry.shipId !== source.shipId
+          || (entry.replacesFleetEntryId && entry.replacesFleetEntryId !== source.id)
+          || (sourceOwner && owner && sourceOwner !== owner)
+          || sameIdentity(entry.logIdentity, source.logIdentity)
+          || (entry.logIdentity?.channel && source.logIdentity?.channel && entry.logIdentity.channel !== source.logIdentity.channel)) return false;
+      // Even imported or manually restored histories must not form a cycle.
+      const seen = new Set();
+      let previous = source;
+      while (previous) {
+        if (previous.id === entry.id || seen.has(previous.id)) return false;
+        seen.add(previous.id);
+        previous = state.fleet.find(item => item.id === previous.replacesFleetEntryId);
+      }
+      return true;
+    });
+  }
+  function linkReplacement(state, sourceId, targetId, expectedId = '') {
+    const source = state.fleet.find(entry => entry.id === sourceId);
+    const linked = state.fleet.filter(entry => entry.replacesFleetEntryId === sourceId);
+    if (!source || source.status !== 'destroyed' || linked.length > 1 || (linked[0]?.id || '') !== expectedId) return false;
+    if (!targetId) {
+      if (!linked.length) return false;
+      linked[0].replacesFleetEntryId = '';
+      return true;
+    }
+    const target = replacementCandidates(state, source).find(entry => entry.id === targetId);
+    if (!target || (linked.length && linked[0].id !== targetId)) return false;
+    target.replacesFleetEntryId = sourceId;
+    return true;
+  }
   function decideLoss(state, fleetId, lossId, decision, date) {
     const entry = state.fleet.find(item => item.id === fleetId), value = loss(entry?.logLoss);
     if (!entry || !value || value.id !== lossId) return false;
@@ -116,12 +154,16 @@
     } else if (decision === 'restore' && value.status === 'confirmed' && entry.status === 'destroyed'
         && sameIdentity(entry.logIdentity, value.identity)) {
       entry.status = 'active'; entry.endedOn = value.previousEndedOn; value.status = 'restored';
+      for (const replacement of state.fleet) {
+        if (replacement.replacesFleetEntryId === entry.id) replacement.replacesFleetEntryId = '';
+      }
       if (value.previousActive && !state.activeFleetEntryId) state.activeFleetEntryId = entry.id;
     } else return false;
     entry.logLoss = value;
     return true;
   }
-  const api = {identity, bindingKey, sameIdentity, own, matchesModel, candidates, profiles, shipPlan, loss, lossPlan, decideLoss, hubShip};
+  const api = {identity, bindingKey, sameIdentity, own, matchesModel, candidates, profiles, shipPlan, loss, lossPlan,
+    replacement, replacementCandidates, linkReplacement, decideLoss, hubShip};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FleetLog = api;
 })(globalThis);

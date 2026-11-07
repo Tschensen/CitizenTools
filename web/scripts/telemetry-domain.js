@@ -6,7 +6,7 @@
   // Inventory names observed on arrival at these stations. Resolve against
   // existing locations so archived or renamed entries are not recreated.
   const inventoryLocations = {RR_CRU_LEO:'Seraphim Station', RR_CRU_L4:'CRU-L4 Shallow Fields Station',
-    RR_CRU_L1:'CRU-L1 Ambitious Dream Station'};
+    RR_CRU_L1:'CRU-L1 Ambitious Dream Station', RR_CRU_L5:'CRU-L5 Beautiful Glen Station'};
   function links(value) {
     const result = {};
     for (const name of ['ships', 'locations', 'missions', 'objectives']) {

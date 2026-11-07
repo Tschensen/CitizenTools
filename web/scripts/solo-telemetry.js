@@ -50,18 +50,19 @@
     ship_loss_link:['Verlustmeldung einem eigenen Schiff zuordnen', 'Link the loss report to an own ship'],
   };
   async function fleetAction(build) {
-    if (busy || blocked()) return;
+    if (busy || blocked()) return false;
     busy = true;
     try {
-      if (!await getSoloSync().refresh() || blocked()) return;
+      if (!await getSoloSync().refresh() || blocked()) return false;
       const ticket = getSoloSync().checkpoint(), staged = build();
       if (!staged) throw new Error(say('Die Zuordnung hat sich geändert. Bitte erneut prüfen.', 'The match has changed. Please review again.'));
       const committed = staged.telemetryIds?.length
         ? await getSoloSync().commitImports(staged, ticket) : await getSoloSync().commitChange(staged.state, ticket);
       if (!committed) throw new Error(say('Änderung nicht gespeichert. Bitte erneut prüfen.', 'Change not saved. Please review again.'));
-      latest.events = latest.events.filter(event => !(staged.telemetryIds || []).includes(event.id));
+      if (latest) latest.events = latest.events.filter(event => !(staged.telemetryIds || []).includes(event.id));
       issue = '';
-    } catch (error) { issue = error.message; }
+      return true;
+    } catch (error) { issue = error.message; return false; }
     finally { busy = false; renderStatus(); }
   }
   function chooseShip(eventId, fleetId) {
@@ -89,12 +90,14 @@
       return staged;
     });
   }
-  function decideFleetLoss(fleetId, lossId, choice) {
-    return fleetAction(() => {
+  async function decideFleetLoss(fleetId, lossId, choice) {
+    const saved = await fleetAction(() => {
       const copy = cloneData(state), entry = copy.fleet.find(item => item.id === fleetId);
       const date = entry?.logLoss ? formatDateForInput(new Date(entry.logLoss.at)) : '';
       return FleetLog.decideLoss(copy, fleetId, lossId, choice, date) ? {state:soloCleanState(copy), telemetryIds:[]} : null;
     });
+    if (saved && choice === 'confirm') window.fleetReplacementUi?.open(fleetId);
+    return saved;
   }
   function shipRow(event, label) {
     const row = document.createElement('div'); row.className = 'fleet-log-entry';
@@ -296,6 +299,7 @@
   document.getElementById('uiLanguageSelect')?.addEventListener('change', translate);
   window.addEventListener('pywebviewready', updateFolderPicker);
   window.soloTelemetry = {refresh, render:renderStatus, decideFleetLoss,
+    replaceFleetLoss:(fleetId, lossId, choice, expectedId) => fleetAction(() => stageFleetLossReplacement(fleetId, lossId, choice, expectedId)),
     currentShip:() => FleetLog.hubShip(latest || {}, state, currentActiveFleetEntry(), getSoloPilotProfile()?.name),
     locationStatus:() => D.locationStatus(state, latest || {}, places())};
   translate(); void refresh(); setInterval(refresh, 2000);

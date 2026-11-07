@@ -1,21 +1,32 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
-## 0.10.0 — Schiffserkennung und Verlustmeldungen
+## 0.11.0 — Sitzungslogbuch und Flottenverwaltung
 
-- Eigene Schiffe anhand von Besitzer, Spielkanal und beobachteter Schiffs-ID mit der Flotte verbinden.
-- Neue eigene Modelle optional aus der Schiffsdatenbank aufnehmen; geänderte Instanzen bleiben zur Zuordnung offen.
-- Schiffsverluste in der Flotte prüfen, als zerstört markieren, ignorieren oder zurücknehmen.
-- Besitzeranzeige beim aktuellen Schiff auf der Startseite; Verlustmeldungen verwenden die vertrauten Schiffskarten mit Bild und Registrierung.
-- Anwesenheit an Bord von der Beladeschiff-Auswahl trennen; Abreisen und unbekannte Orte leeren den Routenstandort, zuletzt bekannte Orte bleiben als solche erkennbar.
-- Landeort und umgebenden Bereich gemeinsam auswerten: bestätigte Stationen bleiben bei internen Bereichswechseln erhalten; geprüfte Planeten-/Mondbereiche, „Im All“ und „Unterwegs“ werden getrennt angezeigt. Sprungziele bleiben von Ankünften getrennt.
-- Instanzdaten und Verlustentscheidungen bleiben beim Bearbeiten, Sichern und Geräteabgleich erhalten.
+- Sitzungslogbuch mit Reisezeiten und geschätztem Kraftstoffbedarf ergänzt.
+- Zusammenführen von Orten verbessert.
+- Schiffsverlust und Ersatzverwaltung verfeinert.
+- Laden und Verbindung auf Tablets stabilisiert.
 
 ### English
 
-- Link own ships to the fleet using owner, game channel and observed ship instance ID.
-- Optionally add newly detected own models from the ship database; changed instances require review.
-- Review ship losses in Fleet, mark ships as destroyed, ignore reports or reverse the marking.
-- Preserve instance links and review decisions during editing, backups and device sync.
+- Added a session journal with travel times and estimated fuel requirements.
+- Improved location merging.
+- Refined ship loss and replacement management.
+- Improved loading and connection stability on tablets.
+
+## 0.10.0 — Schiffserkennung und Verlustmeldungen
+
+- Eigene Schiffe und Besitzer anhand der Game.log erkennen und mit der Flotte verbinden.
+- Schiffsverluste in der Flotte prüfen und verwalten.
+- Aktuelles Schiff und Beladeschiff getrennt behandeln.
+- Standorterkennung für Landeorte, Planeten, Monde und das All verbessert.
+
+### English
+
+- Detect own ships and owners from Game.log and link them to the fleet.
+- Review and manage ship losses in Fleet.
+- Track the current ship separately from the selected cargo ship.
+- Improved location detection for landing zones, planets, moons and space.
 
 ## 0.9.0 — Finanz-Schnellwahl
 
