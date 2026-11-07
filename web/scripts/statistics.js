@@ -1,6 +1,6 @@
 (function registerStatisticsModule() {
   const NON_OPERATING_SHIP_CATEGORIES = new Set(["Schiffskauf", "Schiffsverkauf", "Upgrade"]);
-  const STATISTICS_VIEW_IDS = ["overview", "operations", "ships"];
+  const STATISTICS_VIEW_IDS = ["overview", "operations", "ships", "journal"];
   const STATISTICS_SECTION_IDS = ["customers", "pickups", "dropoffs", "destinations", "history", "ship-models", "fleet-entries"];
   const DEFAULT_EXPANDED_STATISTICS_SECTIONS = ["customers", "ship-models", "fleet-entries"];
 
@@ -98,6 +98,8 @@
     }
 
     function syncStatisticsViewState() {
+      const periodPanel = document.querySelector('.statistics-period-panel');
+      if (periodPanel) periodPanel.hidden = activeStatisticsView === 'journal';
       dom.viewTabs.forEach((button) => {
         const isActive = button.dataset.statisticsViewTarget === activeStatisticsView;
         button.classList.toggle("is-active", isActive);
@@ -107,6 +109,7 @@
         const isActive = section.dataset.statisticsView === activeStatisticsView;
         section.hidden = !isActive;
       });
+      window.soloJournal?.refresh();
     }
 
     function syncStatisticsSectionState() {

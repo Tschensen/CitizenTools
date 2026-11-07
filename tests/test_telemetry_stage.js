@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const D = require('../web/scripts/telemetry-domain.js');
+const FleetLog = require('../web/scripts/fleet-log.js');
 const progress = require('../web/scripts/delivery-progress.js');
 const copy = value => JSON.parse(JSON.stringify(value));
 function fixture() {
@@ -205,11 +206,59 @@ function fleetFixture() {
     formatDateForInput:date=>date.toISOString().slice(0,10), syncLayoutToActiveFleetShip:()=>{}});
   const app=fs.readFileSync(require.resolve('../web/app.js'),'utf8');
   vm.runInContext(app.slice(app.indexOf('function createFleetEntry('),app.indexOf('function getGridHeightAt(')),c);
+  const fleet=fs.readFileSync(require.resolve('../web/scripts/fleet.js'),'utf8');
+  vm.runInContext(fleet.slice(fleet.indexOf('function createFleetReplacementEntry('),fleet.indexOf('function registerFleetEvents(')),c);
   c.state.shipLibrary=[{id:'profile',manufacturer:'Origin',model:'400i'}];
   c.state.fleet=[c.createFleetEntry({id:'ship',manufacturer:'Origin',model:'400i',shipId:'profile',acquiredOn:'2026-01-01'})];
   return c;
 }
 const ownedShip={...event,kind:'ship',name:'Origin 400i',player:'Pilot',owner:'Pilot',entityId:'123',className:'ORIG_400i',channel:'LIVE'};
+
+function confirmedLossFixture() {
+  const c=fleetFixture();
+  Object.assign(c.state.fleet[0], {status:'destroyed',endedOn:'2026-10-31',registration:'OLD-400I',pledgePurchased:true,
+    logIdentity:FleetLog.identity(ownedShip),logLoss:FleetLog.loss({id:'loss',at:event.at,identity:ownedShip,status:'confirmed'})});
+  c.state.activeFleetEntryId='';
+  return c;
+}
+
+test('a new replacement preserves the old history and starts without its registration or log identity',()=>{
+  const c=confirmedLossFixture(), before=copy(c.state);
+  const staged=c.stageFleetLossReplacement('ship','loss',{mode:'new',acquiredOn:'2026-11-07',registration:'NEW-400I'});
+  const replacement=staged.state.fleet[0];
+  assert.equal(replacement.replacesFleetEntryId,'ship');
+  assert.equal(replacement.registration,'NEW-400I');assert.equal(replacement.acquiredOn,'2026-11-07');
+  assert.equal(replacement.logIdentity,null);assert.equal(replacement.logLoss,null);assert.equal(replacement.pledgePurchased,true);
+  assert.deepEqual(staged.state.fleet[1],before.fleet[0]);
+  for(const key of ['missions','ledgerEntries','layout']) assert.deepEqual(staged.state[key],before[key]);
+  assert.deepEqual(copy(c.state),before,'staging must not change the live state');
+  assert.equal(c.createFleetEntry(replacement).replacesFleetEntryId,'ship');
+  c.state=staged.state;
+  assert.equal(c.stageFleetLossReplacement('ship','loss',{mode:'new',acquiredOn:'2026-11-07'}),null,'double clicks cannot create a second replacement');
+});
+
+test('linking an existing replacement preserves its own identity and can be undone without deleting it',()=>{
+  const c=confirmedLossFixture();
+  const identity=FleetLog.identity({...ownedShip,entityId:'456'});
+  c.state.fleet.push(c.createFleetEntry({id:'new',manufacturer:'Origin',model:'400i',shipId:'profile',acquiredOn:'2026-11-07',logIdentity:identity}));
+  const linked=c.stageFleetLossReplacement('ship','loss',{mode:'existing',fleetId:'new'});
+  assert.equal(linked.state.fleet.length,2);assert.deepEqual(linked.state.fleet[1].logIdentity,identity);
+  assert.equal(linked.state.fleet[1].replacesFleetEntryId,'ship');
+  c.state=linked.state;
+  assert.equal(c.stageFleetLossReplacement('ship','loss',{mode:'unlink'},''),null,'stale dialogs cannot remove a newly created link');
+  const unlinked=c.stageFleetLossReplacement('ship','loss',{mode:'unlink'},'new');
+  assert.equal(unlinked.state.fleet.length,2);assert.equal(unlinked.state.fleet[1].replacesFleetEntryId,'');
+  assert.equal(FleetLog.decideLoss(c.state,'ship','loss','restore','2026-11-07'),true);
+  assert.equal(c.state.fleet[1].replacesFleetEntryId,'');assert.equal(c.state.fleet[1].status,'active');
+});
+
+test('replacement creation rejects stale losses, duplicate registrations and missing profiles',()=>{
+  const c=confirmedLossFixture(), choice={mode:'new',acquiredOn:'2026-11-07'};
+  assert.equal(c.stageFleetLossReplacement('ship','old-loss',choice),null);
+  assert.equal(c.stageFleetLossReplacement('ship','loss',{...choice,registration:' old-400i '}),null);
+  assert.equal(c.stageFleetLossReplacement('ship','loss',{...choice,acquiredOn:'2026-10-30'}),null);
+  c.state.shipLibrary=[];assert.equal(c.stageFleetLossReplacement('ship','loss',choice),null);
+});
 test('real fleet factory retains identity and review metadata through edit/reload',()=>{
   const c=fleetFixture();
   let staged=c.stageTelemetryEvent(ownedShip,{action:'ship',fleetId:'ship'},{});

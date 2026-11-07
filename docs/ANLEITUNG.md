@@ -61,8 +61,19 @@ deaktiviert; am Spiele-PC kann der Pfad weiterhin von Hand eingetragen werden.
   erscheint unter **Flotte → Verlustmeldungen** als Schiffskarte mit Bild, Hersteller
   und Registrierung. Mit **Als zerstört markieren**
   wird das konkrete Schiff archiviert. **Ignorieren** verwirft den Vorschlag;
+  nach der Bestätigung öffnet sich **Ersatz verwalten**. Dort lässt sich ein
+  passendes aktives Schiff als Ersatz verknüpfen oder ein neuer Flotteneintrag
+  mit eigenem Einsatzdatum und optionaler Registriernummer anlegen. **Später**
+  lässt den Verlust bestätigt und den Ersatz offen. Der Dialog bleibt über die
+  Verlustkarte erreichbar. Ein bereits verknüpfter Ersatz wird dort und in den
+  Schiffsakten angezeigt; die Verknüpfung lässt sich wieder lösen.
+  Neue Einträge übernehmen Modell und Besitzart, erhalten aber keine alte
+  Log-ID und lösen keine Kaufbuchung aus. Die Log-Erkennung ordnet die neue
+  Instanz anschließend nach den normalen Regeln zu. Bereits vorhandene
+  Schiffe behalten beim Verknüpfen ihre eigene Registrierung und Log-ID.
   **Wieder aktiv setzen** nimmt die Markierung zurück, solange die zugehörige
-  Instanz nicht zwischenzeitlich ersetzt wurde. Die normale Flottenbearbeitung
+  Instanz nicht zwischenzeitlich ersetzt wurde. Dabei wird eine Ersatzverknüpfung
+  gelöst; der Ersatz-Flotteneintrag selbst bleibt erhalten. Die normale Flottenbearbeitung
   bleibt verfügbar. Ladung, Aufträge und Buchungen werden dabei nicht geändert.
   Ignorierte oder zurückgenommene Meldungen verschwinden aus der Übersicht.
   Ein Tod des Spielers allein bestätigt keinen Schiffsverlust. Nicht jede mögliche
@@ -99,6 +110,25 @@ Offene neue Ereignisse warten höchstens 15 Minuten auf Zuordnung; Verlustmeldun
 bleiben bis zur Prüfung erhalten. Doppelte Meldungen
 werden nur einmal übernommen. Sitzungswechsel und veraltete Logs werden erkannt.
 Die Automatik aktualisiert Citizen Tools; sie steuert das Spiel nicht.
+
+Unter **Statistik → Sitzungslogbuch** erscheinen Reisen, Schiffswechsel und
+Auftragsereignisse. Die aktuelle Game.log wird auch beim Start nachgelesen;
+alte Ereignisse lösen dabei keine Buchungen oder Lieferungen aus. Erfasste
+Sitzungen bleiben auf dem PC gespeichert und sind auf weiteren Geräten sichtbar.
+Log-Backups werden nicht automatisch durchsucht.
+
+Reisezeiten reichen vom erkannten Verlassen eines Ortsbereichs bis zur
+bestätigten Ankunft und enthalten Pausen unterwegs. Abgebrochene oder unvollständig
+erfasste Reisen zählen nicht zur Gesamtzeit. Der Quantum-Kraftstoffbedarf ist
+eine Schätzung für die gewählte Route. Die Einheit wird im Log nicht angegeben;
+der angezeigte Logwert wird daher nicht in Liter oder SCU umgerechnet. Eine
+Schätzung ist keine Verbrauchsmessung und wird nur bei passender Route zugeordnet.
+
+Beim **Zusammenführen von Orten** kann das Ziel über **Zielort suchen** gefiltert
+werden. Die Suche berücksichtigt Namen, Aliase, Sternensystem und übergeordneten
+Ort. Anschließend den gewünschten Treffer auswählen und die Vorschau prüfen.
+Ein einzelner Treffer wird nicht automatisch ausgewählt; ein durch die Suche
+ausgeblendetes Ziel muss erneut ausgewählt werden.
 
 **Kontostand aus neuen Companion-Screenshots lesen** prüft neue Aufnahmen zusätzlich.
 Der unter Companion eingetragene Import-Handle oder der erkannte Spieler muss im

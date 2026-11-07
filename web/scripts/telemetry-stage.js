@@ -1,3 +1,22 @@
+// Replacement decisions use the same atomic shared-state commit as loss review.
+function stageFleetLossReplacement(fleetId, lossId, choice, expectedReplacementId = '') {
+  const copy = cloneData(state), source = copy.fleet.find(entry => entry.id === fleetId);
+  if (!source || source.status !== 'destroyed' || source.logLoss?.id !== lossId
+      || source.logLoss.status !== 'confirmed' || !FleetLog.sameIdentity(source.logIdentity, source.logLoss.identity)) return null;
+  if (choice.mode === 'new') {
+    const profile = copy.shipLibrary.find(entry => entry.id === source.shipId && !entry.archived);
+    const date = normalizeDateInput(choice.acquiredOn), registration = String(choice.registration || '').trim();
+    if (!profile || !date || date < source.endedOn || expectedReplacementId || FleetLog.replacement(copy, fleetId)
+        || (registration && copy.fleet.some(entry => String(entry.registration || '').trim().toLowerCase() === registration.toLowerCase()))) return null;
+    const replacement = createFleetReplacementEntry(source, registration, date);
+    copy.fleet.unshift(replacement);
+  } else if (choice.mode === 'existing' || choice.mode === 'unlink') {
+    if (choice.mode === 'existing' && !choice.fleetId) return null;
+    if (!FleetLog.linkReplacement(copy, fleetId, choice.mode === 'unlink' ? '' : choice.fleetId, expectedReplacementId)) return null;
+  } else return null;
+  return {state:soloCleanState(copy), telemetryIds:[]};
+}
+
 // Stage against a private copy. Shared state changes only after the atomic server commit.
 function stageTelemetryEvent(event, plan, settings) {
   const previous = state;

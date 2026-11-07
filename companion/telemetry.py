@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from shared.game_log import GameLogParser
+from shared.log_journal import LogJournal
+from companion import journal
 
 CHANNELS = ('LIVE', 'PTU', 'EPTU', 'HOTFIX')
 DEFAULTS = {'logEnabled': False, 'gameDirectory': '', 'gameChannel': 'LIVE', 'logAutoShip': True,
@@ -58,6 +60,7 @@ def configured_log(settings):
 
 
 def init_store(connection):
+    journal.init_store(connection)
     connection.execute('''CREATE TABLE IF NOT EXISTS telemetry_events (
         id TEXT PRIMARY KEY, at TEXT NOT NULL, kind TEXT NOT NULL,
         payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending')''')
@@ -76,6 +79,7 @@ class Telemetry:
         self.anchor = b''
         self.fragment = b''
         self.parser = GameLogParser()
+        self.journal = LogJournal(runtime.settings.get('gameChannel', 'LIVE'))
         self.error = ''
         self.loading = True
         self.file_mtime = 0.0
@@ -118,6 +122,7 @@ class Telemetry:
                 self.offset = 0
                 self.prefix = self.anchor = self.fragment = b''
                 self.parser = GameLogParser()
+                self.journal = LogJournal(settings.get('gameChannel', 'LIVE'))
                 self.loading = True
                 self.file_mtime = 0.0
             if not settings.get('logEnabled'):
@@ -136,6 +141,7 @@ class Telemetry:
                     replaced = identity != self.identity or stat.st_size < self.offset or (self.prefix and not prefix.startswith(self.prefix)) or anchor != self.anchor
                     if replaced:
                         self.parser = GameLogParser()
+                        self.journal = LogJournal(settings.get('gameChannel', 'LIVE'))
                         self.offset = 0
                         self.fragment = b''
                         self.loading = True
@@ -159,9 +165,17 @@ class Telemetry:
                 self.fragment = b''
             new_events = []
             for line in lines:
-                for event in self.parser.feed(line.decode('utf-8', errors='replace').rstrip('\r')):
+                decoded = line.decode('utf-8', errors='replace').rstrip('\r')
+                events = self.parser.feed(decoded)
+                self.journal.feed(decoded, self.parser, events)
+                for event in events:
                     if not self.loading and -5 <= seconds_since(event['at']) <= 300:
                         new_events.append(event)
+            sessions, entries = self.journal.drain()
+            if sessions or entries:
+                with self.connect() as connection:
+                    journal.save(connection, sessions, entries)
+                    connection.commit()
             caught_up = self.offset >= stat.st_size
             if self.loading and caught_up:
                 self.loading = False

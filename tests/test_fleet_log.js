@@ -71,6 +71,24 @@ test('outdated confirmation cannot destroy a replacement or overwrite a later fl
   assert.equal(F.decideLoss(s,'mine','loss','confirm','2026-11-05'),false);
 });
 
+test('replacement choices exclude wrong models, owners, channels, reused instances and existing links', () => {
+  const s=state(), source=s.fleet[0];
+  Object.assign(source,{status:'destroyed',logIdentity:F.identity(event)});
+  const next={...entry,id:'next',logIdentity:F.identity({...event,entityId:'456'})};
+  s.fleet.push(next);
+  assert.deepEqual(F.replacementCandidates(s,source).map(item=>item.id),['next']);
+  for(const changes of [{shipId:'other'},{ownerName:'Other'},{status:'sold'},{replacesFleetEntryId:'elsewhere'},
+    {logIdentity:F.identity(event)},{logIdentity:F.identity({...event,entityId:'456',channel:'PTU'})}]) {
+    s.fleet[1]={...next,...changes};assert.equal(F.replacementCandidates(s,source).length,0);
+  }
+  s.fleet[1]=next;
+  source.replacesFleetEntryId='next';assert.equal(F.replacementCandidates(s,source).length,0,'no cycles');
+  source.replacesFleetEntryId='';
+  assert.equal(F.linkReplacement(s,'mine','next'),true);
+  s.fleet.push({...entry,id:'third'});
+  assert.equal(F.linkReplacement(s,'mine','third'),false,'a stale second choice must not overwrite the first');
+});
+
 test('the cockpit shows a visited foreign ship without borrowing the own ship registration or changing fleet selection', () => {
   const s=state();s.fleet[0].registration='MY-400I';s.fleet[0].logIdentity=F.identity(event);
   const before=structuredClone(s);

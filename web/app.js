@@ -1852,6 +1852,7 @@ function createFleetEntry({
   createdAt = new Date().toISOString(),
   logIdentity = null,
   logLoss = null,
+  replacesFleetEntryId = "",
 }) {
   const normalizedRefuelContainerSizes = normalizeRefuelContainerSizeList(refuelContainerSizesScu);
   const hasSpecificRefuelSizes = normalizedRefuelContainerSizes.some((size) => size > 0);
@@ -1879,6 +1880,7 @@ function createFleetEntry({
     createdAt,
     logIdentity: typeof FleetLog !== 'undefined' ? FleetLog.identity(logIdentity) : null,
     logLoss: typeof FleetLog !== 'undefined' ? FleetLog.loss(logLoss) : null,
+    replacesFleetEntryId: typeof replacesFleetEntryId === 'string' && replacesFleetEntryId.trim() !== id ? replacesFleetEntryId.trim().slice(0, 200) : '',
   };
 }
 

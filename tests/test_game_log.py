@@ -176,6 +176,14 @@ class TailerTests(unittest.TestCase):
         data = self.reader.snapshot()
         self.assertTrue(data['live'])
         self.assertEqual({event['kind'] for event in data['events']}, {'ship', 'location'})
+        from companion import journal
+        with self.connect() as db:
+            history = journal.read(db)
+        self.assertEqual({event['kind'] for event in history['entries']}, {'ship','location','completed','payment'})
+        restarted = Telemetry(self.runtime, self.connect)
+        restarted.tick()
+        with self.connect() as db:
+            self.assertEqual(journal.read(db), history)
 
     def test_exit_snapshot_and_unknown_location_survive_tailer_restart(self):
         text = line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42')

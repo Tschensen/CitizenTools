@@ -44,6 +44,8 @@
       deleteDialogConfirm: document.querySelector("#systemDbDeleteDialogConfirm"),
       mergeDialog: document.querySelector("#systemDbMergeDialog"),
       mergeSource: document.querySelector("#systemDbMergeSource"),
+      mergeSearch: document.querySelector("#systemDbMergeSearch"),
+      mergeCount: document.querySelector("#systemDbMergeCount"),
       mergeTarget: document.querySelector("#systemDbMergeTarget"),
       mergePreview: document.querySelector("#systemDbMergePreview"),
       mergeStatus: document.querySelector("#systemDbMergeStatus"),
@@ -52,11 +54,13 @@
     };
 
     let locations = [];
+    const locationNameIndex = new Map();
     let activeView = "database";
     let loaded = false;
     let busy = false;
     let pendingDelete = null;
     let pendingMerge = null;
+    let mergeCandidates = [];
 
     const text = (key, fallback, params = {}) => {
       const translated = helpers.t(key, params);
@@ -90,6 +94,20 @@
         .toLocaleLowerCase("de")
         .replace(/[^a-z0-9]+/g, " ")
         .trim();
+    }
+
+    function indexLocationNames() {
+      // Suggestions and live telemetry resolve many names on every render.
+      // Normalize the catalog once when it changes, not for every lookup.
+      locationNameIndex.clear();
+      for (const entry of locations) {
+        if (entry.status !== 'active') continue;
+        for (const value of [entry.name, ...(entry.aliases || [])]) {
+          const key = normalizeSearch(value);
+          if (!locationNameIndex.has(key)) locationNameIndex.set(key, new Set());
+          locationNameIndex.get(key).add(entry.name);
+        }
+      }
     }
 
     function resolveAliasSuggestion(correction) {
@@ -146,6 +164,7 @@
       if (!isRemoteAvailable()) {
         loaded = true;
         locations = [];
+        indexLocationNames();
         render();
         return;
       }
@@ -153,6 +172,7 @@
       try {
         const payload = await apiRequest("./api/locations?status=all");
         locations = Array.isArray(payload.locations) ? payload.locations : [];
+        indexLocationNames();
         loaded = true;
         render();
         helpers.renderLocationSuggestions();
@@ -160,6 +180,7 @@
       } catch (error) {
         loaded = true;
         locations = [];
+        indexLocationNames();
         render();
         setStatus(text("systemdb.error.load", "Systemdatenbank konnte nicht geladen werden."), "error");
       }
@@ -188,6 +209,7 @@
         const index = locations.findIndex((entry) => entry.id === payload.location.id);
         if (index >= 0) locations.splice(index, 1, payload.location);
         else locations.push(payload.location);
+        indexLocationNames();
         render();
         helpers.renderLocationSuggestions();
       }
@@ -587,22 +609,40 @@
         : '';
     }
 
+    function renderMergeTargets() {
+      const selected = dom.mergeTarget.value;
+      const words = normalizeSearch(dom.mergeSearch.value).split(' ').filter(Boolean);
+      const matches = mergeCandidates.filter(candidate => words.every(word => candidate.search.includes(word)));
+      dom.mergeTarget.innerHTML = matches.length
+        ? matches.map(({entry, label}) => `<option value="${escape(entry.id)}">${escape(label)}</option>`).join('')
+        : `<option value="" disabled>${escape(text('systemdb.merge.noResults', 'Keine passenden Orte gefunden.'))}</option>`;
+      // Filtering must never silently select a different merge destination.
+      dom.mergeTarget.value = matches.some(({entry}) => entry.id === selected) ? selected : '';
+      dom.mergeTarget.disabled = busy || matches.length === 0;
+      dom.mergeCount.textContent = text('systemdb.merge.count', 'Passende Orte: {count}', {count:matches.length});
+      renderMergePreview();
+    }
+
     function openMergeDialog(entry) {
       if (busy) return;
       pendingMerge = entry;
       dom.mergeSource.textContent = entry.name;
-      dom.mergeTarget.innerHTML = `<option value="">${escape(text('systemdb.merge.choose', 'Zielort auswählen …'))}</option>`
-        + locations.filter(candidate => candidate.id !== entry.id && candidate.status === 'active')
-          .map(candidate => `<option value="${escape(candidate.id)}">${escape([candidate.name, candidate.starSystem, candidate.parentLocation].filter(Boolean).join(' · '))}</option>`).join('');
+      mergeCandidates = locations.filter(candidate => candidate.id !== entry.id && candidate.status === 'active')
+        .map(entry => ({entry, label:[entry.name, entry.starSystem, entry.parentLocation].filter(Boolean).join(' · '),
+          search:normalizeSearch([entry.name, entry.starSystem, entry.parentLocation, ...(entry.aliases || [])].join(' '))}));
+      dom.mergeSearch.value = '';
+      dom.mergeSearch.disabled = false;
+      dom.mergeTarget.value = '';
       dom.mergeStatus.hidden = true;
       dom.mergeDialog.hidden = false;
-      renderMergePreview();
-      dom.mergeTarget.focus();
+      renderMergeTargets();
+      dom.mergeSearch.focus();
     }
 
     function closeMergeDialog() {
       if (busy) return;
       pendingMerge = null;
+      mergeCandidates = [];
       dom.mergeDialog.hidden = true;
     }
 
@@ -611,7 +651,7 @@
       const target = locations.find(entry => entry.id === dom.mergeTarget.value);
       if (busy || !source || !target) return;
       busy = true;
-      dom.mergeConfirm.disabled = dom.mergeCancel.disabled = dom.mergeTarget.disabled = true;
+      dom.mergeConfirm.disabled = dom.mergeCancel.disabled = dom.mergeTarget.disabled = dom.mergeSearch.disabled = true;
       dom.mergeStatus.hidden = true;
       try {
         await helpers.mergeLocations({sourceId:source.id, targetId:target.id,
@@ -634,8 +674,8 @@
         }
       } finally {
         busy = false;
-        dom.mergeCancel.disabled = dom.mergeTarget.disabled = false;
-        dom.mergeConfirm.disabled = !pendingMerge;
+        dom.mergeCancel.disabled = dom.mergeSearch.disabled = false;
+        renderMergeTargets();
       }
     }
 
@@ -652,6 +692,7 @@
     }
 
     function init() {
+      dom.mergeSearch?.addEventListener('input', renderMergeTargets);
       dom.mergeTarget?.addEventListener('change', renderMergePreview);
       dom.mergeCancel?.addEventListener('click', () => { closeMergeDialog(); void load(); });
       dom.mergeConfirm?.addEventListener('click', () => void confirmMerge());
@@ -689,11 +730,8 @@
     }
 
     function resolveLocationName(name) {
-      const key = normalizeSearch(name);
-      const matches = locations.filter(entry => entry.status === 'active'
-        && [entry.name, ...(entry.aliases || [])].some(value => normalizeSearch(value) === key));
-      const names = [...new Set(matches.map(entry => entry.name))];
-      return names.length === 1 ? names[0] : name;
+      const names = locationNameIndex.get(normalizeSearch(name));
+      return names?.size === 1 ? names.values().next().value : name;
     }
 
     function getActiveLocations() {
