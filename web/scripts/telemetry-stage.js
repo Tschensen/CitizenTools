@@ -24,6 +24,7 @@ function stageTelemetryEvent(event, plan, settings) {
   state = cloneData(state);
   try {
     const mission = state.missions.find(item => item.id === plan.missionId);
+    if (mission?.logFailure?.status === 'blocked' && ['complete','payment','package','cargo'].includes(plan.action)) return null;
     if (plan.action === 'ship_create') {
       const profile = FleetLog.profiles(event, state).find(item => item.id === plan.shipId);
       const identity = FleetLog.identity(event);
@@ -66,6 +67,12 @@ function stageTelemetryEvent(event, plan, settings) {
           if (point.hasCargo || point.hasService) selectStopByDropoff(point.dropoff);
         }
       }
+    } else if (plan.action === 'failed') {
+      if (!mission || TelemetryDomain.links(state.telemetryLinks).missions[event.missionId] !== mission.id
+          || mission.logFailure?.id === event.id) return null;
+      mission.logFailure = normalizeMissionLogFailure({...event, status:'blocked'});
+      if (!mission.logFailure) return null;
+      state.selectedRunRoutePointKey = '';
     } else if (plan.action === 'complete') {
       unloadMissionLoadsForCompletion(mission, event.at);
       markMissionCompleted(mission, {completedAt:event.at, bookIncome:false});
@@ -105,8 +112,56 @@ function stageTelemetryEvent(event, plan, settings) {
       }
       state.selectedRunRoutePointKey = '';
     } else if (plan.action === 'balance') {
-      state.telemetryBalance = TelemetryDomain.balance(event);
+      const snapshot = TelemetryDomain.balance(event);
+      if (!snapshot) return null;
+      state.balanceReconciliation = BalanceReconciliation.begin(state, snapshot);
+      state.telemetryBalance = snapshot;
     }
     return {state:soloCleanState(state), telemetryIds:plan.action === 'location_unresolved' ? [] : [event.id]};
   } finally { state = previous; lastUnloadPlan = oldPlan; }
+}
+
+// Every decision is staged with the same compare-and-swap commit as imports.
+function stageBalanceDecision(expected, choice) {
+  const R = BalanceReconciliation, current = R.view(state);
+  if (current.status !== 'pending' || current.key !== expected.key || current.ledgerStamp !== expected.ledgerStamp) return null;
+  const previous = state, oldPlan = lastUnloadPlan;
+  state = cloneData(state);
+  try {
+    const now = new Date().toISOString();
+    if (choice.mode === 'dismiss') {
+      state.balanceReconciliation = {...state.balanceReconciliation,status:'dismissed',reviewedAt:now};
+    } else {
+      const amount = Number(choice.amount), flow = current.difference > 0 ? 'income' : 'expense';
+      if (!Number.isSafeInteger(amount) || amount <= 0 || amount > R.limit) return null;
+      const note = cargoText('finance.reconcile.note','Bestätigter Kontostandsabgleich aus einem Screenshot.');
+      let entry;
+      if (choice.mode === 'mission') {
+        const mission = state.missions.find(item => item.id === choice.missionId);
+        if (flow !== 'income' || !R.canMatch(state,mission) || R.missionStamp(mission) !== choice.missionStamp
+            || isMissionIncomplete(mission) || isMissionPaid(mission) || isMissionPayoutSplitRequired(mission)
+            || !isOrganizationMissionReadyForCompletion(mission)) return null;
+        unloadMissionLoadsForCompletion(mission, current.at);
+        for (const item of mission.serviceDetails?.packages || []) { item.pickedUpAt ||= current.at; item.deliveredAt ||= current.at; }
+        markMissionPaid(mission,{paidAt:current.at,amountAuec:amount});
+        entry = getMissionIncomeEntry(mission);
+        if (!entry || entry.amountAuec !== amount) return null;
+        entry.notes = note;
+        state.selectedRunRoutePointKey = '';
+      } else if (choice.mode === 'booking') {
+        const category = R.categories(flow).find(item => item.category === choice.category);
+        const fleet = choice.fleetId ? state.fleet.find(item => item.id === choice.fleetId && item.status === 'active') : null;
+        if (!category || (choice.fleetId && !fleet)) return null;
+        entry = createLedgerEntry({...category,flow,amountAuec:amount,
+          bookedOn:formatDateForInput(new Date(current.at)),createdAt:now,
+          reference:String(choice.reference || category.category).trim().slice(0,200),notes:note,
+          fleetEntryId:fleet?.id || '',shipId:fleet?.shipId || ''});
+        state.ledgerEntries.unshift(entry);
+      } else return null;
+      entry.balanceObservationId = current.key;
+      state.balanceReconciliation = {...state.balanceReconciliation,ledgerStamp:R.ledgerStamp(state.ledgerEntries),
+        status:R.total(state.ledgerEntries) === current.amount ? 'resolved' : 'pending',reviewedAt:now};
+    }
+    return {state:soloCleanState(state),telemetryIds:[]};
+  } finally {state = previous; lastUnloadPlan = oldPlan;}
 }

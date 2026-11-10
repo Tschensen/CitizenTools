@@ -38,6 +38,20 @@ def fixture():
     }, 'images': {'/source/image.png': base64.b64encode(PNG).decode()}}
 
 
+class BalanceTransferTests(unittest.TestCase):
+    def test_balance_review_and_receipt_survive_personal_export(self):
+        state = fixture()['state']
+        review = {'key': 'a' * 16, 'ledgerStamp': 'b' * 16, 'amount': 25000,
+                  'status': 'dismissed', 'reviewedAt': '2026-11-10T12:00:00Z'}
+        state['balanceReconciliation'] = review
+        state['telemetryBalance'] = {'id': 'capture-1', 'amount': 25000, 'at': '2026-11-10T11:59:00Z'}
+        state['ledgerEntries'][0]['balanceObservationId'] = review['key']
+        result = transfer.personal_state(state)
+        self.assertEqual(result['balanceReconciliation'], review)
+        self.assertEqual(result['telemetryBalance'], state['telemetryBalance'])
+        self.assertEqual(result['ledgerEntries'][0]['balanceObservationId'], review['key'])
+
+
 class TransferTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

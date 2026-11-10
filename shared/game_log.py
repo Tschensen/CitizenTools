@@ -224,6 +224,11 @@ class GameLogParser:
             payment = self.payment_notification(line, at)
             if payment:
                 return payment
+            blueprint = re.search(r'<SHUDEvent_OnNotification> Added notification "Bauplan erhalten:\s*([^"\r\n]+)".*?MissionId: \[', line)
+            if blueprint:
+                name = clean(blueprint[1])
+                if name and len(name) <= 200:
+                    return [self.event('blueprint', at, name=name)]
             ship = re.search(r"(?:You have joined channel '([^']+)'|Du bist Kanal \[\s*([^]]+)\]\s*beigetreten)", line)
             if ship:
                 channel = (ship[1] or ship[2]).strip()
@@ -263,4 +268,7 @@ class GameLogParser:
                 return [self.event('completed', at, missionId=mission_id)]
             self.completions.pop(mission_id, None)
             self.payment_candidate = None
+            if ended[2] == 'MISSION_STATE_FAILED':
+                return [self.event('failed', at, missionId=mission_id,
+                                   title=self.contracts.get(mission_id, {}).get('title', ''))]
         return []

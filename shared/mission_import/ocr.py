@@ -69,7 +69,7 @@ def run_ocr(tesseract_path: str, image_path: Path) -> str:
     return result.stdout
 
 
-def prepare_ocr_crop(image_path: Path, region: str) -> Path | None:
+def prepare_ocr_crop(image_path: Path, region: str, rectangle=None) -> Path | None:
     if os.name != "nt" or image_path.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
         return None
     script_path = Path(__file__).with_name("prepare-ocr-image.ps1")
@@ -82,6 +82,7 @@ def prepare_ocr_crop(image_path: Path, region: str) -> Path | None:
         "title": "Title",
         "balance": "Balance",
         "balancecontext": "BalanceContext",
+        "balanceword": "BalanceWord",
     }.get(str(region).casefold(), "Objectives")
     file_descriptor, temporary_name = tempfile.mkstemp(
         prefix=f"citizen-tools-ocr-{normalized_region.casefold()}-",
@@ -90,6 +91,13 @@ def prepare_ocr_crop(image_path: Path, region: str) -> Path | None:
     os.close(file_descriptor)
     temporary_path = Path(temporary_name)
     temporary_path.unlink(missing_ok=True)
+    crop_arguments = []
+    if normalized_region == 'BalanceWord':
+        if not rectangle or len(rectangle) != 4 or any(not isinstance(value, int) or value < 0 for value in rectangle) \
+                or not rectangle[2] or not rectangle[3]:
+            return None
+        for name, value in zip(('CropLeft','CropTop','CropWidth','CropHeight'), rectangle):
+            crop_arguments.extend(['-' + name, str(value)])
     try:
         result = subprocess.run(
             [
@@ -106,7 +114,7 @@ def prepare_ocr_crop(image_path: Path, region: str) -> Path | None:
                 str(temporary_path),
                 "-Region",
                 normalized_region,
-            ],
+            ] + crop_arguments,
             check=False,
             capture_output=True,
             text=True,

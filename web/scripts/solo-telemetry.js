@@ -42,6 +42,7 @@
     expired:['Veraltetes Ereignis', 'Expired event'],
     payment_completion:['Zahlung wartet auf den Auftragsabschluss', 'Payment is waiting for contract completion'],
     payment_failed:['Zahlung konnte nicht verbucht werden – bitte prüfen', 'Payment could not be booked — please review'],
+    mission_failed:['Auftrag fehlgeschlagen – Meldung im Auftrag prüfen', 'Contract failed — review the report in Contracts'],
     ship_owner:['Fremdes Schiff oder Besitzer nicht bestätigt', 'Other owner or ownership not confirmed'],
     ship_instance:['Schiffsinstanz zuordnen – vorhandenes oder zusätzliches Schiff', 'Link this instance — existing or additional ship'],
     ship_new:['Eigenes Schiff erkannt – Aufnahme in die Flotte prüfen', 'Own ship detected — review adding it to the fleet'],
@@ -161,10 +162,23 @@
       badge.hidden = false; badge.textContent += say(' · Verlustmeldung unter Spiel-Log zuordnen', ' · Link a loss report in Game log settings');
     }
     const snapshot = D.balance(state.telemetryBalance);
-    const ledger = (state.ledgerEntries || []).reduce((sum, entry) => sum + (entry.flow === 'expense' ? -1 : 1) * (Number(entry.amountAuec) || 0), 0);
-    const text = snapshot ? `${say('Spielkontostand', 'Game balance')}: ${snapshot.amount.toLocaleString()} aUEC · ${new Date(snapshot.at).toLocaleString()} · ${say('Differenz zur Buchhaltung', 'Difference from ledger')}: ${(snapshot.amount - ledger).toLocaleString()} aUEC`
-      : say('Noch kein sicher erkannter Kontostand. Ein frischer mobiGlas-Screenshot muss deinen Handle und den Kontostand zeigen.', 'No verified balance yet. A fresh mobiGlas screenshot must show your handle and balance.');
+    const comparison = BalanceReconciliation.view(state);
+    const shortcut = latest.settings.captureHotkey || say('deiner Screenshot-Taste', 'your screenshot shortcut');
+    const balanceHint = !latest.settings.balanceOcrEnabled
+      ? say('Kontostandserkennung unter Einstellungen → Spiel-Log & Kontostand aktivieren.', 'Enable balance recognition in Settings → Game log & balance.')
+      : !latest.settings.pilotName && !latest.player
+      ? say('Trage deinen Username unter Companion ein oder lasse ihn aus der Game.log erkennen.', 'Enter your username in Companion settings or let Game.log detect it.')
+      : say(`Noch kein sicher erkannter Kontostand. Erfasse mit ${shortcut} einen Auftrag oder die mobiGlas-Übersicht; Username und Kontostand müssen unten links sichtbar sein.`,
+        `No verified balance yet. Capture a contract or the mobiGlas overview with ${shortcut}; your username and balance must be visible at the bottom left.`);
+    const comparisonText = comparison.status === 'pending'
+      ? `${say('Buchungsvorschlag unter Finanzen', 'Suggested booking in Finances')}: ${comparison.difference.toLocaleString()} aUEC`
+      : comparison.status === 'resolved' ? say('Mit Buchhaltung abgeglichen', 'Reconciled with ledger')
+      : comparison.status === 'dismissed' ? say('Abweichung verworfen', 'Difference dismissed')
+      : say('Frischen Screenshot für Abgleich aufnehmen', 'Take a fresh screenshot to reconcile');
+    const text = snapshot ? `${say('Spielkontostand', 'Game balance')}: ${snapshot.amount.toLocaleString()} aUEC · ${new Date(snapshot.at).toLocaleString()} · ${comparisonText}`
+      : balanceHint;
     document.querySelectorAll('[data-telemetry-balance]').forEach(node => {node.textContent = text;});
+    window.soloBalanceReconciliation?.render();
     if (soloEditing()) return;
     inbox.replaceChildren();
     const saved = D.links(state.telemetryLinks);
@@ -184,12 +198,13 @@
     };
     const contracts = new Map((latest.contracts || []).map(contract => [contract.id, contract]));
     for (const event of latest.events) if (event.missionId && !contracts.has(event.missionId)) {
-      contracts.set(event.missionId, {id:event.missionId, title:say('Auftrag', 'Contract')});
+      contracts.set(event.missionId, {id:event.missionId, title:event.title || say('Auftrag', 'Contract')});
     }
     for (const contract of contracts.values()) {
-      const candidates = state.missions.filter(mission => !['paid', 'cancelled'].includes(mission.status)
+      const candidates = state.missions.filter(mission => (saved.missions[contract.id] === mission.id || !['paid', 'cancelled'].includes(mission.status))
         && !Object.entries(saved.missions).some(([gameId, id]) => gameId !== contract.id && id === mission.id));
-      selectRow(`${contract.title} · ${contract.id.slice(0, 8)}`, candidates.map(mission => ({id:mission.id,
+      const failed = latest.events.some(event => event.kind === 'failed' && event.missionId === contract.id);
+      selectRow(`${failed ? say('Fehlgeschlagen · ', 'Failed · ') : ''}${contract.title} · ${contract.id.slice(0, 8)}`, candidates.map(mission => ({id:mission.id,
         name:`${mission.title} · ${mission.pickup || mission.segments?.[0]?.pickup || ''} → ${mission.dropoff || mission.segments?.[0]?.dropoff || ''}`})),
       saved.missions[contract.id], 'missions', contract.id);
     }
@@ -229,7 +244,8 @@
       }
       issue = '';
       if (!blocked() && payload.events.length && await getSoloSync().refresh() && !blocked()) {
-        for (const event of payload.events) {
+        // Apply failure blocks before any queued completion/payment for that contract.
+        for (const event of [...payload.events].sort((a,b) => Number(b.kind === 'failed') - Number(a.kind === 'failed'))) {
           const plan = decision(event);
           if (!plan.action) continue;
           // Do not replay intermediate ship/location observations when a more
@@ -299,6 +315,13 @@
   document.getElementById('uiLanguageSelect')?.addEventListener('change', translate);
   window.addEventListener('pywebviewready', updateFolderPicker);
   window.soloTelemetry = {refresh, render:renderStatus, decideFleetLoss,
+    reconcileBalance:(expected, choice) => fleetAction(() => stageBalanceDecision(expected, choice)),
+    overrideMissionFailure:(missionId, failureId) => fleetAction(() => {
+      const copy = cloneData(state), mission = copy.missions.find(entry => entry.id === missionId);
+      if (!mission || mission.logFailure?.id !== failureId || mission.logFailure.status !== 'blocked') return null;
+      mission.logFailure = {...mission.logFailure, status:'overridden', reviewedAt:new Date().toISOString()};
+      return {state:soloCleanState(copy), telemetryIds:[]};
+    }),
     replaceFleetLoss:(fleetId, lossId, choice, expectedId) => fleetAction(() => stageFleetLossReplacement(fleetId, lossId, choice, expectedId)),
     currentShip:() => FleetLog.hubShip(latest || {}, state, currentActiveFleetEntry(), getSoloPilotProfile()?.name),
     locationStatus:() => D.locationStatus(state, latest || {}, places())};

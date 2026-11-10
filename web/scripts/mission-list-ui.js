@@ -267,6 +267,30 @@ function createMissionCard(mission) {
   }
 
   const missionBody = missionNode.querySelector(".mission-body");
+  if (mission.logFailure) {
+    const warning = document.createElement('div');
+    warning.className = 'mission-failure-note';
+    const message = document.createElement('p');
+    message.textContent = isMissionFailed(mission)
+      ? cargoText('contracts.failure.blocked', 'Game.log: Auftrag fehlgeschlagen. Abschluss und Auszahlung sind gesperrt; Fracht bleibt erhalten.')
+      : cargoText('contracts.failure.overridden', 'Fehlermeldung aus der Game.log manuell übersteuert.');
+    const evidence = document.createElement('small');
+    evidence.textContent = `${formatDateTimeDisplay(mission.logFailure.at)} · ${mission.logFailure.channel} · ${mission.logFailure.missionId}`;
+    warning.append(message, evidence);
+    if (isMissionFailed(mission)) {
+      if (mission.paidAt || getMissionIncomeEntry(mission)) {
+        const note = document.createElement('p');
+        note.textContent = cargoText('contracts.failure.existingPayment', 'Es gibt bereits eine Zahlung. Bitte die Buchung prüfen; sie wurde nicht verändert.');
+        warning.append(note);
+      }
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'secondary-button';
+      button.textContent = cargoText('contracts.failure.override', 'Meldung übersteuern');
+      button.addEventListener('click', () => void overrideMissionFailure(mission));
+      warning.append(button);
+    }
+    missionBody.before(warning);
+  }
   const dispatchAssignment = missionNode.querySelector(".mission-dispatch-assignment");
   const toggleMissionButton = missionNode.querySelector(".toggle-mission");
   const assignmentWarning = missionNode.querySelector(".mission-assignment-warning");
@@ -326,7 +350,8 @@ function createMissionCard(mission) {
 
   if (statusBadge) {
     statusBadge.hidden = false;
-    statusBadge.textContent = isIncomplete ? cargoText("contracts.workflow.incomplete", "Unvollständig") : getMissionWorkflowLabel(mission);
+    statusBadge.textContent = isMissionFailed(mission) ? getMissionWorkflowLabel(mission) : isIncomplete ? cargoText("contracts.workflow.incomplete", "Unvollständig") : getMissionWorkflowLabel(mission);
+    statusBadge.classList.toggle('is-failed', isMissionFailed(mission));
     statusBadge.classList.toggle("is-open", workflowStatus === "active" && !isIncomplete);
     statusBadge.classList.toggle("is-paid", workflowStatus === "paid");
     statusBadge.classList.toggle("is-incomplete", isIncomplete);
@@ -370,7 +395,7 @@ function createMissionCard(mission) {
         ].filter(Boolean).join(" | ")
       : [
           getMissionTypeLabel(mission),
-          isCompleted && completedAt ? cargoText("contracts.meta.completedAt", "abgeschlossen {value}", { value: formatDateTimeDisplay(completedAt) }) : cargoText("common.active", "Aktiv").toLowerCase(),
+          isMissionFailed(mission) ? getMissionWorkflowLabel(mission) : isCompleted && completedAt ? cargoText("contracts.meta.completedAt", "abgeschlossen {value}", { value: formatDateTimeDisplay(completedAt) }) : cargoText("common.active", "Aktiv").toLowerCase(),
           formatMissionAssignedShip(mission),
           formatMissionAssignedPilot(mission),
           formatMissionTransportSummary(mission),
@@ -487,7 +512,7 @@ function createMissionCard(mission) {
     completeMissionButton.setAttribute("aria-label", completeLabel);
     completeMissionButton.setAttribute("title", completeLabel);
     completeMissionButton.dataset.tooltip = completeLabel;
-    const canCompleteDirectly = !isCompleted && !isPaid
+    const canCompleteDirectly = !isMissionFailed(mission) && !isCompleted && !isPaid
       && (isDispatcherMode() || !mission.organizationLink?.missionId)
       && isOrganizationMissionReadyForCompletion(mission);
     completeMissionButton.hidden = !canCompleteDirectly;
@@ -501,7 +526,7 @@ function createMissionCard(mission) {
   }
 
   if (payMissionButton) {
-    const canBookPayment = missionHasPayout(mission) && !isPaid && !isIncomplete
+    const canBookPayment = !isMissionFailed(mission) && missionHasPayout(mission) && !isPaid && !isIncomplete
       && (isDispatcherMode() || !mission.organizationLink?.missionId)
       && isOrganizationMissionReadyForCompletion(mission);
     payMissionButton.hidden = !canBookPayment;
@@ -570,6 +595,11 @@ function renderMissions() {
     .sort(byCompletedDesc);
 
   [
+    ...(state.missions.some(isMissionFailed) ? [{
+      id:'failed', title:cargoText('contracts.workflow.failed', 'Fehlgeschlagen'),
+      description:cargoText('contracts.failure.group', 'Fehlermeldungen aus der Game.log. Auszahlung erst nach bewusster Freigabe.'),
+      missions:state.missions.filter(isMissionFailed), mode:'cards',
+    }] : []),
     {
       id: "active",
       title: cargoText("contracts.groups.active.title", "Aktiv"),

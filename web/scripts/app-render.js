@@ -61,4 +61,5 @@ function render() {
   renderMissionImportProgress();
   invalidateAppViews();
   renderVisiblePage();
+  window.soloBalanceReconciliation?.render();
 }

@@ -17,9 +17,10 @@ Heimnetz greifen per Browser auf denselben Spielstand zu.
 - Finanzen und Statistiken mit Schnellbuchungen im Blick behalten.
 - Schiff und Standort automatisch anhand der Game.log erkennen.
 - Sitzungen, Reisezeiten und geschätzten Kraftstoffbedarf nachvollziehen.
+- Baupläne sammeln und fehlgeschlagene Aufträge anhand der Game.log kennzeichnen.
 - Bestätigte Auftragszahlungen aus der Game.log verbuchen, auch Gruppenanteile.
 - Doppelte Orte mit Suchfunktion zusammenführen.
-- Kontostand per Screenshot mit der Buchhaltung abgleichen.
+- Kontostand aus Screenshots abgleichen und Buchungsvorschläge selbst zuordnen oder verwerfen.
 - Auf PC und weiteren Geräten im Heimnetz zusammenarbeiten.
 - Persönliche Daten sichern, exportieren und importieren.
 

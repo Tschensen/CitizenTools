@@ -1,5 +1,15 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
+## Unreleased
+
+- Bauplansammlung und Kennzeichnung fehlgeschlagener Aufträge mit Auszahlungssperre ergänzt.
+- Kontostandsabgleich mit bestätigbaren Buchungsvorschlägen und Auftragszuordnung verbessert.
+
+### English
+
+- Added a blueprint collection and failure reports that block contract payments until reviewed.
+- Improved balance reconciliation with reviewable bookings and contract matching.
+
 ## 0.11.0 — Sitzungslogbuch und Flottenverwaltung
 
 - Sitzungslogbuch mit Reisezeiten und geschätztem Kraftstoffbedarf ergänzt.

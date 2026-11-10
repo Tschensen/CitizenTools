@@ -7,6 +7,30 @@ const locations = [{name:'Orison'}, {name:'Bountiful Harvest',aliases:['Stanton2
 function fixture() { return {fleet:[{id:'fleet',shipId:'hermes',status:'active',manufacturer:'RSI',model:'Hermes'}],missions:[{id:'m',status:'active',type:'courier',serviceDetails:{packages:[{id:'p',pickup:'Orison',destination:'Bountiful Harvest'}]}}],telemetryLinks:{missions:{game:'m'}}}; }
 const plan = (event, state=fixture(), flags=settings, live=true) => D.plan({at,...event}, state, flags, locations, live, now);
 
+test('failure requires an explicit game-ID link, survives age and does not depend on completion automation', () => {
+  const state = fixture(), failed = {id:'failed:game', kind:'failed', missionId:'game', at:'2026-10-11T12:00:00Z', player:'Pilot'};
+  const flags = {...settings, pilotName:'Pilot', logAutoComplete:false, logAutoPayment:false};
+  assert.deepEqual(plan(failed,state,flags,false), {action:'failed',missionId:'m'});
+  assert.equal(plan({...failed,missionId:'same-title-other-id'},state,flags).reason,'mission');
+  assert.equal(plan({...failed,player:'Other'},state,flags).reason,'player');
+  assert.equal(plan(failed,state,{...flags,logEnabled:false}).reason,'offline');
+  for (const status of ['blocked','overridden']) {
+    state.missions[0].logFailure = {id:failed.id,status};
+    assert.equal(plan(failed,state,flags).action,'discard');
+  }
+});
+
+test('blocked contracts cannot be completed, delivered or paid automatically until overridden', () => {
+  const state=fixture(), flags={...settings,logAutoPayment:true};
+  state.missions[0].status='completed';
+  state.missions[0].logFailure={id:'failed',status:'blocked'};
+  const events=[{kind:'completed'}, {kind:'objective',objectiveId:'dropoff_0'},
+    {kind:'payment',amount:500,match:'adjacent_notifications',completedAt:at}];
+  for (const event of events) assert.equal(plan({...event,missionId:'game'},state,flags).reason,'mission_failed');
+  state.missions[0].logFailure.status='overridden';
+  assert.equal(plan({...events[2],missionId:'game'},state,flags).action,'payment');
+});
+
 test('payment needs an enabled option, linked completed contract and confirmed actual amount', () => {
   const state=fixture(); Object.assign(state.missions[0], {status:'completed', payout:50250});
   const event={id:'payment:game:',kind:'payment',missionId:'game',amount:50250,completedAt:at,match:'adjacent_notifications'};

@@ -426,6 +426,11 @@ class SoloHandler(backend.CargoPlannerHandler):
                 result = journal.read(connection, selected, before)
             result.update(enabled=self.runtime.settings.get('logEnabled', False), loading=self.runtime.telemetry.loading)
             return self.send_json(200, result)
+        if path == '/api/solo/blueprints':
+            with backend.get_connection() as connection:
+                result = journal.blueprints(connection)
+            result.update(enabled=self.runtime.settings.get('logEnabled', False), loading=self.runtime.telemetry.loading)
+            return self.send_json(200, result)
         if path == "/api/solo/status":
             return self.send_json(200, self.runtime.status())
         return super().do_GET()

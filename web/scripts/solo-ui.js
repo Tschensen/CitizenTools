@@ -7,7 +7,7 @@
   let loaded = false, running = false, busy = false, refreshing = false, lastStatus = null;
   const english = {
     title:"Companion & home network", address:"Currently reachable", port:"Port",
-    hotkey:"Screenshot shortcut", mode:"Capture area", activeMonitor:"Active window's monitor", desktop:"Entire desktop", retention:"Screenshots to keep", pilot:"Pilot / handle for imports",
+    hotkey:"Screenshot shortcut", mode:"Capture area", activeMonitor:"Active window's monitor", desktop:"Entire desktop", retention:"Screenshots to keep", pilot:"Pilot / username for imports",
     autoCapture:"Enable screenshot capture at startup", allowLan:"Share on your home network",
     save:"Save settings", pcOnly:"Change network and screenshot settings directly on the PC.", restart:"Changes take effect after a restart.",
     routeKeys:"Route shortcuts", routeKeysHint:"Work in the background while Citizen Tools is running, even with screenshot capture paused. Record a combination and save. Empty fields disable a shortcut. Auto-unload directly confirms all ready deliveries at the current stop.",

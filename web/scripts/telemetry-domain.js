@@ -36,7 +36,7 @@
   }
   function plan(event, state, settings, choices, live, now = Date.now(), context = {}) {
     const age = now - Date.parse(event.at);
-    if (!Number.isFinite(age) || age < -5000 || (event.kind !== 'ship_loss' && age > 15 * 60 * 1000)) return {action:'discard', reason:'expired'};
+    if (!Number.isFinite(age) || age < -5000 || (!['ship_loss','failed'].includes(event.kind) && age > 15 * 60 * 1000)) return {action:'discard', reason:'expired'};
     const player = context.player || settings.pilotName;
     if (event.player && player && key(event.player) !== key(player)) return {action:'discard', reason:'player'};
     if (['ship', 'location'].includes(event.kind) && event.session && context.session && event.session !== context.session) return {action:'discard', reason:'session'};
@@ -67,13 +67,18 @@
       }
       return value !== null ? {action:'location', value} : {reason:'location', bindingKey:event.value};
     }
-    if (!['objective', 'completed', 'payment'].includes(event.kind)) return {action:'discard'};
-    const enabled = event.kind === 'payment' ? settings.logAutoPayment
+    if (!['objective', 'completed', 'payment', 'failed'].includes(event.kind)) return {action:'discard'};
+    const enabled = event.kind === 'failed' ? true : event.kind === 'payment' ? settings.logAutoPayment
       : event.kind === 'completed' ? settings.logAutoComplete : settings.logAutoRoute;
     if (!enabled) return {reason:'disabled'};
     const missionId = saved.missions[event.missionId];
     const mission = state.missions.find(item => item.id === missionId);
     if (!mission) return {reason:'mission', bindingKey:event.missionId};
+    if (event.kind === 'failed') {
+      if (mission.logFailure?.id === event.id) return {action:'discard'};
+      return {action:'failed', missionId};
+    }
+    if (mission.logFailure?.status === 'blocked') return {reason:'mission_failed', missionId};
     if (event.kind === 'payment') {
       const delay = Date.parse(event.at) - Date.parse(event.completedAt);
       if (!Number.isSafeInteger(event.amount) || event.amount <= 0 || event.amount > 999999999999
@@ -104,7 +109,8 @@
   }
   function balance(value) {
     if (!value || !Number.isSafeInteger(value.amount) || value.amount < 0 || !Number.isFinite(Date.parse(value.at))) return null;
-    return {amount:value.amount, at:value.at, sourceFile:String(value.sourceFile || '').slice(0, 240)};
+    return {amount:value.amount, at:value.at, sourceFile:String(value.sourceFile || '').slice(0, 240),
+      ...(value.id ? {id:String(value.id).slice(0,200)} : {})};
   }
   function locationObservation(value) {
     if (!value || typeof value.id !== 'string' || !value.id || value.id.length > 200

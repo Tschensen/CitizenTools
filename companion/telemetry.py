@@ -169,7 +169,9 @@ class Telemetry:
                 events = self.parser.feed(decoded)
                 self.journal.feed(decoded, self.parser, events)
                 for event in events:
-                    if not self.loading and -5 <= seconds_since(event['at']) <= 300:
+                    # Failure warnings are durable and safe to recover on startup;
+                    # historical completions and payments must never be applied.
+                    if event['kind'] == 'failed' or (not self.loading and -5 <= seconds_since(event['at']) <= 300):
                         new_events.append(event)
             sessions, entries = self.journal.drain()
             if sessions or entries:
@@ -188,7 +190,7 @@ class Telemetry:
                     new_events.append(self.parser.location_event(self.parser.last_at))
             for event in new_events:
                 event['channel'] = settings.get('gameChannel', 'LIVE')
-                if event['kind'] in ('accepted', 'objective_text', 'ship_exit', 'disconnected'):
+                if event['kind'] in ('accepted', 'objective_text', 'ship_exit', 'disconnected', 'blueprint'):
                     continue
                 # Semantic objective IDs are stable even when the game repeats
                 # the same completed objective with a different timestamp.
@@ -196,6 +198,8 @@ class Telemetry:
                     event['id'] = event['kind'] + ':' + event['missionId'] + ':' + event.get('objectiveId', '')
                 if event['kind'] == 'ship_loss':
                     event['id'] = 'ship_loss:' + event['channel'] + ':' + event['entityId']
+                if event['kind'] == 'failed':
+                    event['id'] = 'failed:' + event['channel'] + ':' + event['missionId']
                 self.enqueue(event)
 
     def snapshot(self):
@@ -214,7 +218,7 @@ class Telemetry:
                       'locationContext': self.parser.position.context(),
                       'contracts': list(copy.deepcopy(self.parser.contracts).values())[-100:]}
         with self.connect() as connection:
-            rows = connection.execute("SELECT payload FROM telemetry_events WHERE status='pending' AND (kind='ship_loss' OR julianday(at) >= julianday('now','-15 minutes')) ORDER BY at,id LIMIT 100").fetchall()
+            rows = connection.execute("SELECT payload FROM telemetry_events WHERE status='pending' AND (kind IN ('ship_loss','failed') OR julianday(at) >= julianday('now','-15 minutes')) ORDER BY at,id LIMIT 100").fetchall()
             result['events'] = [json.loads(row[0]) for row in rows]
         return result
 
@@ -226,12 +230,12 @@ class Telemetry:
         captured = datetime.fromtimestamp(image_path.stat().st_mtime, timezone.utc).isoformat()
         if not -5 <= seconds_since(captured) <= 120:
             return False
-        handle = self.runtime.settings.get('pilotName') or self.parser.player
-        if not handle:
+        username = self.runtime.settings.get('pilotName') or self.parser.player
+        if not username:
             return False
-        result = read_balance(tesseract, image_path, handle)
+        result = read_balance(tesseract, image_path, username)
         if result is None:
             return False
         self.enqueue({'id': 'balance:' + hash_file(image_path), 'kind': 'balance', 'at': captured,
-                      'amount': result, 'player': handle, 'sourceFile': image_path.name})
+                      'amount': result, 'player': username, 'sourceFile': image_path.name})
         return True

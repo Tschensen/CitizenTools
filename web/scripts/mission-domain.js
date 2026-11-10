@@ -96,6 +96,19 @@ function isMissionIncomplete(mission) {
   return getMissionIncompleteReasons(mission).length > 0;
 }
 
+function normalizeMissionLogFailure(value) {
+  if (!value || typeof value.id !== 'string' || !value.id || value.id.length > 200
+      || !/^[0-9a-f-]{36}$/i.test(value.missionId || '') || !Number.isFinite(Date.parse(value.at))) return null;
+  return {id:value.id, missionId:value.missionId, at:value.at,
+    status:value.status === 'overridden' ? 'overridden' : 'blocked',
+    reviewedAt:Number.isFinite(Date.parse(value.reviewedAt)) ? value.reviewedAt : '',
+    player:String(value.player || '').slice(0,100), channel:String(value.channel || '').slice(0,20)};
+}
+
+function isMissionFailed(mission) {
+  return mission?.logFailure?.status === 'blocked';
+}
+
 function normalizeMissionStatus(status) {
   const normalized = String(status || "active").trim().toLowerCase();
   if (normalized === "completed_paid" || normalized === "completed-paid") return "paid";
@@ -103,7 +116,7 @@ function normalizeMissionStatus(status) {
 }
 
 function isMissionCompleted(mission) {
-  if (!mission) return false;
+  if (!mission || isMissionFailed(mission)) return false;
   const status = normalizeMissionStatus(mission.status);
   if (status === "completed" || status === "paid" || mission.completedAt) {
     return true;
@@ -120,6 +133,7 @@ function isMissionCompleted(mission) {
 }
 
 function canAutoCompleteMissionProgress(mission) {
+  if (isMissionFailed(mission)) return false;
   if (normalizeMissionType(mission?.type) === "delivery") {
     return isMissionCompleted(mission);
   }
@@ -127,7 +141,7 @@ function canAutoCompleteMissionProgress(mission) {
 }
 
 function isMissionActive(mission) {
-  return normalizeMissionStatus(mission?.status) === "active" && !isMissionCompleted(mission);
+  return !isMissionFailed(mission) && normalizeMissionStatus(mission?.status) === "active" && !isMissionCompleted(mission);
 }
 
 function getMissionPayout(mission) {
@@ -157,6 +171,7 @@ function isMissionPaid(mission) {
 }
 
 function getMissionWorkflowStatus(mission) {
+  if (isMissionFailed(mission)) return 'failed';
   if (isMissionPaid(mission)) return "paid";
   if (isMissionCompleted(mission)) return "completed";
   if (normalizeMissionStatus(mission?.status) === "cancelled") return "cancelled";
@@ -165,6 +180,8 @@ function getMissionWorkflowStatus(mission) {
 
 function getMissionWorkflowLabel(mission) {
   switch (getMissionWorkflowStatus(mission)) {
+    case 'failed':
+      return cargoText('contracts.workflow.failed', 'Fehlgeschlagen');
     case "paid":
       return t("contracts.workflow.paid");
     case "completed":
