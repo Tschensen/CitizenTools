@@ -1,6 +1,6 @@
 # Citizen Tools · Flight Deck — Versionsverlauf
 
-## Unreleased
+## Noch nicht veröffentlicht
 
 - Bauplansammlung und Kennzeichnung fehlgeschlagener Aufträge mit Auszahlungssperre ergänzt.
 - Kontostandsabgleich mit bestätigbaren Buchungsvorschlägen und Auftragszuordnung verbessert.
