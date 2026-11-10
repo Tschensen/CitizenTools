@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.11.1",
+    "de": {
+      "title": "Baupläne und Kontostandsabgleich",
+      "changes": [
+        "Bauplansammlung und Kennzeichnung fehlgeschlagener Aufträge mit Auszahlungssperre ergänzt.",
+        "Kontostandsabgleich mit bestätigbaren Buchungsvorschlägen und Auftragszuordnung verbessert."
+      ]
+    },
+    "en": {
+      "title": "Blueprints and balance reconciliation",
+      "changes": [
+        "Added a blueprint collection and failure reports that block contract payments until reviewed.",
+        "Improved balance reconciliation with reviewable bookings and contract matching."
+      ]
+    }
+  },
+  {
     "version": "0.11.0",
     "de": {
       "title": "Sitzungslogbuch und Flottenverwaltung",

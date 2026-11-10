@@ -21,6 +21,20 @@ from server import app as backend
 
 
 class SoloIntegrationTests(unittest.TestCase):
+    def test_blueprint_collection_api_is_read_only_and_separates_profiles(self):
+        from companion import journal
+        session = {'id':'b'*64, 'startedAt':'2026-11-07T12:00:00Z', 'player':'Pilot', 'channel':'LIVE'}
+        entry = {'id':'bp', 'sessionId':session['id'], 'kind':'blueprint', 'at':session['startedAt'], 'name':'Sedulity', 'player':'Pilot', 'channel':'LIVE'}
+        with backend.get_connection() as db:
+            journal.save(db,[session],[entry]); journal.save(db,[session],[entry]); db.commit()
+        before = self.api('/api/state')[1]
+        code, result = self.api('/api/solo/blueprints')
+        self.assertEqual(code,200)
+        self.assertEqual(result['blueprints'][0]['name'],'Sedulity')
+        self.assertEqual(result['blueprints'][0]['observations'],1)
+        self.assertEqual(self.api('/api/state')[1],before)
+        self.assertEqual(self.api('/api/solo/blueprints?scope=dispatcher')[0],400)
+
     def test_session_journal_is_read_only_shared_and_validates_query(self):
         from companion import journal
         session = {'id':'a'*64, 'startedAt':'2026-11-07T12:00:00Z', 'player':'Pilot', 'channel':'LIVE'}

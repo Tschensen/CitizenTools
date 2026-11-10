@@ -98,7 +98,8 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(accepted[0]['title'], 'Courier [BP]')
         objective = p.feed(line(f'<ObjectiveUpserted> Received ObjectiveUpserted push message for: mission_id {MISSION} - objective_id pickup_box_0 - state MISSION_OBJECTIVE_STATE_COMPLETED - created 0'))
         self.assertEqual(objective[0]['missionId'], MISSION)
-        self.assertEqual(p.feed(line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_FAILED')), [])
+        failed = p.feed(line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_FAILED'))
+        self.assertEqual((failed[0]['kind'], failed[0]['missionId'], failed[0]['title']), ('failed', MISSION, 'Courier [BP]'))
         self.assertEqual(p.feed(line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_COMPLETED'))[0]['kind'], 'completed')
 
     def test_multiline_objective_message(self):
@@ -108,8 +109,31 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(result[0]['kind'], 'objective_text')
         self.assertIn('Bountiful Harvest', result[0]['text'])
 
+    def test_blueprint_awards_ignore_render_repeats_and_preserve_name_without_mission_guess(self):
+        parser = GameLogParser()
+        notice = '<SHUDEvent_OnNotification> Added notification "Bauplan erhalten: <EM4>Sedulity</EM4>: " [35] to queue, MissionId: [00000000-0000-0000-0000-000000000000], ObjectiveId: []'
+        event = parser.feed(line(notice))[0]
+        self.assertEqual((event['kind'],event['name']), ('blueprint','Sedulity'))
+        self.assertNotIn('missionId', event)
+        self.assertEqual(parser.feed(line(notice.replace('SHUDEvent_OnNotification','UpdateNotificationItem'))), [])
+        self.assertEqual(parser.feed(line('"Bauplan erhalten: Sedulity: " [35]')), [])
+        self.assertEqual(parser.feed(line('<SHUDEvent_OnNotification> Added notification "Bauplan erhalten: Huracan')), [])
+        self.assertEqual(parser.feed(line(': " [36] to queue, MissionId: [00000000-0000-0000-0000-000000000000], ObjectiveId: []'))[0]['name'], 'Huracan')
+
 
 class TailerTests(unittest.TestCase):
+    def test_historical_failures_survive_restart_without_replaying_payments(self):
+        old = '2026-10-11T12:21:30.090Z'
+        self.path.write_text(line('<Channel Connection Complete> remoteAddr=server nickname="Pilot" playerGEID=42', old)
+            + line(f'<MissionEnded> mission_id {MISSION} - mission_state MISSION_STATE_FAILED', old), encoding='utf-8')
+        self.reader.tick()
+        events = self.reader.snapshot()['events']
+        self.assertEqual([event['kind'] for event in events], ['failed'])
+        with self.connect() as db:
+            db.execute("UPDATE telemetry_events SET status='applied'"); db.commit()
+        Telemetry(self.runtime, self.connect).tick()
+        self.assertEqual(self.reader.snapshot()['events'], [])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.root = Path(self.temp.name)
         (self.root / 'LIVE').mkdir()

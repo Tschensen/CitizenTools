@@ -80,6 +80,7 @@ function fixture() {
     ledgerEntries: [{ id: 'opening', bookedOn: '2026-11-03', scope: 'other', category: 'Anfangsbestand', flow: 'income', amountAuec: 10000 }],
   };
   let persisted = 0, counter = 0;
+  const notices = [];
   const context = vm.createContext({
     window: { requestAnimationFrame: fn => fn() }, document,
     FormData: class { constructor(form) { this.form = form; } get(key) { return this.form.elements[key]?.value ?? null; } },
@@ -94,10 +95,11 @@ function fixture() {
       compareDateInputs: (a, b) => a.localeCompare(b), createRuntimeId: () => 'entry-' + ++counter,
       getFleetEntries: () => state.fleet, getShipLibraryEntries: () => [], findShipLibraryEntryById: () => null,
       render() {}, persist() { persisted++; }, setActivePage() {},
+      async showConfirmDialog(options) { notices.push(options); return true; },
     },
   });
   controller.init();
-  return { main, quick, controller, state, details, amountMode, quickMode, document,
+  return { main, quick, controller, state, details, amountMode, quickMode, document, notices,
     node: id => nodes.get('#' + id), persisted: () => persisted,
     async open(preset) {
       const button = buttons.find(button => button.dataset.financeQuickExpense === preset);
@@ -128,6 +130,19 @@ test('explicit income and an existing booking retain their direction', async () 
   f.main.scope.value = 'other'; await f.main.scope.fire('change');
   f.main.category.value = 'Transfer'; await f.main.category.fire('change');
   assert.equal(f.main.flow.value, 'expense');
+});
+
+test('manual ledger income cannot bypass a linked contract failure', async () => {
+  const f=fixture();
+  f.state.missions.push({id:'failed-contract',logFailure:{status:'blocked'}});
+  f.main.elements.missionId={value:'failed-contract'};
+  f.main.flow.value='income'; await f.main.flow.fire('change');
+  f.main.category.value='Auftragserlös'; f.main.amountAuec.value='500';
+  const before=JSON.stringify(f.state.ledgerEntries);
+  await f.main.fire('submit');
+  assert.equal(JSON.stringify(f.state.ledgerEntries),before);
+  assert.equal(f.persisted(),0);
+  assert.equal(f.notices.at(-1).message,'contracts.failure.blocked');
 });
 
 test('new forms still suggest defaults; neutral categories preserve the direction', async () => {

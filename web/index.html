@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      window.soloClientVersion = "0.11.0";
+      window.soloClientVersion = "0.11.1";
       window.soloErrors = [];
       window.soloLoadErrors = [];
       window.addEventListener('error', function (event) {
@@ -15,14 +15,14 @@
     </script>
     <title>Citizen Tools · Flight Deck</title>
     <link rel="icon" href="assets/brand/citizen-tools-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?solo=0.11.0" />
-    <link rel="stylesheet" href="solo.css?solo=0.11.0&ui=3" />
-    <link rel="stylesheet" href="personal-transfer.css?solo=0.11.0" />
-    <link rel="stylesheet" href="solo-personalize.css?solo=0.11.0" />
-    <link rel="stylesheet" href="statistics-period.css?solo=0.11.0" />
-    <link rel="stylesheet" href="journal.css?solo=0.11.0" />
-    <link rel="stylesheet" href="solo-updates.css?solo=0.11.0" />
-    <link rel="stylesheet" href="delivery.css?solo=0.11.0" />
+    <link rel="stylesheet" href="styles.css?solo=0.11.1" />
+    <link rel="stylesheet" href="solo.css?solo=0.11.1&ui=3" />
+    <link rel="stylesheet" href="personal-transfer.css?solo=0.11.1" />
+    <link rel="stylesheet" href="solo-personalize.css?solo=0.11.1" />
+    <link rel="stylesheet" href="statistics-period.css?solo=0.11.1" />
+    <link rel="stylesheet" href="journal.css?solo=0.11.1" />
+    <link rel="stylesheet" href="solo-updates.css?solo=0.11.1" />
+    <link rel="stylesheet" href="delivery.css?solo=0.11.1" />
   </head>
   <body>
     <aside id="soloConnectionBanner" class="solo-connection-banner" role="status" aria-live="polite" hidden>
@@ -128,6 +128,7 @@
           <button class="nav-tab" type="button" data-statistics-view-target="operations" role="tab" data-i18n="statistics.tabs.operations">Aufträge &amp; Orte</button>
           <button class="nav-tab" type="button" data-statistics-view-target="ships" role="tab" data-i18n="statistics.tabs.ships">Schiffe</button>
           <button class="nav-tab" type="button" data-statistics-view-target="journal" role="tab" data-journal-text="tab">Sitzungslogbuch</button>
+          <button class="nav-tab" type="button" data-statistics-view-target="blueprints" role="tab" data-blueprint-text="tab">Baupläne</button>
         </nav>
 
         <nav id="settingsNav" class="app-nav" aria-label="Einstellungsnavigation" data-i18n-aria-label="settings.navAria" hidden>
@@ -1260,7 +1261,7 @@
                 <div id="fleetDispatcherCrewFields" class="grid-2 compact-grid" hidden>
                   <label data-i18n-label="fleet.form.owner">
                     Eigentümer
-                    <input type="text" name="ownerName" id="fleetOwnerInput" placeholder="z. B. Orga, Spielername oder Handle" data-i18n-placeholder="fleet.form.ownerPlaceholder" />
+                    <input type="text" name="ownerName" id="fleetOwnerInput" placeholder="z. B. Orga, Spielername oder Username" data-i18n-placeholder="fleet.form.ownerPlaceholder" />
                   </label>
 
                   <label data-i18n-label="fleet.form.pilot">
@@ -1360,6 +1361,7 @@
                 </div>
               </div>
               <p class="telemetry-balance" data-telemetry-balance role="status"></p>
+              <section id="balanceReconciliationPanel" class="balance-reconciliation" hidden></section>
             </section>
 
             <section class="panel panel-finance-form" data-finance-view="entry" hidden>
@@ -1589,6 +1591,13 @@
               <details id="soloJournalRoutes"><summary data-journal-text="routes">Geplante Routen und Kraftstoffbedarf</summary><div id="soloJournalEstimates" class="journal-trips"></div></details>
               <h3 data-journal-text="events">Ereignisse</h3><ol id="soloJournalEvents" class="journal-events"></ol>
             </section>
+            <section id="soloBlueprintPanel" class="panel statistics-view journal-panel" data-statistics-view="blueprints" hidden>
+              <div class="panel-header"><div><h2 data-blueprint-text="tab">Baupläne</h2><p data-blueprint-text="intro">Deine erfassten Baupläne aus allen gespeicherten Sitzungen.</p></div><button id="soloBlueprintRefresh" class="secondary-button" type="button" data-blueprint-text="refresh">Aktualisieren</button></div>
+              <div class="journal-toolbar"><label><span data-blueprint-text="search">Bauplan suchen</span><input id="soloBlueprintSearch" type="search" autocomplete="off" /></label><label><span data-blueprint-text="profile">Spieler und Spielkanal</span><select id="soloBlueprintProfile"></select></label></div>
+              <p id="soloBlueprintStatus" role="status" aria-live="polite"></p>
+              <p id="soloBlueprintCount"></p><div id="soloBlueprintList" class="blueprint-list"></div>
+              <p class="journal-help" data-blueprint-text="hint">Erfasst werden „Bauplan erhalten“-Meldungen aus der Game.log. Frühere Freischaltungen ohne Log-Meldung fehlen; mehrfach erkannte Meldungen sind keine Stückzahl.</p>
+            </section>
             <section class="panel statistics-period-panel" aria-label="Statistik-Zeitraum" data-i18n-aria-label="statistics.period.label">
               <form id="statisticsPeriodForm" class="statistics-period-form" novalidate>
                 <label for="statisticsPeriod"><span data-i18n="statistics.period.label">Zeitraum</span>
@@ -1764,7 +1773,7 @@
                     <select id="uiLanguageSelect"></select>
                   </label>
                   <label id="soloPilotProfileGroup" class="settings-profile-field" data-i18n-label="settings.pilotName">
-                    Pilot / Handle
+                    Pilot / Username
                     <input id="soloPilotNameInput" type="text" maxlength="80" placeholder="z. B. Tsche" data-i18n-placeholder="settings.pilotNamePlaceholder" />
                   </label>
                 </div>
@@ -1833,7 +1842,7 @@
                   </div>
                   <label><span data-solo-text="mode">Aufnahmebereich</span><select name="captureMode"><option value="active-monitor" data-solo-text="activeMonitor">Bildschirm des aktiven Fensters</option><option value="virtual-desktop" data-solo-text="desktop">Gesamter Desktop</option></select></label>
                   <label><span data-solo-text="retention">Screenshots aufbewahren</span><input name="captureRetention" type="number" min="1" max="1000" value="100" required /></label>
-                  <label><span data-solo-text="pilot">Pilot / Handle für Importe</span><input name="pilotName" maxlength="80" /></label>
+                  <label><span data-solo-text="pilot">Pilot / Username für Importe</span><input name="pilotName" maxlength="80" /></label>
                   <label class="solo-checkbox"><input name="captureEnabled" type="checkbox" checked /><span data-solo-text="autoCapture">Screenshot-Erfassung beim Start aktivieren</span></label>
                   <fieldset class="solo-route-shortcuts">
                     <legend data-solo-text="routeKeys">Routen-Tastenkürzel</legend>
@@ -1900,8 +1909,8 @@
                   <label class="solo-checkbox"><input type="checkbox" name="logAutoComplete" /><span data-telemetry-en="Complete linked contracts on game confirmation">Verknüpfte Aufträge bei Spielbestätigung abschließen</span></label>
                   <label class="solo-checkbox"><input type="checkbox" name="logAutoPayment" /><span data-telemetry-en="Book confirmed contract payments">Bestätigte Auftragszahlungen verbuchen</span></label>
                   <p class="form-hint" data-telemetry-en="Books the amount actually received, including reduced payouts and group shares, when the linked contract is completed and the payment immediately follows its completion message. The original reward is preserved. Ambiguous payments remain unbooked.">Bucht den tatsächlich erhaltenen Betrag, auch bei Abzügen oder Gruppenanteilen, wenn der verknüpfte Auftrag abgeschlossen ist und die Zahlungsbestätigung direkt folgt. Der ursprüngliche Auftragserlös bleibt erhalten. Uneindeutige Zahlungen werden nicht gebucht.</p>
-                  <label class="solo-checkbox"><input type="checkbox" name="balanceOcrEnabled" /><span data-telemetry-en="Read balance from new Companion screenshots">Kontostand aus neuen Companion-Screenshots lesen</span></label>
-                  <p class="form-hint" data-telemetry-en="Balance recognition requires your import handle above or a detected player. Verified balances show the difference from the ledger; they do not book income. A log confirms the ship you boarded, not who is piloting it.">Die Kontostandserkennung benötigt deinen Import-Handle oben oder einen erkannten Spieler. Geprüfte Kontostände zeigen die Differenz zur Buchhaltung; sie buchen keine Einnahmen. Das Log erkennt das betretene Schiff, nicht den Piloten am Steuer.</p>
+                  <label class="solo-checkbox"><input type="checkbox" name="balanceOcrEnabled" /><span data-telemetry-en="Also read the balance from contract screenshots">Kontostand aus Auftragsscreenshots mitlesen</span></label>
+                  <p class="form-hint" data-telemetry-en="Use your normal screenshot shortcut for a contract or the mobiGlas overview. Your username and balance must be visible at the bottom left. Your username is matched against the Companion setting or the detected player. Verified balances show the difference from the ledger; they do not create bookings.">Nutze deine normale Screenshot-Taste für einen Auftrag oder die mobiGlas-Übersicht. Username und Kontostand müssen unten links sichtbar sein. Der Username wird mit der Companion-Einstellung oder dem erkannten Spieler abgeglichen. Geprüfte Kontostände zeigen die Differenz zur Buchhaltung; sie erzeugen keine Buchungen.</p>
                   <div class="solo-actions"><button type="submit" class="primary-button" data-telemetry-en="Save detection settings">Erkennung speichern</button></div>
                 </form>
                 <p id="soloTelemetryStatus" role="status" aria-live="polite"></p>
@@ -3008,96 +3017,99 @@
 
     <datalist id="financeReferenceSuggestions"></datalist>
 
-    <script data-solo-src="scripts/calendar-date.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/fleet-log.js?solo=0.11.0&ui=3"></script>
-    <script data-solo-src="scripts/telemetry-domain.js?solo=0.11.0&ui=4"></script>
-    <script data-solo-src="scripts/config.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/i18n.js?solo=0.11.0&ui=4"></script>
+    <script data-solo-src="scripts/calendar-date.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/fleet-log.js?solo=0.11.1&ui=3"></script>
+    <script data-solo-src="scripts/telemetry-domain.js?solo=0.11.1&ui=4"></script>
+    <script data-solo-src="scripts/balance-reconciliation.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/config.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/i18n.js?solo=0.11.1&ui=4"></script>
     
     
     
     
-    <script data-solo-src="scripts/state-storage.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/state-store.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/state-api.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/state-sync.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/state-normalization.js?solo=0.11.0&ui=3"></script>
-    <script data-solo-src="scripts/state-status-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/state-persistence.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/presets.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-duplicates.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-domain.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-import-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-areas.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/autoload.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/unload-guidance.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/route-optimizer.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/delivery-progress.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/delivery-workflow-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/route-run-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/run-view-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-scene.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-warehouse-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-cargo-edit.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-quality-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-service-form-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-form-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-submit-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-actions.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-assignment-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-service-view-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/mission-list-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-overview-ui.js?solo=0.11.0&ui=4"></script>
-    <script data-solo-src="scripts/run-route-state.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/run-mode-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-layout-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/location-picker-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/hub-ui.js?solo=0.11.0&ui=3"></script>
-    <script data-solo-src="scripts/view-renderer.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/app-render.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/app-navigation.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/cargo-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/route-order-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/fleet.js?solo=0.11.0&ui=3"></script>
+    <script data-solo-src="scripts/state-storage.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/state-store.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/state-api.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/state-sync.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/state-normalization.js?solo=0.11.1&ui=3"></script>
+    <script data-solo-src="scripts/state-status-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/state-persistence.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/presets.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-duplicates.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-domain.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-cargo-form-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-import-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-areas.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-area-editor.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/autoload.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/unload-guidance.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/route-optimizer.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/delivery-progress.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/delivery-workflow-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/route-run-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/run-view-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-scene.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-grid-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-warehouse-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-cargo-edit.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-quality-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-service-form-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-form-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-submit-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-actions.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-assignment-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-service-view-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/mission-list-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-overview-ui.js?solo=0.11.1&ui=4"></script>
+    <script data-solo-src="scripts/run-route-state.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/run-mode-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-layout-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/location-picker-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/hub-ui.js?solo=0.11.1&ui=3"></script>
+    <script data-solo-src="scripts/view-renderer.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/app-render.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/app-navigation.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/cargo-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/route-order-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/autoload-area-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/fleet.js?solo=0.11.1&ui=3"></script>
     
-    <script data-solo-src="scripts/shipdb.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/finance.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/statistics-period.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/statistics-trend.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/statistics.js?solo=0.11.0"></script>
+    <script data-solo-src="scripts/shipdb.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/finance.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/statistics-period.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/statistics-trend.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/statistics.js?solo=0.11.1"></script>
     
-    <script data-solo-src="scripts/systemdb.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/location-alias-learning.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/backup-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/ledger-automation.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-merge.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-sync.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-connection.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-theme.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-effects.js?solo=0.11.0"></script>
-    <script data-solo-src="app.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/sound-presets.js?solo=0.11.0" data-solo-optional="audio"></script>
-    <script data-solo-src="scripts/solo-sounds.js?solo=0.11.0" data-solo-optional="audio"></script>
-    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.11.0" data-solo-optional="audio"></script>
-    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.11.0" data-solo-optional="audio"></script>
-  <script data-solo-src="scripts/solo-hotkey.js?solo=0.11.0"></script>
-  <script data-solo-src="scripts/solo-route-shortcuts.js?solo=0.11.0"></script>
-  <script data-solo-src="scripts/solo-ui.js?solo=0.11.0"></script>
-  <script data-solo-src="scripts/telemetry-stage.js?solo=0.11.0&ui=4"></script>
-  <script data-solo-src="scripts/solo-telemetry.js?solo=0.11.0&ui=4"></script>
-  <script data-solo-src="scripts/fleet-log-ui.js?solo=0.11.0&ui=3"></script>
-  <script data-solo-src="scripts/solo-about.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/personal-transfer.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-dialog.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/fleet-replacement-ui.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-journal.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-updates.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-cockpit.js?solo=0.11.0"></script>
-    <script data-solo-src="scripts/solo-setup.js?solo=0.11.0"></script>
-    <script src="scripts/solo-loader.js?solo=0.11.0"></script>
+    <script data-solo-src="scripts/systemdb.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/location-alias-learning.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/backup-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/ledger-automation.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-merge.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-sync.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-connection.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-theme.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-effects.js?solo=0.11.1"></script>
+    <script data-solo-src="app.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/sound-presets.js?solo=0.11.1" data-solo-optional="audio"></script>
+    <script data-solo-src="scripts/solo-sounds.js?solo=0.11.1" data-solo-optional="audio"></script>
+    <script data-solo-src="scripts/solo-sound-settings.js?solo=0.11.1" data-solo-optional="audio"></script>
+    <script data-solo-src="scripts/solo-import-sounds.js?solo=0.11.1" data-solo-optional="audio"></script>
+  <script data-solo-src="scripts/solo-hotkey.js?solo=0.11.1"></script>
+  <script data-solo-src="scripts/solo-route-shortcuts.js?solo=0.11.1"></script>
+  <script data-solo-src="scripts/solo-ui.js?solo=0.11.1"></script>
+  <script data-solo-src="scripts/telemetry-stage.js?solo=0.11.1&ui=4"></script>
+  <script data-solo-src="scripts/solo-telemetry.js?solo=0.11.1&ui=4"></script>
+  <script data-solo-src="scripts/fleet-log-ui.js?solo=0.11.1&ui=3"></script>
+  <script data-solo-src="scripts/solo-about.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/personal-transfer.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-dialog.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-balance-reconciliation.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/fleet-replacement-ui.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-journal.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-blueprints.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-updates.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-cockpit.js?solo=0.11.1"></script>
+    <script data-solo-src="scripts/solo-setup.js?solo=0.11.1"></script>
+    <script src="scripts/solo-loader.js?solo=0.11.1"></script>
   </body>
 </html>

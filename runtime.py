@@ -30,7 +30,7 @@ import solo_shortcuts
 import location_merge
 from solo_updates import UpdateManager, UpdateError
 
-VERSION = "0.11.0"
+VERSION = "0.11.1"
 DEFAULT_PORT = 4174
 SOUND_NAMES = set(solo_sounds.NAMES)
 SOUND_MAX_BYTES = solo_sounds.MAX_BYTES
@@ -424,6 +424,11 @@ class SoloHandler(backend.CargoPlannerHandler):
                 return self.send_json(400, {'error':'invalid_journal_query'})
             with backend.get_connection() as connection:
                 result = journal.read(connection, selected, before)
+            result.update(enabled=self.runtime.settings.get('logEnabled', False), loading=self.runtime.telemetry.loading)
+            return self.send_json(200, result)
+        if path == '/api/solo/blueprints':
+            with backend.get_connection() as connection:
+                result = journal.blueprints(connection)
             result.update(enabled=self.runtime.settings.get('logEnabled', False), loading=self.runtime.telemetry.loading)
             return self.send_json(200, result)
         if path == "/api/solo/status":

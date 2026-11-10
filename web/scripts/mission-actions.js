@@ -1,8 +1,23 @@
 // Mission changes and confirmation workflows; persistence goes through persist().
+async function overrideMissionFailure(mission) {
+  const failureId = mission.logFailure?.id;
+  if (!isMissionFailed(mission)) return;
+  const confirmed = await showMissionConfirmDialog({
+    title:cargoText('contracts.failure.overrideTitle', 'Fehlermeldung übersteuern?'),
+    message:cargoText('contracts.failure.overrideMessage', 'Die Game.log meldet diesen verknüpften Auftrag als fehlgeschlagen. Danach kannst du ihn wieder abschließen und bezahlen. Prüfe vorher den Auftrag und seine Spiel-ID.'),
+    confirmLabel:cargoText('contracts.failure.override', 'Meldung übersteuern'),
+  });
+  if (!confirmed) return;
+  if (!await window.soloTelemetry?.overrideMissionFailure(mission.id, failureId)) {
+    await showAppNotice(cargoText('contracts.failure.retry', 'Die Änderung wurde nicht gespeichert. Bitte erneut prüfen.'));
+  }
+}
+
 function saveMissionEntry(nextMission, { assignedFleetEntryId, importQuality = {} } = {}) {
   nextMission.color = getDistinctActiveMissionColor(nextMission.color, nextMission.id);
   const existingIndex = state.missions.findIndex((mission) => mission.id === nextMission.id);
   const existingMission = existingIndex >= 0 ? state.missions[existingIndex] : null;
+  if (existingMission) nextMission.logFailure = existingMission.logFailure || null;
   if (existingMission && assignedFleetEntryId !== undefined) {
     nextMission.assignedFleetEntryId = String(assignedFleetEntryId || "").trim();
   }
@@ -19,7 +34,7 @@ function saveMissionEntry(nextMission, { assignedFleetEntryId, importQuality = {
     if (incomeEntry) {
       const assignedFleetEntry = (state.fleet || []).find((entry) => entry.id === nextMission.assignedFleetEntryId) || null;
       incomeEntry.reference = nextMission.title || incomeEntry.reference;
-      if (missionHasPayout(nextMission) && !incomeEntry.telemetryEventId) incomeEntry.amountAuec = getMissionPayout(nextMission);
+      if (missionHasPayout(nextMission) && !incomeEntry.telemetryEventId && !incomeEntry.balanceObservationId) incomeEntry.amountAuec = getMissionPayout(nextMission);
       incomeEntry.fleetEntryId = assignedFleetEntry?.id || "";
       incomeEntry.shipId = assignedFleetEntry?.shipId || "";
     }
@@ -171,6 +186,7 @@ async function deleteActiveMissions(missions) {
 }
 
 async function completeActiveMissions(missions) {
+  missions = missions.filter(mission => !isMissionFailed(mission));
   const incompleteMissions = missions.filter((mission) => isMissionIncomplete(mission));
   const splitRequiredMissions = missions.filter((mission) => isMissionPayoutSplitRequired(mission));
   const completableMissions = missions.filter((mission) => !isMissionIncomplete(mission) && !isMissionPayoutSplitRequired(mission));
@@ -206,6 +222,7 @@ async function completeActiveMissions(missions) {
 }
 
 async function payCompletedMissions(missions) {
+  missions = missions.filter(mission => !isMissionFailed(mission));
   const splitRequiredMissions = missions.filter((mission) => isMissionPayoutSplitRequired(mission));
   const payableMissions = missions.filter((mission) => !isMissionPayoutSplitRequired(mission));
   if (!payableMissions.length) return;
@@ -245,6 +262,7 @@ function isMissionPayoutSplitRequired(mission) {
 }
 
 async function completeMission(missionId, { bookIncome = false } = {}) {
+  if (isMissionFailed(state.missions.find(entry => entry.id === missionId))) return;
   const mission = state.missions.find((entry) => entry.id === missionId);
   if (!mission) return;
 
@@ -294,6 +312,7 @@ async function completeMission(missionId, { bookIncome = false } = {}) {
 }
 
 async function payMission(missionId) {
+  if (isMissionFailed(state.missions.find(entry => entry.id === missionId))) return;
   const mission = state.missions.find((entry) => entry.id === missionId);
   if (!mission || isMissionPaid(mission)) return;
 

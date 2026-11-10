@@ -5,23 +5,17 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Quellcode-Stand:** 0.11.0 · **Lizenz:** GPLv3 oder später
+**Version:** 0.11.1 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
 
-- Aufträge verwalten und aus Screenshots übernehmen.
-- Fracht in einer 3D-Ansicht planen und verladen.
-- Routen und Auftragsfortschritt einschließlich Teillieferungen verfolgen.
-- Routen per Tastenkürzel bedienen und zur Heimatbasis zurückkehren.
+- Aufträge aus Screenshots übernehmen, verwalten und ihren Fortschritt verfolgen.
+- Fracht in 3D verladen und Routen mit Teillieferungen planen.
 - Flotte, Schiffsverluste und Ersatz verwalten.
-- Finanzen und Statistiken mit Schnellbuchungen im Blick behalten.
-- Schiff und Standort automatisch anhand der Game.log erkennen.
+- Finanzen auswerten und Kontostandsabweichungen als Buchungsvorschläge prüfen.
+- Schiff, Standort, Baupläne und Auftragsmeldungen aus der Game.log nutzen.
 - Sitzungen, Reisezeiten und geschätzten Kraftstoffbedarf nachvollziehen.
-- Bestätigte Auftragszahlungen aus der Game.log verbuchen, auch Gruppenanteile.
-- Doppelte Orte mit Suchfunktion zusammenführen.
-- Kontostand per Screenshot mit der Buchhaltung abgleichen.
-- Auf PC und weiteren Geräten im Heimnetz zusammenarbeiten.
-- Persönliche Daten sichern, exportieren und importieren.
+- Gemeinsam im Heimnetz arbeiten und persönliche Daten sichern oder übertragen.
 
 Die Spielfunktionen arbeiten offline. Die optionale Update-Prüfung benötigt
 Internetzugriff.

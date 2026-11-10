@@ -19,7 +19,7 @@
     cargo: ["Warenverkauf", "Warenankauf", "Cargo-Gebühr", "Cargo-Sonstiges"],
     ship: ["Schiffskauf", "Schiffsverkauf", "Upgrade", "Leihgebühr", "Schiff-Sonstiges"],
     service: ["Reparatur", "Betankung", "Wasserstoff", "Quantum", "Treibstoffankauf", "Versicherung", "Claim", "Hangargebühr", "Service-Sonstiges"],
-    other: ["Anfangsbestand", "Essen", "Trinken", "Transfer", "Geschenk", "Rückerstattung", "Steuer / Gebühr", "Sonstiges"],
+    other: ["Anfangsbestand", "Essen", "Trinken", "Kleidung", "Transfer", "Geschenk", "Rückerstattung", "Steuer / Gebühr", "Sonstiges"],
   };
 
   const LEDGER_CATEGORY_LABEL_KEYS = {
@@ -40,6 +40,7 @@
     Quantum: "finance.category.quantum",
     Essen: "finance.category.food",
     Trinken: "finance.category.drink",
+    Kleidung: "finance.category.clothing",
     Versicherung: "finance.category.insurance",
     Claim: "finance.category.claim",
     Hangargebühr: "finance.category.hangarFee",
@@ -139,6 +140,7 @@
     "Quantum",
     "Essen",
     "Trinken",
+    "Kleidung",
     "Treibstoffankauf",
     "Versicherung",
     "Claim",
@@ -337,7 +339,7 @@
         const payout = Math.max(0, Math.round(Number(mission?.payout) || 0));
         const isCompleted = status === "completed" || status === "paid" || Boolean(mission?.completedAt);
         const isPaid = status === "paid" || Boolean(mission?.paidAt) || incomeMissionIds.has(String(mission?.id || ""));
-        return payout > 0 && isCompleted && !isPaid && status !== "cancelled";
+        return payout > 0 && isCompleted && !isPaid && status !== "cancelled" && mission.logFailure?.status !== 'blocked';
       })
       .map((mission) => ({
         id: String(mission.id || ""),
@@ -1666,6 +1668,11 @@
       event.preventDefault();
       if (!validateEndingBalanceInput()) return;
       const draft = readDraft();
+      if (draft.flow === 'income' && findMissionById(draft.missionId)?.logFailure?.status === 'blocked') {
+        await helpers.showConfirmDialog({title:translate('common.notice'), message:translate('contracts.failure.blocked'),
+          confirmLabel:translate('common.ok'), showCancel:false});
+        return;
+      }
       if (!draft.bookedOn || !draft.category || !draft.amountAuec) {
         await helpers.showConfirmDialog({
           title: translate("common.notice"),
@@ -1814,6 +1821,7 @@
         createdAt: existingEntry?.createdAt,
       });
       if (existingEntry?.telemetryEventId) nextEntry.telemetryEventId = existingEntry.telemetryEventId;
+      if (existingEntry?.balanceObservationId) nextEntry.balanceObservationId = existingEntry.balanceObservationId;
 
       if (existingIndex >= 0) {
         getState().ledgerEntries.splice(existingIndex, 1, nextEntry);

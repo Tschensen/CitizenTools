@@ -3,12 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const D = require('../web/scripts/telemetry-domain.js');
+const R = require('../web/scripts/balance-reconciliation.js');
 const FleetLog = require('../web/scripts/fleet-log.js');
 const progress = require('../web/scripts/delivery-progress.js');
 const copy = value => JSON.parse(JSON.stringify(value));
 function fixture() {
   const c = {console, Date, Map, Set, TelemetryDomain:D, FleetLog:require('../web/scripts/fleet-log.js'), DeliveryProgress:progress,
-    cloneData:copy, sanitizeState:copy, soloCleanState:copy,
+    cloneData:copy, sanitizeState:copy, soloCleanState:copy, BalanceReconciliation:R,
     state:{activeFleetEntryId:'ship', currentLocation:'A', selectedRunRoutePointKey:'old',
       fleet:[{id:'ship'}],layout:{rows:4,cols:4},ledgerEntries:[],stopHistory:[],runCompletedRoutePoints:[],
       missions:[{id:'m',title:'Cargo',type:'cargo',status:'active',assignedFleetEntryId:'ship',
@@ -63,6 +64,47 @@ function paymentFixture() {
   Object.assign(c.state.missions[0],{status:'completed',payout:50250,completedAt:'2026-10-31T11:59:59.950Z'});
   return c;
 }
+
+test('failure stages a durable warning without changing cargo or existing money; all payment paths obey the block', () => {
+  const c=paymentFixture(), helpers=vm.createContext({Date});
+  vm.runInContext(fs.readFileSync(require.resolve('../web/scripts/mission-domain.js'),'utf8'), helpers);
+  c.normalizeMissionLogFailure=helpers.normalizeMissionLogFailure;
+  const gameId='11111111-2222-3333-4444-555555555555';
+  c.state.telemetryLinks={missions:{[gameId]:'m'}};
+  const failed={...event,id:'failed:LIVE:'+gameId,kind:'failed',missionId:gameId,player:'Pilot',channel:'LIVE'};
+  const before=copy(c.state);
+  assert.equal(c.stageTelemetryEvent({...failed,missionId:'wrong-id'},{action:'failed',missionId:'m'},{}),null);
+  const staged=c.stageTelemetryEvent(failed,{action:'failed',missionId:'m'},{});
+  assert.deepEqual(c.state,before);
+  assert.deepEqual(staged.state.missions[0].loads,before.missions[0].loads);
+  assert.deepEqual(staged.state.ledgerEntries,[]);
+  c.state=staged.state;
+  const mission=c.state.missions[0], blocked=copy(c.state);
+  assert.equal(helpers.isMissionActive(mission),false);
+  assert.equal(helpers.getMissionWorkflowStatus(mission),'failed');
+  c.unloadMissionLoadsForCompletion(mission,event.at);
+  c.markMissionCompleted(mission,{bookIncome:true});
+  c.markMissionPaid(mission);
+  assert.equal(c.bookMissionIncome(mission,event.at),null);
+  for (const action of ['complete','payment','cargo','package']) {
+    assert.equal(c.stageTelemetryEvent({...event,amount:50250},{action,missionId:'m'},{}),null);
+  }
+  assert.deepEqual(c.state,blocked);
+  assert.equal(c.window.FinanceModule.calculateOpenReceivables({missions:c.state.missions}).count,0);
+  Object.assign(c,{window:{},getDistinctActiveMissionColor:color=>color,getMissionPayout:mission=>mission.payout});
+  vm.runInContext(fs.readFileSync(require.resolve('../web/scripts/mission-actions.js'),'utf8'),c);
+  const edited={...mission,title:'Edited'}; delete edited.logFailure;
+  c.saveMissionEntry(edited);
+  assert.equal(c.state.missions[0].logFailure.status,'blocked');
+  c.state.missions[0].logFailure.status='overridden';
+  c.markMissionPaid(c.state.missions[0],{paidAt:event.at});
+  assert.equal(c.state.ledgerEntries.length,1);
+  const paid=copy(c.state);
+  const second={...failed,id:'failed:second'};
+  const review=c.stageTelemetryEvent(second,{action:'failed',missionId:'m'},{});
+  assert.deepEqual(review.state.ledgerEntries,paid.ledgerEntries);
+  assert.equal(review.state.missions[0].paidAt,paid.missions[0].paidAt);
+});
 
 test('payment stages exactly one real ledger entry and paid status without changing live state or cargo', () => {
   const c=paymentFixture();
@@ -177,6 +219,108 @@ test('balance snapshot leaves all accounting entries intact', () => {
   assert.equal(staged.state.telemetryBalance.amount,500);
   assert.deepEqual(staged.state.ledgerEntries,c.state.ledgerEntries);
   assert.equal(c.state.telemetryBalance,undefined);
+  assert.equal(R.view(staged.state).status,'pending');
+});
+
+function reconciliationFixture(amount=1470) {
+  const c=paymentFixture();
+  Object.assign(c, {
+    formatDateForInput:at=>new Date(at).toISOString().slice(0,10),
+    isMissionIncomplete:mission=>Boolean(mission.incomplete),
+    isMissionPaid:mission=>Boolean(mission.paidAt),
+    isMissionPayoutSplitRequired:mission=>Boolean(mission.splitRequired),
+    isOrganizationMissionReadyForCompletion:mission=>!mission.organizationBlocked,
+  });
+  Object.assign(c.state.fleet[0],{status:'active',shipId:'profile'});
+  Object.assign(c.state.missions[0],{status:'active',payout:500,completedAt:''});
+  c.state.ledgerEntries=[c.createLedgerEntry({id:'opening',flow:'income',scope:'other',category:'Anfangsbestand',amountAuec:1000,createdAt:'2026-10-01T00:00:00Z'})];
+  c.state=c.stageTelemetryEvent({...event,id:'balance',amount},{action:'balance'},{}).state;
+  return c;
+}
+
+test('dismissal changes neither money nor contracts and cannot be confirmed twice',()=>{
+  const c=reconciliationFixture(), before=copy(c.state), expected=R.view(c.state);
+  const staged=c.stageBalanceDecision(expected,{mode:'dismiss'});
+  assert.deepEqual(c.state,before);
+  assert.deepEqual(staged.state.ledgerEntries,before.ledgerEntries);
+  assert.deepEqual(staged.state.missions,before.missions);
+  assert.equal(R.view(staged.state).status,'dismissed');
+  c.state=staged.state;
+  assert.equal(c.stageBalanceDecision(expected,{mode:'booking',category:'Transfer',amount:470}),null);
+});
+
+test('confirmed expenses book exactly once, with category and optional ship',()=>{
+  const c=reconciliationFixture(960), before=copy(c.state), expected=R.view(c.state);
+  const choice={mode:'booking',category:'Kleidung',amount:40,fleetId:'ship',reference:'Jacke'};
+  const staged=c.stageBalanceDecision(expected,choice);
+  assert.deepEqual(c.state,before);
+  assert.deepEqual(staged.state.missions,before.missions);
+  const entry=staged.state.ledgerEntries[0];
+  assert.equal(entry.flow,'expense'); assert.equal(entry.category,'Kleidung');
+  assert.equal(entry.amountAuec,40); assert.equal(entry.fleetEntryId,'ship');
+  assert.equal(entry.balanceObservationId,expected.key);
+  assert.equal(R.view(staged.state).status,'resolved');
+  c.state=staged.state;
+  assert.equal(c.stageBalanceDecision(expected,choice),null);
+  assert.equal(c.state.ledgerEntries.length,2);
+});
+
+test('one net difference can match a contract and then a separate fuel expense',()=>{
+  const c=reconciliationFixture(), before=copy(c.state), expected=R.view(c.state);
+  const choice={mode:'mission',missionId:'m',missionStamp:R.missionStamp(c.state.missions[0]),amount:500};
+  const staged=c.stageBalanceDecision(expected,choice);
+  assert.deepEqual(c.state,before);
+  assert.equal(staged.state.missions[0].status,'paid');
+  assert.ok(staged.state.missions[0].loads.every(load=>load.deliveredAt===event.at && !load.placement));
+  assert.equal(staged.state.ledgerEntries[0].amountAuec,500);
+  assert.equal(R.view(staged.state).difference,-30);
+  c.state=staged.state;
+  assert.equal(c.stageBalanceDecision(expected,choice),null,'old dialog cannot be submitted again');
+  assert.equal(c.stageTelemetryEvent({...event,amount:500},{action:'payment',missionId:'m'},{}),null,'log payment cannot duplicate the confirmed receipt');
+  const fuel=c.stageBalanceDecision(R.view(c.state),{mode:'booking',category:'Betankung',amount:20});
+  assert.equal(R.view(fuel.state).difference,-10);
+  c.state=fuel.state;
+  const food=c.stageBalanceDecision(R.view(c.state),{mode:'booking',category:'Essen',amount:10});
+  assert.equal(R.view(food.state).status,'resolved');
+  assert.equal(food.state.ledgerEntries.length,4);
+});
+
+test('matching rejects unsafe or changed contracts without mutating any state',()=>{
+  for (const patch of [{logFailure:{status:'blocked'}},{status:'cancelled'},{paidAt:event.at},
+    {incomplete:true},{splitRequired:true},{organizationBlocked:true},{title:'Changed while dialog open'}]) {
+    const c=reconciliationFixture(), expected=R.view(c.state);
+    const choice={mode:'mission',missionId:'m',missionStamp:R.missionStamp(c.state.missions[0]),amount:470};
+    Object.assign(c.state.missions[0],patch);
+    if (!patch.title) choice.missionStamp=R.missionStamp(c.state.missions[0]);
+    const before=copy(c.state);
+    assert.equal(c.stageBalanceDecision(expected,choice),null);
+    assert.deepEqual(c.state,before);
+  }
+});
+
+test('changed ledger, newer observation and invalid choices reject stale confirmations',()=>{
+  for (const change of [c=>c.state.ledgerEntries[0].amountAuec=900,
+    c=>{c.state=c.stageTelemetryEvent({...event,id:'new',at:'2026-11-01T00:00:00Z',amount:1500},{action:'balance'},{}).state;}]) {
+    const c=reconciliationFixture(), expected=R.view(c.state); change(c);
+    const before=copy(c.state);
+    assert.equal(c.stageBalanceDecision(expected,{mode:'booking',category:'Transfer',amount:470}),null);
+    assert.deepEqual(c.state,before);
+  }
+  const c=reconciliationFixture(), expected=R.view(c.state), before=copy(c.state);
+  for (const patch of [{amount:0},{amount:-1},{amount:1.5},{amount:1e12},{category:'Reparatur'},{fleetId:'unknown'},{mode:'auto'}]) {
+    assert.equal(c.stageBalanceDecision(expected,{mode:'booking',category:'Transfer',amount:470,...patch}),null);
+    assert.deepEqual(c.state,before);
+  }
+});
+
+test('matching an actual receipt preserves it when the planned contract payout is edited',()=>{
+  const c=reconciliationFixture();
+  c.state=c.stageBalanceDecision(R.view(c.state),{mode:'mission',missionId:'m',amount:470,missionStamp:R.missionStamp(c.state.missions[0])}).state;
+  Object.assign(c,{getDistinctActiveMissionColor:color=>color,getMissionPayout:mission=>mission.payout});
+  vm.runInContext(fs.readFileSync(require.resolve('../web/scripts/mission-actions.js'),'utf8'),c);
+  c.saveMissionEntry({...c.state.missions[0],title:'Edited',payout:600});
+  assert.equal(c.state.ledgerEntries[0].amountAuec,470);
+  assert.equal(R.view(c.state).status,'resolved');
 });
 
 test('ship staging applies the existing grid synchronously and restores state on failure', () => {

@@ -565,7 +565,7 @@ def process_screenshot(
             job_id,
             "completed",
             source_file=image_path.name,
-            message="Auftrag erkannt und übertragen",
+            message="Auftrag übertragen · Kontostand erkannt" if balance_read else "Auftrag erkannt und übertragen",
             import_id=str(result.get("id") or ""),
         )
     state.mark(signature)

@@ -12,7 +12,7 @@ MAX_BYTES = 32 * 1024 * 1024
 COLLECTIONS = {"shipLibrary": 500, "fleet": 500, "missions": 500, "ledgerEntries": 1000, "contacts": 500}
 EXTRAS = ("layout", "pilots", "soloPilotId", "activeFleetEntryId", "autoload", "stopHistory", "currentLocation",
           "selectedStopDropoff", "selectedRunRoutePointKey", "runPriorityRouteLocation", "runCompletedRoutePoints", "runHomeDestinations",
-          "telemetryLinks", "telemetryBalance", "telemetryLocation")
+          "telemetryLinks", "telemetryBalance", "telemetryLocation", "balanceReconciliation")
 PRIVATE = {"_onlineMeta", "organization", "pilotGroups", "organizationLink", "organizationOrigin", "organizationProgress",
            "participantAllocations", "participants", "participantProgress", "onlineAssigneeIds", "groupId", "workspaceId",
            "payoutSplit", "payoutSettlement", "permissions", "roles", "createdBy", "ownerUserId"}

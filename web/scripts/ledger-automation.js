@@ -7,7 +7,7 @@
     helpers,
   }) {
     const payout = Math.round(Number(amountAuec) || 0);
-    if (!state || !mission?.id || payout <= 0) return null;
+    if (!state || !mission?.id || payout <= 0 || mission.logFailure?.status === 'blocked') return null;
 
     const missionType = helpers.normalizeMissionType
       ? helpers.normalizeMissionType(mission.type)

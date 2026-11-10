@@ -39,6 +39,27 @@ def arrive(second=130, destination='RR_CRU_L4'):
 
 
 class JournalTests(unittest.TestCase):
+    def test_blueprint_collection_is_durable_deduplicated_and_separates_channel_and_player(self):
+        notice = '<SHUDEvent_OnNotification> Added notification "Bauplan erhalten: Sedulity: " [35] MissionId: [00000000-0000-0000-0000-000000000000], ObjectiveId: []'
+        lines = start() + [line(notice, 4), line(notice.replace('SHUDEvent_OnNotification','UpdateNotificationItem'), 5)]
+        self.read_lines(lines)
+        self.read_lines(lines)
+        saved = journal.blueprints(self.db)['blueprints']
+        self.assertEqual(len(saved), 1)
+        self.assertEqual((saved[0]['name'],saved[0]['observations']), ('Sedulity',1))
+        self.read_lines(lines + [line(notice, 8)])
+        self.assertEqual(journal.blueprints(self.db)['blueprints'][0]['observations'], 2)
+        self.read_lines(lines, channel='PTU')
+        self.read_lines([value.replace('Pilot','Other') for value in lines])
+        saved = journal.blueprints(self.db)['blueprints']
+        self.assertEqual({(row['channel'],row['player']) for row in saved}, {('LIVE','Pilot'),('PTU','Pilot'),('LIVE','Other')})
+
+    def test_failure_is_journaled_separately_from_ship_loss(self):
+        mission = '11111111-2222-3333-4444-555555555555'
+        result = self.read_lines(start()+[line(f'<MissionEnded> mission_id {mission} - mission_state MISSION_STATE_FAILED', 4)])
+        failed = [entry for entry in result['entries'] if entry['kind']=='failed']
+        self.assertEqual([entry['missionId'] for entry in failed], [mission])
+
     def setUp(self):
         self.db = sqlite3.connect(':memory:')
         journal.init_store(self.db)

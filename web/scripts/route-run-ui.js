@@ -690,6 +690,7 @@ function selectStopByDropoff(dropoff) {
 }
 
 function bookMissionIncome(mission, completedAt, { amountAuec } = {}) {
+  if (mission?.logFailure?.status === 'blocked') return null;
   if (amountAuec === undefined && !missionHasPayout(mission)) return null;
   return createMissionIncomeForCompletedMission({
     state,
@@ -706,7 +707,7 @@ function bookMissionIncome(mission, completedAt, { amountAuec } = {}) {
 }
 
 function markMissionCompleted(mission, { completedAt = new Date().toISOString(), bookIncome = false } = {}) {
-  if (!mission) return;
+  if (!mission || mission.logFailure?.status === 'blocked') return;
   const effectiveCompletedAt = mission.completedAt || completedAt;
   mission.completedAt = effectiveCompletedAt;
 
@@ -728,7 +729,7 @@ function markMissionCompleted(mission, { completedAt = new Date().toISOString(),
 }
 
 function markMissionPaid(mission, { paidAt = new Date().toISOString(), amountAuec } = {}) {
-  if (!mission) return;
+  if (!mission || mission.logFailure?.status === 'blocked') return;
   const completedAt = mission.completedAt || paidAt;
   mission.completedAt = completedAt;
   bookMissionIncome(mission, paidAt, { amountAuec });
@@ -737,6 +738,7 @@ function markMissionPaid(mission, { paidAt = new Date().toISOString(), amountAue
 }
 
 function unloadMissionLoadsForCompletion(mission, completedAt = new Date().toISOString()) {
+  if (mission?.logFailure?.status === 'blocked') return;
   if (!isCargoMission(mission)) return;
   const loads = Array.isArray(mission.loads) ? mission.loads : [];
   const openLoads = loads.filter((load) => !isLoadDelivered(load));

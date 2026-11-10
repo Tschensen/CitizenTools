@@ -128,7 +128,9 @@ class LogJournal:
                 elif self.boarding:
                     self.entry(kind, at, ship=copy.deepcopy(self.boarding['ship']))
                 self.boarding = self.estimate = self.selection = None
-            elif kind in ('accepted', 'completed', 'payment'):
+            elif kind == 'blueprint':
+                self.entry(kind, at, name=event['name'], player=parser.player, channel=self.channel)
+            elif kind in ('accepted', 'completed', 'payment', 'failed'):
                 key = (kind, event.get('missionId'))
                 if key in self.seen:
                     continue

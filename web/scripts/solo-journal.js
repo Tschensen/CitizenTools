@@ -18,7 +18,7 @@
       time:'Erfasster Zeitraum',travelTime:'Reisezeit gesamt',completed:'Aufträge abgeschlossen',arrived:'Angekommen',open:'Ankunft noch nicht erfasst',interrupted:'Reise nicht vollständig erfasst',
       unknown:'Unbekannter Ort',fuel:'Quantum-Kraftstoffbedarf',units:'Logwert · geschätzt',missingFuel:'Keine passende Schätzung',estimateAt:'Berechnet',
       location:'Ort erkannt',ship:'An Bord',ship_exit:'Schiff verlassen',ship_loss:'Schiffsverlust gemeldet',accepted:'Auftrag angenommen',completedEvent:'Auftrag abgeschlossen',payment:'Auftragszahlung erkannt',contract:'Auftrag',
-      durationHint:'Summe vollständig erfasster Reisen',owner:'Besitzer'},
+      durationHint:'Summe vollständig erfasster Reisen',owner:'Besitzer',failed:'Auftrag fehlgeschlagen',blueprint:'Bauplan erhalten'},
     en:{tab:'Session journal',intro:'Your journeys and events from Game.log.',refresh:'Refresh',session:'Session',older:'Older sessions',
       journeys:'Journeys',events:'Events',routes:'Planned routes and fuel requirements',basis:'How are time and fuel calculated?',
       timeHint:'Travel time runs from the detected departure from a location area to confirmed arrival. It includes detours and pauses along the way.',
@@ -30,7 +30,7 @@
       time:'Recorded period',travelTime:'Total travel time',completed:'Contracts completed',arrived:'Arrived',open:'Arrival not yet recorded',interrupted:'Journey incompletely recorded',
       unknown:'Unknown location',fuel:'Quantum fuel requirement',units:'Log value · estimated',missingFuel:'No matching estimate',estimateAt:'Calculated',
       location:'Location detected',ship:'On board',ship_exit:'Left ship',ship_loss:'Ship loss reported',accepted:'Contract accepted',completedEvent:'Contract completed',payment:'Contract payment detected',contract:'Contract',
-      durationHint:'Sum of fully recorded journeys',owner:'Owner'}
+      durationHint:'Sum of fully recorded journeys',owner:'Owner',failed:'Contract failed',blueprint:'Blueprint received'}
   };
   const lang = () => currentUiLanguage() === 'en' ? 'en' : 'de';
   const text = key => words[lang()][key] || key;
@@ -77,7 +77,7 @@
     byId('Events').innerHTML = events.length ? events.map(entry => {
       const label = text(entry.kind === 'completed' ? 'completedEvent' : entry.kind);
       const detail = entry.kind === 'location' ? place(entry.place) : entry.ship ? ship(entry) :
-        [entry.title || text('contract'), entry.kind === 'payment' ? `${number(entry.amount)} aUEC` : ''].filter(Boolean).join(' · ');
+        [entry.name || entry.title || text('contract'), entry.kind === 'payment' ? `${number(entry.amount)} aUEC` : ''].filter(Boolean).join(' · ');
       return `<li><time datetime="${escape(entry.at)}">${date(entry.at)}</time><div><strong>${escape(label)}</strong><span>${escape(detail)}</span></div></li>`;
     }).join('') : `<li class="journal-empty">${escape(text('noEvents'))}</li>`;
   }
