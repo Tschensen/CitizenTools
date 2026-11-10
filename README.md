@@ -5,12 +5,9 @@ Screenshot-Erkennung in einer gemeinsamen Oberfläche. Zusätzliche Geräte im
 Heimnetz greifen per Browser auf denselben Spielstand zu.
 
 **Ursprüngliches Projekt:** [Tschensen](https://github.com/Tschensen)  
-**Lizenz:** GPLv3 oder später
+**Version:** 0.11.1 · **Lizenz:** GPLv3 oder später
 
 ## Funktionen
-
-Diese Übersicht beschreibt den aktuellen Entwicklungsstand. Noch nicht
-veröffentlichte Änderungen stehen im [Versionsverlauf](CHANGELOG.md).
 
 - Aufträge aus Screenshots übernehmen, verwalten und ihren Fortschritt verfolgen.
 - Fracht in 3D verladen und Routen mit Teillieferungen planen.
